@@ -1,0 +1,20 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ACTIVITY_STATUS = exports.ENTITY_TYPES = exports.ACTION_TYPES = void 0;
+exports.ACTION_TYPES = [
+    'USER_REGISTERED',
+    'TUTOR_VERIFIED',
+    'SESSION_COMPLETED',
+    'SESSION_SCHEDULED',
+    'SESSION_CANCELLED',
+    'PAYMENT_COMPLETED',
+    'PAYMENT_FAILED',
+    'SUBSCRIPTION_CREATED',
+    'TRIAL_REQUEST_CREATED',
+    'APPLICATION_SUBMITTED',
+    'APPLICATION_APPROVED',
+    'APPLICATION_REJECTED',
+    'APPLICATION_RESUBMITTED',
+];
+exports.ENTITY_TYPES = ['USER', 'SESSION', 'PAYMENT', 'APPLICATION', 'SUBSCRIPTION', 'TRIAL_REQUEST'];
+exports.ACTIVITY_STATUS = ['success', 'pending', 'warning', 'error'];

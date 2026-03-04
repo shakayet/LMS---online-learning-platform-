@@ -1,0 +1,724 @@
+import colors from 'colors';
+import { Server } from 'socket.io';
+import { logger } from '../shared/logger';
+import { jwtHelper } from './jwtHelper';
+import config from '../config';
+import { Message } from '../app/modules/message/message.model';
+import { Chat } from '../app/modules/chat/chat.model';
+import NodeCache from 'node-cache';
+import { CallService } from '../app/modules/call/call.service';
+import { WhiteboardService } from '../app/modules/whiteboard/whiteboard.service';
+import { SessionService } from '../app/modules/session/session.service';
+import { CallType } from '../app/modules/call/call.interface';
+import { User } from '../app/modules/user/user.model';
+import {
+  setOnline,
+  setOffline,
+  addUserRoom,
+  removeUserRoom,
+  updateLastActive,
+  getUserRooms,
+  getLastActive,
+  incrConnCount,
+  decrConnCount,
+  clearUserRooms,
+} from '../app/helpers/presenceHelper';
+
+// -------------------------
+// 🔹 Room Name Generators
+// -------------------------
+// USER_ROOM: unique private room for each user (for personal notifications)
+// CHAT_ROOM: group room for each chat conversation
+const USER_ROOM = (userId: string) => `user::${userId}`;
+const CHAT_ROOM = (chatId: string) => `chat::${chatId}`;
+const TYPING_KEY = (chatId: string, userId: string) => `typing:${chatId}:${userId}`;
+const TYPING_TTL_SECONDS = 5; // throttle window
+const typingThrottle = new NodeCache({ stdTTL: TYPING_TTL_SECONDS, checkperiod: 10, useClones: false });
+
+// -------------------------
+// 🔹 Main Socket Handler
+// -------------------------
+const socket = (io: Server) => {
+  io.on('connection', async socket => {
+    try {
+      // -----------------------------
+      // 🧩 STEP 1 — Authenticate Socket
+      // -----------------------------
+      const token =
+        (socket.handshake.auth as any)?.token ||
+        (socket.handshake.query as any)?.token;
+
+      if (!token || typeof token !== 'string') {
+        logger.warn(
+          colors.yellow('Socket connection without token. Disconnecting.')
+        );
+        return socket.disconnect(true);
+      }
+
+      let payload: any;
+      try {
+        payload = jwtHelper.verifyToken(token, config.jwt.jwt_secret as any);
+      } catch (err) {
+        logger.warn(
+          colors.red('Invalid JWT on socket connection. Disconnecting.')
+        );
+        return socket.disconnect(true);
+      }
+
+      const userId = payload?.id as string;
+      if (!userId) {
+        logger.warn(colors.red('JWT payload missing id. Disconnecting.'));
+        return socket.disconnect(true);
+      }
+
+      // -----------------------------
+      // 🧩 STEP 2 — Mark Online & Join Personal Room
+      // -----------------------------
+      await setOnline(userId);
+      await incrConnCount(userId);
+      await updateLastActive(userId);
+      socket.join(USER_ROOM(userId)); // join user’s personal private room
+      logger.info(
+        colors.blue(`✅ User ${userId} connected & joined ${USER_ROOM(userId)}`)
+      );
+      logEvent('socket_connected', `for user_id: ${userId}`);
+
+      // -----------------------------
+      // 🔹 Helper Function: Simplify repetitive event logging & activity update
+      // -----------------------------
+      const handleEventProcessed = (event: string, extra?: string) => {
+        updateLastActive(userId).catch(() => {});
+        logEvent(event, extra);
+      };
+
+      // ---------------------------------------------
+      // 🔹 Chat Room Join / Leave Events
+      // ---------------------------------------------
+      socket.on('JOIN_CHAT', async ({ chatId }: { chatId: string }) => {
+        if (!chatId) return;
+        // Security: Ensure only chat participants can join the room
+        const allowed = await Chat.exists({ _id: chatId, participants: userId });
+        if (!allowed) {
+          socket.emit('ACK_ERROR', {
+            message: 'You are not a participant of this chat',
+            chatId: String(chatId),
+          });
+          handleEventProcessed('JOIN_CHAT_DENIED', `for chat_id: ${chatId}`);
+          return;
+        }
+        socket.join(CHAT_ROOM(chatId));
+        await addUserRoom(userId, chatId);
+        handleEventProcessed('JOIN_CHAT', `for chat_id: ${chatId}`);
+
+        // Broadcast to others in the chat that this user is now online
+        const lastActive = await getLastActive(userId);
+        io.to(CHAT_ROOM(chatId)).emit('USER_ONLINE', {
+          userId,
+          chatId,
+          lastActive,
+        });
+        logger.info(
+          colors.green(`User ${userId} joined chat room ${CHAT_ROOM(chatId)}`)
+        );
+
+        // Auto-mark undelivered messages as delivered for this user upon joining the chat.
+        // This fixes cases where messages sent while the user was offline remain stuck at "sent"
+        // after the user logs back in and rejoins rooms.
+        try {
+          const undelivered = await Message.find(
+            {
+              chatId,
+              sender: { $ne: userId },
+              deliveredTo: { $nin: [userId] },
+            },
+            { _id: 1 }
+          );
+
+          if (undelivered && undelivered.length > 0) {
+            const ids = undelivered.map(m => m._id);
+            await Message.updateMany(
+              { _id: { $in: ids } },
+              { $addToSet: { deliveredTo: userId } }
+            );
+
+            for (const msg of undelivered) {
+              io.to(CHAT_ROOM(String(chatId))).emit('MESSAGE_DELIVERED', {
+                messageId: String(msg._id),
+                chatId: String(chatId),
+                userId,
+              });
+            }
+
+            logger.info(
+              colors.green(
+                `Auto-delivered ${
+                  undelivered.length
+                } pending messages for user ${userId} on join to ${CHAT_ROOM(
+                  chatId
+                )}`
+              )
+            );
+            handleEventProcessed(
+              'AUTO_DELIVERED_ON_JOIN',
+              `count=${undelivered.length} chat_id=${chatId}`
+            );
+          }
+        } catch (err) {
+          logger.error(
+            colors.red(`JOIN_CHAT auto deliver error: ${String(err)}`)
+          );
+        }
+      });
+
+      socket.on('LEAVE_CHAT', async ({ chatId }: { chatId: string }) => {
+        if (!chatId) return;
+        // Guard: Ensure only participants can leave (consistency & logging)
+        const allowed = await Chat.exists({ _id: chatId, participants: userId });
+        if (!allowed) {
+          socket.emit('ACK_ERROR', {
+            message: 'You are not a participant of this chat',
+            chatId: String(chatId),
+          });
+          handleEventProcessed('LEAVE_CHAT_DENIED', `for chat_id: ${chatId}`);
+          return;
+        }
+        socket.leave(CHAT_ROOM(chatId));
+        await removeUserRoom(userId, chatId);
+        handleEventProcessed('LEAVE_CHAT', `for chat_id: ${chatId}`);
+
+        // Notify others that user went offline in this chat
+        const lastActive = await getLastActive(userId);
+        io.to(CHAT_ROOM(chatId)).emit('USER_OFFLINE', {
+          userId,
+          chatId,
+          lastActive,
+        });
+        logger.info(
+          colors.yellow(`User ${userId} left chat room ${CHAT_ROOM(chatId)}`)
+        );
+      });
+
+      // ---------------------------------------------
+      // 🔹 Typing Indicators
+      // ---------------------------------------------
+      socket.on('TYPING_START', async ({ chatId }: { chatId: string }) => {
+        if (!chatId) return;
+        // Guard: Only participants can emit typing events for a chat
+        const allowed = await Chat.exists({ _id: chatId, participants: userId });
+        if (!allowed) {
+          handleEventProcessed('TYPING_START_DENIED', `for chat_id: ${chatId}`);
+          return;
+        }
+
+        // Throttle typing events per user per chat using in-memory TTL key
+        {
+          const key = TYPING_KEY(chatId, userId);
+          if (typingThrottle.has(key)) {
+            handleEventProcessed('TYPING_START_THROTTLED_SKIP', `for chat_id: ${chatId}`);
+            return;
+          }
+          typingThrottle.set(key, 1, TYPING_TTL_SECONDS);
+        }
+
+        io.to(CHAT_ROOM(chatId)).emit('TYPING_START', { userId, chatId });
+        handleEventProcessed('TYPING_START', `for chat_id: ${chatId}`);
+      });
+
+      socket.on('TYPING_STOP', async ({ chatId }: { chatId: string }) => {
+        if (!chatId) return;
+        // Guard: Only participants can emit typing stop events
+        const allowed = await Chat.exists({ _id: chatId, participants: userId });
+        if (!allowed) {
+          handleEventProcessed('TYPING_STOP_DENIED', `for chat_id: ${chatId}`);
+          return;
+        }
+        // Clear throttle key so next start can emit immediately
+        typingThrottle.del(TYPING_KEY(chatId, userId));
+
+        io.to(CHAT_ROOM(chatId)).emit('TYPING_STOP', { userId, chatId });
+        handleEventProcessed('TYPING_STOP', `for chat_id: ${chatId}`);
+      });
+
+      // ---------------------------------------------
+      // 🔹 Message Delivery & Read Acknowledgements
+      // ---------------------------------------------
+      socket.on(
+        'DELIVERED_ACK',
+        async ({ messageId }: { messageId: string }) => {
+          try {
+            const found = await Message.findById(messageId).select('_id chatId');
+            if (!found) {
+              socket.emit('ACK_ERROR', {
+                message: 'Message not found',
+                messageId,
+              });
+              return;
+            }
+
+            const allowed = await Chat.exists({ _id: found.chatId, participants: userId });
+            if (!allowed) {
+              socket.emit('ACK_ERROR', {
+                message: 'You are not a participant of this chat',
+                chatId: String(found.chatId),
+                messageId: String(found._id),
+              });
+              handleEventProcessed('DELIVERED_ACK_DENIED', `chat_id: ${String(found.chatId)}`);
+              return;
+            }
+
+            const msg = await Message.findByIdAndUpdate(
+              messageId,
+              { $addToSet: { deliveredTo: userId } },
+              { new: true }
+            );
+            if (msg) {
+              io.to(CHAT_ROOM(String(msg.chatId))).emit('MESSAGE_DELIVERED', {
+                messageId: String(msg._id),
+                chatId: String(msg.chatId),
+                userId,
+              });
+              handleEventProcessed(
+                'DELIVERED_ACK',
+                `for message_id: ${String(msg._id)}`
+              );
+            }
+          } catch (err) {
+            logger.error(colors.red(`❌ DELIVERED_ACK error: ${String(err)}`));
+          }
+        }
+      );
+
+      socket.on('READ_ACK', async ({ messageId }: { messageId: string }) => {
+        try {
+          const found = await Message.findById(messageId).select('_id chatId');
+          if (!found) {
+            socket.emit('ACK_ERROR', {
+              message: 'Message not found',
+              messageId,
+            });
+            return;
+          }
+
+          const allowed = await Chat.exists({ _id: found.chatId, participants: userId });
+          if (!allowed) {
+            socket.emit('ACK_ERROR', {
+              message: 'You are not a participant of this chat',
+              chatId: String(found.chatId),
+              messageId: String(found._id),
+            });
+            handleEventProcessed('READ_ACK_DENIED', `chat_id: ${String(found.chatId)}`);
+            return;
+          }
+
+          const msg = await Message.findByIdAndUpdate(
+            messageId,
+            { $addToSet: { readBy: userId } },
+            { new: true }
+          );
+          if (msg) {
+            io.to(CHAT_ROOM(String(msg.chatId))).emit('MESSAGE_READ', {
+              messageId: String(msg._id),
+              chatId: String(msg.chatId),
+              userId,
+            });
+            handleEventProcessed(
+              'READ_ACK',
+              `for message_id: ${String(msg._id)}`
+            );
+          }
+        } catch (err) {
+          logger.error(colors.red(`❌ READ_ACK error: ${String(err)}`));
+        }
+      });
+
+      // ---------------------------------------------
+      // 🔹 Call Events (Agora Integration)
+      // ---------------------------------------------
+
+      // Initiate a call
+      socket.on(
+        'CALL_INITIATE',
+        async ({
+          receiverId,
+          callType,
+          chatId,
+        }: {
+          receiverId: string;
+          callType: CallType;
+          chatId?: string;
+        }) => {
+          try {
+            const { call, token, channelName, uid } =
+              await CallService.initiateCall(userId, receiverId, callType, chatId);
+
+            // Get caller info for receiver
+            const caller = await User.findById(userId).select(
+              'name profilePicture'
+            );
+
+            // Send to caller
+            socket.emit('CALL_INITIATED', {
+              callId: call._id,
+              channelName,
+              token,
+              uid,
+              callType,
+            });
+
+            // Send to receiver
+            io.to(USER_ROOM(receiverId)).emit('INCOMING_CALL', {
+              callId: call._id,
+              channelName,
+              callType,
+              caller: {
+                id: userId,
+                name: caller?.name,
+                profilePicture: caller?.profilePicture,
+              },
+            });
+
+            handleEventProcessed(
+              'CALL_INITIATE',
+              `to: ${receiverId}, type: ${callType}`
+            );
+          } catch (err) {
+            socket.emit('CALL_ERROR', { message: String(err) });
+            logger.error(colors.red(`CALL_INITIATE error: ${String(err)}`));
+          }
+        }
+      );
+
+      // Accept a call
+      socket.on('CALL_ACCEPT', async ({ callId }: { callId: string }) => {
+        try {
+          const { call, token, uid } = await CallService.acceptCall(
+            callId,
+            userId
+          );
+
+          // Send token to acceptor
+          socket.emit('CALL_ACCEPTED', {
+            callId,
+            channelName: call.channelName,
+            token,
+            uid,
+          });
+
+          // Notify caller that call was accepted
+          io.to(USER_ROOM(call.initiator.toString())).emit(
+            'CALL_ACCEPTED_BY_RECEIVER',
+            { callId }
+          );
+
+          handleEventProcessed('CALL_ACCEPT', `callId: ${callId}`);
+        } catch (err) {
+          socket.emit('CALL_ERROR', { message: String(err) });
+          logger.error(colors.red(`CALL_ACCEPT error: ${String(err)}`));
+        }
+      });
+
+      // Reject a call
+      socket.on('CALL_REJECT', async ({ callId }: { callId: string }) => {
+        try {
+          const call = await CallService.rejectCall(callId, userId);
+
+          // Notify caller
+          io.to(USER_ROOM(call.initiator.toString())).emit('CALL_REJECTED', {
+            callId,
+          });
+
+          handleEventProcessed('CALL_REJECT', `callId: ${callId}`);
+        } catch (err) {
+          socket.emit('CALL_ERROR', { message: String(err) });
+          logger.error(colors.red(`CALL_REJECT error: ${String(err)}`));
+        }
+      });
+
+      // End a call
+      socket.on('CALL_END', async ({ callId }: { callId: string }) => {
+        try {
+          const call = await CallService.endCall(callId, userId);
+
+          // Notify all participants
+          call.participants.forEach(participantId => {
+            if (participantId.toString() !== userId) {
+              io.to(USER_ROOM(participantId.toString())).emit('CALL_ENDED', {
+                callId,
+                duration: call.duration,
+              });
+            }
+          });
+
+          handleEventProcessed('CALL_END', `callId: ${callId}`);
+        } catch (err) {
+          socket.emit('CALL_ERROR', { message: String(err) });
+          logger.error(colors.red(`CALL_END error: ${String(err)}`));
+        }
+      });
+
+      // Cancel a call (before accepted)
+      socket.on('CALL_CANCEL', async ({ callId }: { callId: string }) => {
+        try {
+          const call = await CallService.cancelCall(callId, userId);
+
+          // Notify receiver
+          io.to(USER_ROOM(call.receiver.toString())).emit('CALL_CANCELLED', {
+            callId,
+          });
+
+          handleEventProcessed('CALL_CANCEL', `callId: ${callId}`);
+        } catch (err) {
+          socket.emit('CALL_ERROR', { message: String(err) });
+          logger.error(colors.red(`CALL_CANCEL error: ${String(err)}`));
+        }
+      });
+
+      // Join a session-based call (for tutoring sessions)
+      // Both participants join the SAME channel based on sessionId
+      socket.on(
+        'CALL_JOIN_SESSION',
+        async ({
+          sessionId,
+          otherUserId,
+          callType = 'video',
+        }: {
+          sessionId: string;
+          otherUserId: string;
+          callType?: CallType;
+        }) => {
+          try {
+            const { call, token, channelName, uid, isNew } =
+              await CallService.joinSessionCall(userId, sessionId, otherUserId, callType);
+
+            // Send token and channel info to this user
+            socket.emit('SESSION_CALL_JOINED', {
+              callId: call._id,
+              channelName,
+              token,
+              uid,
+              callType,
+              isNew,
+            });
+
+            // If this is a new call, notify the other user
+            if (isNew) {
+              const caller = await User.findById(userId).select('name profilePicture');
+              io.to(USER_ROOM(otherUserId)).emit('SESSION_CALL_READY', {
+                callId: call._id,
+                channelName,
+                sessionId,
+                callType,
+                caller: {
+                  id: userId,
+                  name: caller?.name,
+                  profilePicture: caller?.profilePicture,
+                },
+              });
+            }
+
+            handleEventProcessed(
+              'CALL_JOIN_SESSION',
+              `sessionId: ${sessionId}, channelName: ${channelName}, isNew: ${isNew}`
+            );
+          } catch (err) {
+            socket.emit('CALL_ERROR', { message: String(err) });
+            logger.error(colors.red(`CALL_JOIN_SESSION error: ${String(err)}`));
+          }
+        }
+      );
+
+      // User joined Agora channel
+      socket.on(
+        'CALL_USER_JOINED_CHANNEL',
+        async ({ callId, agoraUid }: { callId: string; agoraUid: number }) => {
+          try {
+            const { call, activeCount } = await CallService.recordParticipantJoin(
+              callId,
+              userId,
+              agoraUid
+            );
+
+            // Notify all participants
+            call.participants.forEach(participantId => {
+              io.to(USER_ROOM(participantId.toString())).emit(
+                'CALL_PARTICIPANT_JOINED',
+                {
+                  callId,
+                  userId,
+                  agoraUid,
+                  activeParticipants: activeCount,
+                }
+              );
+            });
+
+            // If both joined, notify
+            if (activeCount >= 2) {
+              call.participants.forEach(participantId => {
+                io.to(USER_ROOM(participantId.toString())).emit(
+                  'CALL_BOTH_CONNECTED',
+                  {
+                    callId,
+                    message: 'Both participants are now connected',
+                  }
+                );
+              });
+            }
+
+            handleEventProcessed(
+              'CALL_USER_JOINED_CHANNEL',
+              `callId: ${callId}, userId: ${userId}`
+            );
+          } catch (err) {
+            socket.emit('CALL_ERROR', { message: String(err) });
+            logger.error(
+              colors.red(`CALL_USER_JOINED_CHANNEL error: ${String(err)}`)
+            );
+          }
+        }
+      );
+
+      // User left Agora channel
+      socket.on(
+        'CALL_USER_LEFT_CHANNEL',
+        async ({ callId }: { callId: string }) => {
+          try {
+            const { call, activeCount } = await CallService.recordParticipantLeave(
+              callId,
+              userId
+            );
+
+            // Sync attendance to session if this is a session call
+            if (call.sessionId) {
+              try {
+                await SessionService.syncAttendanceFromCall(call.sessionId.toString());
+                logger.info(
+                  colors.cyan(`Session attendance synced for session: ${call.sessionId}`)
+                );
+              } catch (syncErr) {
+                // Don't fail the main operation if sync fails
+                logger.warn(
+                  colors.yellow(`Failed to sync session attendance: ${String(syncErr)}`)
+                );
+              }
+            }
+
+            // Notify remaining participants
+            call.participants.forEach(participantId => {
+              if (participantId.toString() !== userId) {
+                io.to(USER_ROOM(participantId.toString())).emit(
+                  'CALL_PARTICIPANT_LEFT',
+                  {
+                    callId,
+                    userId,
+                    activeParticipants: activeCount,
+                  }
+                );
+              }
+            });
+
+            handleEventProcessed(
+              'CALL_USER_LEFT_CHANNEL',
+              `callId: ${callId}, userId: ${userId}`
+            );
+          } catch (err) {
+            socket.emit('CALL_ERROR', { message: String(err) });
+            logger.error(
+              colors.red(`CALL_USER_LEFT_CHANNEL error: ${String(err)}`)
+            );
+          }
+        }
+      );
+
+      // Enable whiteboard for a call
+      socket.on(
+        'CALL_ENABLE_WHITEBOARD',
+        async ({ callId }: { callId: string }) => {
+          try {
+            const { room, token, isNew } =
+              await WhiteboardService.getOrCreateRoomForCall(callId, userId);
+
+            // Notify all call participants about whiteboard
+            const call = await CallService.getCallById(callId, userId);
+
+            call.participants.forEach((participantId: any) => {
+              io.to(
+                USER_ROOM(
+                  typeof participantId === 'object'
+                    ? participantId._id.toString()
+                    : participantId.toString()
+                )
+              ).emit('WHITEBOARD_ENABLED', {
+                callId,
+                roomUuid: room.uuid,
+                roomToken: token,
+                isNew,
+              });
+            });
+
+            handleEventProcessed(
+              'CALL_ENABLE_WHITEBOARD',
+              `callId: ${callId}, roomUuid: ${room.uuid}`
+            );
+          } catch (err) {
+            socket.emit('CALL_ERROR', { message: String(err) });
+            logger.error(
+              colors.red(`CALL_ENABLE_WHITEBOARD error: ${String(err)}`)
+            );
+          }
+        }
+      );
+
+      // ---------------------------------------------
+      // 🔹 Handle Disconnect Event
+      // ---------------------------------------------
+      socket.on('disconnect', async () => {
+        try {
+          await updateLastActive(userId);
+          const remaining = await decrConnCount(userId);
+          const lastActive = await getLastActive(userId);
+
+          // Only mark offline and broadcast if no other sessions remain
+          if (!remaining || remaining <= 0) {
+            await setOffline(userId);
+
+            // Notify all chat rooms this user participated in
+            try {
+              const rooms = await getUserRooms(userId);
+              for (const chatId of rooms || []) {
+                io.to(CHAT_ROOM(String(chatId))).emit('USER_OFFLINE', {
+                  userId,
+                  chatId: String(chatId),
+                  lastActive,
+                });
+              }
+              await clearUserRooms(userId);
+            } catch {}
+          } else {
+            logger.info(colors.yellow(`User ${userId} disconnected one session; ${remaining} session(s) remain.`));
+          }
+
+          logger.info(colors.red(`User ${userId} disconnected`));
+          logEvent('socket_disconnected', `for user_id: ${userId}`);
+        } catch (err) {
+          logger.error(
+            colors.red(`❌ Disconnect handling error: ${String(err)}`)
+          );
+        }
+      });
+    } catch (err) {
+      logger.error(colors.red(`Socket connection error: ${String(err)}`));
+      try {
+        socket.disconnect(true);
+      } catch {}
+    }
+  });
+};
+
+// -------------------------
+// 🔹 Helper: Log formatter
+// -------------------------
+const logEvent = (event: string, extra?: string) => {
+  logger.info(`🔔 Event processed: ${event} ${extra || ''}`);
+};
+
+export const socketHelper = { socket };

@@ -1,0 +1,750 @@
+{
+  "info": {
+    "_postman_id": "agora-integration-collection",
+    "name": "Agora Integration - Tutoring Platform",
+    "description": "Complete Postman collection for testing Agora Video Call and Whiteboard integration",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5001/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "tutorToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "studentToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "tutorId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "studentId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "callId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "whiteboardRoomId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "1.1 Login as Tutor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.accessToken) {",
+                  "    pm.collectionVariables.set('tutorToken', jsonData.data.accessToken);",
+                  "    pm.collectionVariables.set('tutorId', jsonData.data.user._id);",
+                  "    console.log('Tutor Token saved!');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"tutor@test.com\",\n  \"password\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Login as Tutor to get JWT token. Token will be auto-saved."
+          },
+          "response": []
+        },
+        {
+          "name": "1.2 Login as Student",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.accessToken) {",
+                  "    pm.collectionVariables.set('studentToken', jsonData.data.accessToken);",
+                  "    pm.collectionVariables.set('studentId', jsonData.data.user._id);",
+                  "    console.log('Student Token saved!');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"student@test.com\",\n  \"password\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Login as Student to get JWT token. Token will be auto-saved."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2. Call APIs",
+      "item": [
+        {
+          "name": "2.1 Initiate Call (Tutor → Student)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.call) {",
+                  "    pm.collectionVariables.set('callId', jsonData.data.call._id);",
+                  "    console.log('Call ID saved: ' + jsonData.data.call._id);",
+                  "    console.log('Channel Name: ' + jsonData.data.channelName);",
+                  "    console.log('Agora Token: ' + jsonData.data.token);",
+                  "    console.log('UID: ' + jsonData.data.uid);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tutorToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverId\": \"{{studentId}}\",\n  \"callType\": \"video\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/calls/initiate",
+              "host": ["{{baseUrl}}"],
+              "path": ["calls", "initiate"]
+            },
+            "description": "Tutor initiates a video call to Student. Returns Agora token, channel name, and UID."
+          },
+          "response": []
+        },
+        {
+          "name": "2.2 Accept Call (Student)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data) {",
+                  "    console.log('Call accepted!');",
+                  "    console.log('Student Agora Token: ' + jsonData.data.token);",
+                  "    console.log('Student UID: ' + jsonData.data.uid);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/calls/{{callId}}/accept",
+              "host": ["{{baseUrl}}"],
+              "path": ["calls", "{{callId}}", "accept"]
+            },
+            "description": "Student accepts the incoming call. Returns Agora token for Student."
+          },
+          "response": []
+        },
+        {
+          "name": "2.3 Reject Call (Student)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/calls/{{callId}}/reject",
+              "host": ["{{baseUrl}}"],
+              "path": ["calls", "{{callId}}", "reject"]
+            },
+            "description": "Student rejects the incoming call."
+          },
+          "response": []
+        },
+        {
+          "name": "2.4 End Call (Either Party)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tutorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/calls/{{callId}}/end",
+              "host": ["{{baseUrl}}"],
+              "path": ["calls", "{{callId}}", "end"]
+            },
+            "description": "Either Tutor or Student can end the active call."
+          },
+          "response": []
+        },
+        {
+          "name": "2.5 Cancel Call (Initiator Only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tutorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/calls/{{callId}}/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["calls", "{{callId}}", "cancel"]
+            },
+            "description": "Tutor cancels the call before Student answers."
+          },
+          "response": []
+        },
+        {
+          "name": "2.6 Refresh Token (During Call)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tutorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/calls/{{callId}}/refresh-token",
+              "host": ["{{baseUrl}}"],
+              "path": ["calls", "{{callId}}", "refresh-token"]
+            },
+            "description": "Get a new Agora token if the current one is about to expire."
+          },
+          "response": []
+        },
+        {
+          "name": "2.7 Get Call History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tutorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/calls/history?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["calls", "history"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Get user's call history with pagination."
+          },
+          "response": []
+        },
+        {
+          "name": "2.8 Get Single Call Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tutorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/calls/{{callId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["calls", "{{callId}}"]
+            },
+            "description": "Get details of a specific call."
+          },
+          "response": []
+        },
+        {
+          "name": "2.9 Get Active Participants",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tutorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/calls/{{callId}}/participants",
+              "host": ["{{baseUrl}}"],
+              "path": ["calls", "{{callId}}", "participants"]
+            },
+            "description": "Get currently active participants in a call."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3. Whiteboard APIs",
+      "item": [
+        {
+          "name": "3.1 Create Whiteboard Room",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.room) {",
+                  "    pm.collectionVariables.set('whiteboardRoomId', jsonData.data.room._id);",
+                  "    console.log('Whiteboard Room ID saved: ' + jsonData.data.room._id);",
+                  "    console.log('Room UUID: ' + jsonData.data.room.uuid);",
+                  "    console.log('Whiteboard Token: ' + jsonData.data.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tutorToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Math Session Whiteboard\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/whiteboard/rooms",
+              "host": ["{{baseUrl}}"],
+              "path": ["whiteboard", "rooms"]
+            },
+            "description": "Create a new whiteboard room. Returns room UUID and token."
+          },
+          "response": []
+        },
+        {
+          "name": "3.2 Get Room Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"writer\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/whiteboard/rooms/{{whiteboardRoomId}}/token",
+              "host": ["{{baseUrl}}"],
+              "path": ["whiteboard", "rooms", "{{whiteboardRoomId}}", "token"]
+            },
+            "description": "Get whiteboard token for an existing room. Role can be: admin, writer, reader"
+          },
+          "response": []
+        },
+        {
+          "name": "3.3 Get User's Whiteboard Rooms",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tutorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/whiteboard/rooms?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["whiteboard", "rooms"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Get all whiteboard rooms for the current user."
+          },
+          "response": []
+        },
+        {
+          "name": "3.4 Delete Whiteboard Room",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tutorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/whiteboard/rooms/{{whiteboardRoomId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["whiteboard", "rooms", "{{whiteboardRoomId}}"]
+            },
+            "description": "Delete/close a whiteboard room. Only creator can delete."
+          },
+          "response": []
+        },
+        {
+          "name": "3.5 Take Whiteboard Snapshot",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tutorToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scenePath\": \"/init\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/whiteboard/rooms/{{whiteboardRoomId}}/snapshot",
+              "host": ["{{baseUrl}}"],
+              "path": ["whiteboard", "rooms", "{{whiteboardRoomId}}", "snapshot"]
+            },
+            "description": "Take a screenshot of the current whiteboard state."
+          },
+          "response": []
+        },
+        {
+          "name": "3.6 Get Room Snapshots",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tutorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/whiteboard/rooms/{{whiteboardRoomId}}/snapshots",
+              "host": ["{{baseUrl}}"],
+              "path": ["whiteboard", "rooms", "{{whiteboardRoomId}}", "snapshots"]
+            },
+            "description": "Get all snapshots taken for a whiteboard room."
+          },
+          "response": []
+        },
+        {
+          "name": "3.7 Get/Create Whiteboard for Call",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.room) {",
+                  "    pm.collectionVariables.set('whiteboardRoomId', jsonData.data.room._id);",
+                  "    console.log('Whiteboard for Call - Room ID: ' + jsonData.data.room._id);",
+                  "    console.log('Is New Room: ' + jsonData.data.isNew);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tutorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/whiteboard/call/{{callId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["whiteboard", "call", "{{callId}}"]
+            },
+            "description": "Get or create a whiteboard room for a specific call. If room exists, returns existing; otherwise creates new."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "4. Complete Test Flow",
+      "item": [
+        {
+          "name": "Step 1: Login Tutor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.accessToken) {",
+                  "    pm.collectionVariables.set('tutorToken', jsonData.data.accessToken);",
+                  "    pm.collectionVariables.set('tutorId', jsonData.data.user._id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"tutor@test.com\",\n  \"password\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Step 2: Login Student",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.accessToken) {",
+                  "    pm.collectionVariables.set('studentToken', jsonData.data.accessToken);",
+                  "    pm.collectionVariables.set('studentId', jsonData.data.user._id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"student@test.com\",\n  \"password\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Step 3: Tutor Initiates Call",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.call) {",
+                  "    pm.collectionVariables.set('callId', jsonData.data.call._id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tutorToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverId\": \"{{studentId}}\",\n  \"callType\": \"video\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/calls/initiate",
+              "host": ["{{baseUrl}}"],
+              "path": ["calls", "initiate"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Step 4: Student Accepts Call",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/calls/{{callId}}/accept",
+              "host": ["{{baseUrl}}"],
+              "path": ["calls", "{{callId}}", "accept"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Step 5: Enable Whiteboard",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.room) {",
+                  "    pm.collectionVariables.set('whiteboardRoomId', jsonData.data.room._id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tutorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/whiteboard/call/{{callId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["whiteboard", "call", "{{callId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Step 6: End Call",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tutorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/calls/{{callId}}/end",
+              "host": ["{{baseUrl}}"],
+              "path": ["calls", "{{callId}}", "end"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.POLICY_TYPE = void 0;
+// Policy types enum
+var POLICY_TYPE;
+(function (POLICY_TYPE) {
+    POLICY_TYPE["PRIVACY_POLICY"] = "PRIVACY_POLICY";
+    POLICY_TYPE["TERMS_FOR_STUDENTS"] = "TERMS_FOR_STUDENTS";
+    POLICY_TYPE["TERMS_FOR_TUTORS"] = "TERMS_FOR_TUTORS";
+    POLICY_TYPE["CANCELLATION_POLICY"] = "CANCELLATION_POLICY";
+    POLICY_TYPE["LEGAL_NOTICE"] = "LEGAL_NOTICE";
+    POLICY_TYPE["COOKIE_POLICY"] = "COOKIE_POLICY";
+})(POLICY_TYPE || (exports.POLICY_TYPE = POLICY_TYPE = {}));

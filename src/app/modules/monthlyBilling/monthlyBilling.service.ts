@@ -13,11 +13,7 @@ import {
   IBillingLineItem,
 } from './monthlyBilling.interface';
 import { MonthlyBilling } from './monthlyBilling.model';
-import Stripe from 'stripe';
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2025-01-27.acacia' as any,
-});
+import { stripe } from '../../../config/stripe';
 
 /**
  * Generate monthly billing for all active students

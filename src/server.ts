@@ -1,7 +1,10 @@
 import mongoose from 'mongoose';
 import { Server } from 'socket.io';
-import app from './app';
+// Load configuration (this runs dotenv.config) BEFORE importing `app` so
+// any modules that read process.env during initialization (like Stripe)
+// get the environment variables correctly.
 import config from './config';
+import app from './app';
 import { seedSuperAdmin } from './DB/seedAdmin';
 import { socketHelper } from './helpers/socketHelper';
 import { errorLogger, logger, notifyCritical } from './shared/logger';

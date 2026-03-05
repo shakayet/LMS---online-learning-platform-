@@ -129,7 +129,7 @@ const tutorApplicationSchema = new Schema<ITutorApplication>(
 );
 
 // Indexes for performance
-tutorApplicationSchema.index({ email: 1 });
+
 tutorApplicationSchema.index({ status: 1 });
 tutorApplicationSchema.index({ submittedAt: -1 });
 

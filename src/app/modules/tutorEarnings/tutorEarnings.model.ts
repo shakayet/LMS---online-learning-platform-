@@ -135,7 +135,7 @@ const tutorEarningsSchema = new Schema<ITutorEarnings>(
 // Indexes
 tutorEarningsSchema.index({ tutorId: 1, payoutYear: -1, payoutMonth: -1 });
 tutorEarningsSchema.index({ status: 1 });
-tutorEarningsSchema.index({ payoutReference: 1 });
+
 tutorEarningsSchema.index({ stripeTransferId: 1 });
 
 // Compound unique index to prevent duplicate payouts

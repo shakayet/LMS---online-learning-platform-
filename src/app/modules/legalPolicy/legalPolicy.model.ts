@@ -31,7 +31,7 @@ const legalPolicySchema = new Schema<ILegalPolicy>(
 );
 
 // Index for faster queries
-legalPolicySchema.index({ type: 1 });
+
 legalPolicySchema.index({ isActive: 1 });
 
 export const LegalPolicy = model<ILegalPolicy, LegalPolicyModel>('LegalPolicy', legalPolicySchema);

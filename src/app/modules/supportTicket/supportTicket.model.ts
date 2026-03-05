@@ -78,7 +78,7 @@ supportTicketSchema.index({ status: 1 });
 supportTicketSchema.index({ category: 1 });
 supportTicketSchema.index({ priority: 1 });
 supportTicketSchema.index({ user: 1 });
-supportTicketSchema.index({ ticketNumber: 1 });
+
 supportTicketSchema.index({ createdAt: -1 });
 
 export const SupportTicket = model<ISupportTicket, SupportTicketModel>(

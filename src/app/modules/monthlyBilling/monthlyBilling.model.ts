@@ -145,7 +145,7 @@ const monthlyBillingSchema = new Schema<IMonthlyBilling>(
 // Indexes
 monthlyBillingSchema.index({ studentId: 1, billingYear: -1, billingMonth: -1 });
 monthlyBillingSchema.index({ status: 1 });
-monthlyBillingSchema.index({ invoiceNumber: 1 });
+
 monthlyBillingSchema.index({ stripeInvoiceId: 1 });
 
 // Compound unique index to prevent duplicate billings

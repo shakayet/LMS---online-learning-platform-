@@ -87,7 +87,7 @@ const sessionReviewSchema = new Schema<ISessionReview>(
 // Indexes
 sessionReviewSchema.index({ tutorId: 1, createdAt: -1 });
 sessionReviewSchema.index({ studentId: 1, createdAt: -1 });
-sessionReviewSchema.index({ sessionId: 1 }, { unique: true, sparse: true }); // sparse allows multiple null values
+
 sessionReviewSchema.index({ overallRating: 1 });
 
 // Compound index for public reviews

@@ -12,13 +12,11 @@ const auth =
     try {
       const authHeader = req.headers.authorization;
 
-      // 1️⃣ Allow GUEST access if route permits it and no token is provided
       if (!authHeader && allowedRoles.includes(USER_ROLES.GUEST)) {
         req.user = { role: USER_ROLES.GUEST, id: null, email: null };
         return next();
       }
 
-      // 2️⃣ No token provided and route doesn't allow guests
       if (!authHeader) {
         throw new ApiError(
           StatusCodes.UNAUTHORIZED,
@@ -26,7 +24,6 @@ const auth =
         );
       }
 
-      // 3️⃣ Validate Bearer format
       if (!authHeader.startsWith('Bearer ')) {
         throw new ApiError(
           StatusCodes.UNAUTHORIZED,
@@ -34,13 +31,11 @@ const auth =
         );
       }
 
-      // 4️⃣ Extract token and ensure it's not empty
       const token = authHeader.split(' ')[1];
       if (!token || token.trim() === '') {
         throw new ApiError(StatusCodes.UNAUTHORIZED, 'Valid token is required');
       }
 
-      // 5️⃣ Verify JWT token
       const verifiedUser = jwtHelper.verifyToken(
         token,
         config.jwt.jwt_secret as Secret
@@ -50,10 +45,8 @@ const auth =
         throw new ApiError(StatusCodes.UNAUTHORIZED, 'Invalid token payload');
       }
 
-      // 6️⃣ Attach verified user to request
       req.user = verifiedUser;
 
-      // 7️⃣ Role-based access check
       if (allowedRoles.length && !allowedRoles.includes(verifiedUser.role)) {
         throw new ApiError(
           StatusCodes.FORBIDDEN,
@@ -61,10 +54,9 @@ const auth =
         );
       }
 
-      // 8️⃣ Proceed
       next();
     } catch (error: any) {
-      // Handle JWT-specific errors
+
       if (error.name === 'JsonWebTokenError') {
         return next(new ApiError(StatusCodes.UNAUTHORIZED, 'Invalid token'));
       }
@@ -77,7 +69,6 @@ const auth =
         return next(new ApiError(StatusCodes.UNAUTHORIZED, 'Token not active'));
       }
 
-      // Pass other errors
       next(error);
     }
   };

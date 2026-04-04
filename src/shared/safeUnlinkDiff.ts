@@ -1,12 +1,7 @@
 import unlinkFile from './unlinkFile';
 
-// Normalize leading slashes so path.join('uploads', file) works cross-platform
 const normalize = (p?: string) => (p ? p.replace(/^\/+/, '') : '');
 
-/**
- * Remove files that exist in `oldList` but not in `newList`.
- * Returns number of files removed.
- */
 export const safeUnlinkDiff = (
   oldList: string[] = [],
   newList: string[] = []

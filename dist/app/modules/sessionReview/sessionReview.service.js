@@ -43,11 +43,9 @@ const sessionReview_model_1 = require("./sessionReview.model");
 const session_model_1 = require("../session/session.model");
 const session_interface_1 = require("../session/session.interface");
 const QueryBuilder_1 = __importDefault(require("../../builder/QueryBuilder"));
-/**
- * Create a new session review
- */
+
 const createReview = (studentId, payload) => __awaiter(void 0, void 0, void 0, function* () {
-    // Verify session exists and is completed
+
     const session = yield session_model_1.Session.findById(payload.sessionId);
     if (!session) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, 'Session not found');
@@ -55,24 +53,24 @@ const createReview = (studentId, payload) => __awaiter(void 0, void 0, void 0, f
     if (session.status !== session_interface_1.SESSION_STATUS.COMPLETED) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'Can only review completed sessions');
     }
-    // Verify student owns the session
+
     if (session.studentId.toString() !== studentId) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.FORBIDDEN, 'You can only review your own sessions');
     }
-    // Check if review already exists
+
     const existingReview = yield sessionReview_model_1.SessionReview.findOne({
         sessionId: payload.sessionId,
     });
     if (existingReview) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'Review already exists for this session');
     }
-    // Create review
+
     const review = yield sessionReview_model_1.SessionReview.create(Object.assign(Object.assign({}, payload), { studentId: new mongoose_1.Types.ObjectId(studentId), tutorId: session.tutorId }));
-    // Update session with reviewId
+
     yield session_model_1.Session.findByIdAndUpdate(payload.sessionId, {
         reviewId: review._id,
     });
-    // Emit socket event for real-time update
+
     const io = global.io;
     if (io && session.chatId) {
         const chatIdStr = String(session.chatId);
@@ -82,7 +80,7 @@ const createReview = (studentId, payload) => __awaiter(void 0, void 0, void 0, f
             reviewId: review._id,
             rating: review.overallRating,
         };
-        // Emit to chat room and both users
+
         io.to(`chat::${chatIdStr}`).emit('STUDENT_REVIEW_SUBMITTED', reviewPayload);
         io.to(`user::${studentId}`).emit('STUDENT_REVIEW_SUBMITTED', reviewPayload);
         io.to(`user::${String(session.tutorId)}`).emit('STUDENT_REVIEW_SUBMITTED', reviewPayload);
@@ -90,9 +88,7 @@ const createReview = (studentId, payload) => __awaiter(void 0, void 0, void 0, f
     }
     return review;
 });
-/**
- * Get student's reviews
- */
+
 const getMyReviews = (studentId, query) => __awaiter(void 0, void 0, void 0, function* () {
     const reviewQuery = new QueryBuilder_1.default(sessionReview_model_1.SessionReview.find({ studentId })
         .populate('sessionId', 'subject startTime endTime')
@@ -105,9 +101,7 @@ const getMyReviews = (studentId, query) => __awaiter(void 0, void 0, void 0, fun
     const meta = yield reviewQuery.getPaginationInfo();
     return { data: result, meta };
 });
-/**
- * Get tutor's reviews (public only or all for admin)
- */
+
 const getTutorReviews = (tutorId_1, query_1, ...args_1) => __awaiter(void 0, [tutorId_1, query_1, ...args_1], void 0, function* (tutorId, query, isAdmin = false) {
     const baseQuery = isAdmin
         ? { tutorId }
@@ -123,9 +117,7 @@ const getTutorReviews = (tutorId_1, query_1, ...args_1) => __awaiter(void 0, [tu
     const meta = yield reviewQuery.getPaginationInfo();
     return { data: result, meta };
 });
-/**
- * Get review by session ID
- */
+
 const getReviewBySession = (sessionId) => __awaiter(void 0, void 0, void 0, function* () {
     const review = yield sessionReview_model_1.SessionReview.findOne({ sessionId })
         .populate('studentId', 'name email')
@@ -133,9 +125,7 @@ const getReviewBySession = (sessionId) => __awaiter(void 0, void 0, void 0, func
         .populate('sessionId', 'subject startTime endTime');
     return review;
 });
-/**
- * Get single review
- */
+
 const getSingleReview = (id) => __awaiter(void 0, void 0, void 0, function* () {
     const review = yield sessionReview_model_1.SessionReview.findById(id)
         .populate('studentId', 'name email')
@@ -146,45 +136,39 @@ const getSingleReview = (id) => __awaiter(void 0, void 0, void 0, function* () {
     }
     return review;
 });
-/**
- * Update review (only by student who created it)
- */
+
 const updateReview = (id, studentId, payload) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const review = yield sessionReview_model_1.SessionReview.findById(id);
     if (!review) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, 'Review not found');
     }
-    // Verify ownership
+
     if (((_a = review.studentId) === null || _a === void 0 ? void 0 : _a.toString()) !== studentId) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.FORBIDDEN, 'You can only update your own reviews');
     }
-    // Update fields
+
     Object.assign(review, payload);
     review.isEdited = true;
     review.editedAt = new Date();
     yield review.save();
     return review;
 });
-/**
- * Delete review (only by student who created it)
- */
+
 const deleteReview = (id, studentId) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const review = yield sessionReview_model_1.SessionReview.findById(id);
     if (!review) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, 'Review not found');
     }
-    // Verify ownership
+
     if (((_a = review.studentId) === null || _a === void 0 ? void 0 : _a.toString()) !== studentId) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.FORBIDDEN, 'You can only delete your own reviews');
     }
     yield sessionReview_model_1.SessionReview.findByIdAndDelete(id);
     return review;
 });
-/**
- * Get tutor's review statistics
- */
+
 const getTutorStats = (tutorId) => __awaiter(void 0, void 0, void 0, function* () {
     const reviews = yield sessionReview_model_1.SessionReview.find({ tutorId, isPublic: true });
     if (reviews.length === 0) {
@@ -201,16 +185,16 @@ const getTutorStats = (tutorId) => __awaiter(void 0, void 0, void 0, function* (
         };
     }
     const totalReviews = reviews.length;
-    // Calculate averages
+
     const averageOverallRating = reviews.reduce((sum, r) => sum + r.overallRating, 0) / totalReviews;
     const averageTeachingQuality = reviews.reduce((sum, r) => sum + r.teachingQuality, 0) / totalReviews;
     const averageCommunication = reviews.reduce((sum, r) => sum + r.communication, 0) / totalReviews;
     const averagePunctuality = reviews.reduce((sum, r) => sum + r.punctuality, 0) / totalReviews;
     const averagePreparedness = reviews.reduce((sum, r) => sum + r.preparedness, 0) / totalReviews;
-    // Calculate recommendation percentage
+
     const wouldRecommendCount = reviews.filter(r => r.wouldRecommend).length;
     const wouldRecommendPercentage = (wouldRecommendCount / totalReviews) * 100;
-    // Calculate rating distribution
+
     const ratingDistribution = reviews.reduce((dist, r) => {
         const rating = Math.floor(r.overallRating);
         dist[rating]++;
@@ -228,9 +212,7 @@ const getTutorStats = (tutorId) => __awaiter(void 0, void 0, void 0, function* (
         ratingDistribution,
     };
 });
-/**
- * Toggle review visibility (Admin only)
- */
+
 const toggleVisibility = (id, isPublic) => __awaiter(void 0, void 0, void 0, function* () {
     const review = yield sessionReview_model_1.SessionReview.findById(id);
     if (!review) {
@@ -240,10 +222,7 @@ const toggleVisibility = (id, isPublic) => __awaiter(void 0, void 0, void 0, fun
     yield review.save();
     return review;
 });
-/**
- * Link orphaned reviews to sessions (migration helper)
- * This fixes reviews that were created before the reviewId update was added
- */
+
 const linkOrphanedReviews = () => __awaiter(void 0, void 0, void 0, function* () {
     const reviews = yield sessionReview_model_1.SessionReview.find({});
     let linked = 0;
@@ -266,17 +245,17 @@ const linkOrphanedReviews = () => __awaiter(void 0, void 0, void 0, function* ()
 });
 const adminCreateReview = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
-    // Validate tutor exists
+
     const { User } = yield Promise.resolve().then(() => __importStar(require('../user/user.model')));
     const tutor = yield User.findById(payload.tutorId);
     if (!tutor) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, 'Tutor not found');
     }
-    // Create review without session (admin-created)
+
     const review = yield sessionReview_model_1.SessionReview.create({
         tutorId: new mongoose_1.Types.ObjectId(payload.tutorId),
-        studentId: null, // Admin created, no student
-        sessionId: null, // No session for admin-created reviews
+        studentId: null,
+        sessionId: null,
         overallRating: payload.overallRating,
         teachingQuality: payload.teachingQuality,
         communication: payload.communication,
@@ -290,30 +269,26 @@ const adminCreateReview = (payload) => __awaiter(void 0, void 0, void 0, functio
     });
     return review;
 });
-/**
- * Admin: Update any review
- */
+
 const adminUpdateReview = (id, payload) => __awaiter(void 0, void 0, void 0, function* () {
     const review = yield sessionReview_model_1.SessionReview.findById(id);
     if (!review) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, 'Review not found');
     }
-    // Update fields
+
     Object.assign(review, payload);
     review.isEdited = true;
     review.editedAt = new Date();
     yield review.save();
     return review;
 });
-/**
- * Admin: Delete any review
- */
+
 const adminDeleteReview = (id) => __awaiter(void 0, void 0, void 0, function* () {
     const review = yield sessionReview_model_1.SessionReview.findById(id);
     if (!review) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, 'Review not found');
     }
-    // If review has a session, remove reviewId from session
+
     if (review.sessionId) {
         yield session_model_1.Session.findByIdAndUpdate(review.sessionId, {
             $unset: { reviewId: 1 },
@@ -333,7 +308,7 @@ exports.SessionReviewService = {
     getTutorStats,
     toggleVisibility,
     linkOrphanedReviews,
-    // Admin functions
+
     adminCreateReview,
     adminUpdateReview,
     adminDeleteReview,

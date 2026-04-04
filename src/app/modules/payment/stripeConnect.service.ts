@@ -11,7 +11,6 @@ import {
   retrieveAccount as stripeRetrieveAccount,
 } from './stripe.adapter';
 
-// Create Stripe Connect account for freelancers
 const createStripeAccount = async (
   data: IStripeAccount
 ): Promise<any> => {
@@ -37,13 +36,12 @@ const createStripeAccount = async (
     let dob: { year: number; month: number; day: number } | undefined;
     if (user.dateOfBirth && typeof user.dateOfBirth === 'string') {
       const parts = user.dateOfBirth.split('-');
-      // Validate that we have all parts and they are valid numbers
+
       if (parts.length >= 3) {
         const year = parseInt(parts[0], 10);
         const month = parseInt(parts[1], 10);
         const day = parseInt(parts[2], 10);
 
-        // Only set dob if all values are valid numbers
         if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
           dob = { year, month, day };
         }
@@ -74,7 +72,6 @@ const createStripeAccount = async (
     });
     await stripeAccount.save();
 
-    // Create onboarding link for the newly created account
     const onboardingUrl = await stripeCreateOnboardingLink(
       account.id,
       `${process.env.FRONTEND_URL}/free-trial-teacher-dash?stripe_onboarding=refresh`,
@@ -95,7 +92,6 @@ const createStripeAccount = async (
   }
 };
 
-// Create onboarding link for freelancer
 const createOnboardingLink = async (userId: string): Promise<string> => {
   try {
     const userObjectId = new mongoose.Types.ObjectId(userId);
@@ -133,7 +129,6 @@ const createOnboardingLink = async (userId: string): Promise<string> => {
   }
 };
 
-// Check if freelancer has completed Stripe onboarding
 const checkOnboardingStatus = async (
   userId: string
 ): Promise<{
@@ -193,7 +188,6 @@ const checkOnboardingStatus = async (
   }
 };
 
-// Ensure freelancer is onboarded before allowing escrow actions
 const ensureFreelancerOnboarded = async (taskerId: any) => {
   const freelancerStripeAccount =
     await StripeAccountModel.isExistAccountByUserId(taskerId);
@@ -206,7 +200,6 @@ const ensureFreelancerOnboarded = async (taskerId: any) => {
   return freelancerStripeAccount;
 };
 
-// Get freelancer account or throw
 const getFreelancerAccountOrThrow = async (userId: any) => {
   const freelancerStripeAccount =
     await StripeAccountModel.isExistAccountByUserId(userId);
@@ -219,7 +212,6 @@ const getFreelancerAccountOrThrow = async (userId: any) => {
   return freelancerStripeAccount;
 };
 
-// Delete a Stripe Connect account
 const deleteStripeAccountService = async (accountId: string) => {
   try {
     const deleted = await stripe.accounts.del(accountId);
@@ -234,7 +226,6 @@ const deleteStripeAccountService = async (accountId: string) => {
   }
 };
 
-// Update local account status from Stripe account.update webhook
 const handleAccountUpdated = async (account: any): Promise<void> => {
   const completed = account.charges_enabled && account.payouts_enabled;
 

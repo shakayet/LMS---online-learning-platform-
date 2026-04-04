@@ -16,7 +16,6 @@ const gradeSchema = new Schema<IGrade>(
   { timestamps: true }
 );
 
-// Index for faster queries
 gradeSchema.index({ isActive: 1 });
 
 export const Grade = model<IGrade, GradeModel>('Grade', gradeSchema);

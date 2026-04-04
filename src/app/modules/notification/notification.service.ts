@@ -3,12 +3,11 @@ import { INotification } from './notification.interface';
 import { Notification } from './notification.model';
 import QueryBuilder from '../../builder/QueryBuilder';
 
-// get notifications
 const getNotificationFromDB = async (
   user: JwtPayload,
   query: Record<string, unknown>
 ) => {
-  // 1️⃣ Initialize QueryBuilder for user's notifications
+
   const notificationQuery = new QueryBuilder<INotification>(
     Notification.find({ receiver: user.id }),
     query
@@ -20,16 +19,13 @@ const getNotificationFromDB = async (
     .paginate()
     .fields();
 
-  // 2️⃣ Execute the query and get filtered & paginated results
   const { data, pagination } = await notificationQuery.getFilteredResults();
 
-  // 3️⃣ Count unread notifications separately
   const unreadCount = await Notification.countDocuments({
     receiver: user.id,
     isRead: false,
   });
 
-  // 4️⃣ Return structured response
   return {
     data,
     pagination,
@@ -56,17 +52,16 @@ const markNotificationAsReadIntoDB = async (
 
 export const markAllNotificationsAsRead = async (userId: string) => {
   const result = await Notification.updateMany(
-    { receiver: userId, isRead: false }, // only unread notifications
+    { receiver: userId, isRead: false },
     { isRead: true }
   );
 
   return {
-    modifiedCount: result.modifiedCount, // number of notifications updated
+    modifiedCount: result.modifiedCount,
     message: 'All notifications marked as read',
   };
 };
 
-// Fetch admin notifications with query, pagination, unread count
 const adminNotificationFromDB = async (query: Record<string, unknown>) => {
   const notificationQuery = new QueryBuilder<INotification>(
     Notification.find({ type: 'ADMIN' }),
@@ -93,7 +88,6 @@ const adminNotificationFromDB = async (query: Record<string, unknown>) => {
   };
 };
 
-// Mark a single admin notification as read
 const adminMarkNotificationAsReadIntoDB = async (notificationId: string) => {
   const notification = await Notification.findOneAndUpdate(
     { _id: notificationId, type: 'ADMIN' },
@@ -108,7 +102,6 @@ const adminMarkNotificationAsReadIntoDB = async (notificationId: string) => {
   return notification;
 };
 
-// Mark all admin notifications as read
 const adminMarkAllNotificationsAsRead = async () => {
   const result = await Notification.updateMany(
     { type: 'ADMIN', isRead: false },

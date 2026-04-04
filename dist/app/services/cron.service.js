@@ -1,14 +1,5 @@
 "use strict";
-/**
- * Cron Job Service
- *
- * This service handles automated tasks:
- * - Session reminders (24 hours before, 1 hour before)
- * - Trial request auto-expiration (24 hours)
- * - Month-end billing generation
- * - Month-end tutor earnings generation
- * - Session auto-completion with attendance tracking (after endTime)
- */
+
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -25,14 +16,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CronService = exports.initializeCronJobs = exports.cleanupExpiredInterviewSlots = exports.sendFinalFeedbackReminders = exports.sendFeedbackReminders = exports.processForfeitedFeedbacks = exports.generateTutorEarnings = exports.generateMonthlyBillings = exports.sendSessionReminders = exports.autoCompleteSessions = exports.autoTransitionSessions = exports.expireTrialRequests = void 0;
 const logger_1 = require("../../shared/logger");
 const node_cron_1 = __importDefault(require("node-cron"));
-// ============================================
-// 🧪 TEST MODE CONFIGURATION
-// ============================================
-// Set to true for testing - runs session transition every 1 minute
-// Set to false for production - runs every 5 minutes
+
 const TEST_MODE = true;
-// ============================================
-// Import services
+
 const monthlyBilling_service_1 = require("../modules/monthlyBilling/monthlyBilling.service");
 const tutorEarnings_service_1 = require("../modules/tutorEarnings/tutorEarnings.service");
 const session_service_1 = require("../modules/session/session.service");
@@ -42,10 +28,7 @@ const trialRequest_model_1 = require("../modules/trialRequest/trialRequest.model
 const trialRequest_interface_1 = require("../modules/trialRequest/trialRequest.interface");
 const session_model_1 = require("../modules/session/session.model");
 const session_interface_1 = require("../modules/session/session.interface");
-/**
- * Auto-expire trial requests after 24 hours
- * Runs every hour
- */
+
 const expireTrialRequests = () => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const now = new Date();
@@ -64,16 +47,7 @@ const expireTrialRequests = () => __awaiter(void 0, void 0, void 0, function* ()
     }
 });
 exports.expireTrialRequests = expireTrialRequests;
-/**
- * Auto-transition session statuses with attendance tracking
- * TEST_MODE: Runs every 1 minute
- * PRODUCTION: Runs every 5 minutes
- *
- * Handles:
- * - SCHEDULED → STARTING_SOON (10 min before)
- * - STARTING_SOON → IN_PROGRESS (at start time)
- * - IN_PROGRESS → COMPLETED/NO_SHOW/EXPIRED (at end time, with 80% attendance check)
- */
+
 const autoTransitionSessions = () => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const result = yield session_service_1.SessionService.autoTransitionSessionStatuses();
@@ -87,60 +61,38 @@ const autoTransitionSessions = () => __awaiter(void 0, void 0, void 0, function*
     }
 });
 exports.autoTransitionSessions = autoTransitionSessions;
-/**
- * @deprecated Use autoTransitionSessions instead
- * Keeping for backward compatibility
- */
+
 const autoCompleteSessions = () => __awaiter(void 0, void 0, void 0, function* () {
     yield (0, exports.autoTransitionSessions)();
 });
 exports.autoCompleteSessions = autoCompleteSessions;
-/**
- * Send session reminders
- * Runs every hour
- */
+
 const sendSessionReminders = () => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const now = new Date();
         const twentyFourHoursLater = new Date(now.getTime() + 24 * 60 * 60 * 1000);
         const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
-        // Find sessions starting in 24 hours
+
         const sessionsIn24Hours = yield session_model_1.Session.find({
             status: session_interface_1.SESSION_STATUS.SCHEDULED,
             startTime: {
                 $gte: twentyFourHoursLater,
-                $lte: new Date(twentyFourHoursLater.getTime() + 60 * 60 * 1000), // 1-hour window
+                $lte: new Date(twentyFourHoursLater.getTime() + 60 * 60 * 1000),
             },
         })
             .populate('studentId', 'name email')
             .populate('tutorId', 'name email');
-        // Find sessions starting in 1 hour
+
         const sessionsIn1Hour = yield session_model_1.Session.find({
             status: session_interface_1.SESSION_STATUS.SCHEDULED,
             startTime: {
                 $gte: oneHourLater,
-                $lte: new Date(oneHourLater.getTime() + 10 * 60 * 1000), // 10-minute window
+                $lte: new Date(oneHourLater.getTime() + 10 * 60 * 1000),
             },
         })
             .populate('studentId', 'name email')
             .populate('tutorId', 'name email');
-        // TODO: Send email reminders
-        // for (const session of sessionsIn24Hours) {
-        //   await sendEmail({
-        //     to: [session.studentId.email, session.tutorId.email],
-        //     subject: 'Session Reminder - Tomorrow',
-        //     template: 'session-reminder-24h',
-        //     data: { session },
-        //   });
-        // }
-        // for (const session of sessionsIn1Hour) {
-        //   await sendEmail({
-        //     to: [session.studentId.email, session.tutorId.email],
-        //     subject: 'Session Starting Soon',
-        //     template: 'session-reminder-1h',
-        //     data: { session },
-        //   });
-        // }
+
         if (sessionsIn24Hours.length > 0) {
             logger_1.logger.info(`Sent 24-hour reminders for ${sessionsIn24Hours.length} sessions`);
         }
@@ -153,13 +105,11 @@ const sendSessionReminders = () => __awaiter(void 0, void 0, void 0, function* (
     }
 });
 exports.sendSessionReminders = sendSessionReminders;
-/**
- * Generate monthly billings (1st of every month at 2:00 AM)
- */
+
 const generateMonthlyBillings = () => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const now = new Date();
-        const lastMonth = now.getMonth(); // 0-11
+        const lastMonth = now.getMonth();
         const year = lastMonth === 0 ? now.getFullYear() - 1 : now.getFullYear();
         const month = lastMonth === 0 ? 12 : lastMonth;
         const result = yield monthlyBilling_service_1.MonthlyBillingService.generateMonthlyBillings(month, year);
@@ -170,14 +120,11 @@ const generateMonthlyBillings = () => __awaiter(void 0, void 0, void 0, function
     }
 });
 exports.generateMonthlyBillings = generateMonthlyBillings;
-/**
- * Generate tutor earnings (4th of every month at 3:00 AM)
- * CHANGED: Moved from 1st to 4th to allow feedback deadline (3rd) to pass first
- */
+
 const generateTutorEarnings = () => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const now = new Date();
-        const lastMonth = now.getMonth(); // 0-11
+        const lastMonth = now.getMonth();
         const year = lastMonth === 0 ? now.getFullYear() - 1 : now.getFullYear();
         const month = lastMonth === 0 ? 12 : lastMonth;
         const result = yield tutorEarnings_service_1.TutorEarningsService.generateTutorEarnings(month, year, 0.2);
@@ -188,10 +135,7 @@ const generateTutorEarnings = () => __awaiter(void 0, void 0, void 0, function* 
     }
 });
 exports.generateTutorEarnings = generateTutorEarnings;
-/**
- * Process forfeited feedbacks (4th of every month at 1:00 AM)
- * NEW: Runs before tutor earnings to mark missed deadlines
- */
+
 const processForfeitedFeedbacks = () => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const result = yield tutorSessionFeedback_service_1.TutorSessionFeedbackService.processForfeitedFeedbacks();
@@ -202,10 +146,7 @@ const processForfeitedFeedbacks = () => __awaiter(void 0, void 0, void 0, functi
     }
 });
 exports.processForfeitedFeedbacks = processForfeitedFeedbacks;
-/**
- * Send feedback deadline reminders (1st of every month at 10:00 AM)
- * NEW: Remind tutors about pending feedbacks due on 3rd
- */
+
 const sendFeedbackReminders = () => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const count = yield tutorSessionFeedback_service_1.TutorSessionFeedbackService.sendDeadlineReminders();
@@ -216,10 +157,7 @@ const sendFeedbackReminders = () => __awaiter(void 0, void 0, void 0, function* 
     }
 });
 exports.sendFeedbackReminders = sendFeedbackReminders;
-/**
- * Send final feedback reminders (2nd of every month at 10:00 AM)
- * NEW: Last warning before deadline
- */
+
 const sendFinalFeedbackReminders = () => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const count = yield tutorSessionFeedback_service_1.TutorSessionFeedbackService.sendFinalReminders();
@@ -230,12 +168,7 @@ const sendFinalFeedbackReminders = () => __awaiter(void 0, void 0, void 0, funct
     }
 });
 exports.sendFinalFeedbackReminders = sendFinalFeedbackReminders;
-/**
- * Cleanup expired available interview slots
- * Runs daily at midnight (00:00)
- * Deletes all AVAILABLE slots where the day has passed
- * Booked/completed/cancelled slots are kept for records
- */
+
 const cleanupExpiredInterviewSlots = () => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const deletedCount = yield interviewSlot_service_1.InterviewSlotService.cleanupExpiredAvailableSlots();
@@ -248,54 +181,50 @@ const cleanupExpiredInterviewSlots = () => __awaiter(void 0, void 0, void 0, fun
     }
 });
 exports.cleanupExpiredInterviewSlots = cleanupExpiredInterviewSlots;
-/**
- * Initialize all cron jobs
- */
+
 const initializeCronJobs = () => {
-    // Expire trial requests - Every hour
+
     node_cron_1.default.schedule('0 * * * *', () => {
         logger_1.logger.info('Running cron: Expire trial requests');
         (0, exports.expireTrialRequests)();
     });
-    // Auto-transition sessions with attendance tracking
-    // TEST_MODE: Every 1 minute (for testing 5 min sessions)
-    // PRODUCTION: Every 5 minutes
+
     const sessionTransitionSchedule = TEST_MODE ? '* * * * *' : '*/5 * * * *';
     node_cron_1.default.schedule(sessionTransitionSchedule, () => {
         logger_1.logger.info(`Running cron: Auto-transition sessions (TEST_MODE: ${TEST_MODE})`);
         (0, exports.autoTransitionSessions)();
     });
-    // Send session reminders - Every hour
+
     node_cron_1.default.schedule('0 * * * *', () => {
         logger_1.logger.info('Running cron: Send session reminders');
         (0, exports.sendSessionReminders)();
     });
-    // Generate monthly billings - 1st of month at 2:00 AM
+
     node_cron_1.default.schedule('0 2 1 * *', () => {
         logger_1.logger.info('Running cron: Generate monthly billings');
         (0, exports.generateMonthlyBillings)();
     });
-    // Send feedback deadline reminders - 1st of month at 10:00 AM
+
     node_cron_1.default.schedule('0 10 1 * *', () => {
         logger_1.logger.info('Running cron: Send feedback deadline reminders');
         (0, exports.sendFeedbackReminders)();
     });
-    // Send final feedback reminders - 2nd of month at 10:00 AM
+
     node_cron_1.default.schedule('0 10 2 * *', () => {
         logger_1.logger.info('Running cron: Send final feedback reminders');
         (0, exports.sendFinalFeedbackReminders)();
     });
-    // Process forfeited feedbacks - 4th of month at 1:00 AM (before earnings)
+
     node_cron_1.default.schedule('0 1 4 * *', () => {
         logger_1.logger.info('Running cron: Process forfeited feedbacks');
         (0, exports.processForfeitedFeedbacks)();
     });
-    // Generate tutor earnings - 4th of month at 3:00 AM (after forfeit processing)
+
     node_cron_1.default.schedule('0 3 4 * *', () => {
         logger_1.logger.info('Running cron: Generate tutor earnings');
         (0, exports.generateTutorEarnings)();
     });
-    // Cleanup expired available interview slots - Daily at midnight (00:00)
+
     node_cron_1.default.schedule('0 0 * * *', () => {
         logger_1.logger.info('Running cron: Cleanup expired interview slots');
         (0, exports.cleanupExpiredInterviewSlots)();

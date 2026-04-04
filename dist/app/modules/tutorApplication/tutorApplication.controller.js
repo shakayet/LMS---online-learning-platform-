@@ -17,7 +17,7 @@ const http_status_codes_1 = require("http-status-codes");
 const catchAsync_1 = __importDefault(require("../../../shared/catchAsync"));
 const sendResponse_1 = __importDefault(require("../../../shared/sendResponse"));
 const tutorApplication_service_1 = require("./tutorApplication.service");
-// Submit application (PUBLIC - creates user + application)
+
 const submitApplication = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield tutorApplication_service_1.TutorApplicationService.submitApplication(req.body);
     (0, sendResponse_1.default)(res, {
@@ -27,7 +27,7 @@ const submitApplication = (0, catchAsync_1.default)((req, res) => __awaiter(void
         data: result,
     });
 }));
-// Get my application (applicant view - requires auth)
+
 const getMyApplication = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;
     const userEmail = (_a = req.user) === null || _a === void 0 ? void 0 : _a.email;
@@ -35,7 +35,7 @@ const getMyApplication = (0, catchAsync_1.default)((req, res) => __awaiter(void 
     const result = yield tutorApplication_service_1.TutorApplicationService.getMyApplication(userEmail, userRole);
     (0, sendResponse_1.default)(res, Object.assign({ success: true, statusCode: http_status_codes_1.StatusCodes.OK, message: 'Application retrieved successfully', data: result.application }, (result.newAccessToken && { accessToken: result.newAccessToken })));
 }));
-// Get all applications (admin view) With filtering, searching, pagination
+
 const getAllApplications = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield tutorApplication_service_1.TutorApplicationService.getAllApplications(req.query);
     (0, sendResponse_1.default)(res, {
@@ -46,7 +46,7 @@ const getAllApplications = (0, catchAsync_1.default)((req, res) => __awaiter(voi
         pagination: result.meta,
     });
 }));
-// Get single application (admin view)
+
 const getSingleApplication = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const result = yield tutorApplication_service_1.TutorApplicationService.getSingleApplication(id);
@@ -57,7 +57,7 @@ const getSingleApplication = (0, catchAsync_1.default)((req, res) => __awaiter(v
         data: result,
     });
 }));
-// Select for interview (Admin only) - after initial review
+
 const selectForInterview = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const { adminNotes } = req.body;
@@ -69,7 +69,7 @@ const selectForInterview = (0, catchAsync_1.default)((req, res) => __awaiter(voi
         data: result,
     });
 }));
-// Approve application (Admin only) - after interview
+
 const approveApplication = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const { adminNotes } = req.body;
@@ -81,7 +81,7 @@ const approveApplication = (0, catchAsync_1.default)((req, res) => __awaiter(voi
         data: result,
     });
 }));
-// Reject application (Admin only)
+
 const rejectApplication = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const { rejectionReason } = req.body;
@@ -93,7 +93,7 @@ const rejectApplication = (0, catchAsync_1.default)((req, res) => __awaiter(void
         data: result,
     });
 }));
-// Send for revision (Admin only)
+
 const sendForRevision = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const { revisionNote } = req.body;
@@ -105,7 +105,7 @@ const sendForRevision = (0, catchAsync_1.default)((req, res) => __awaiter(void 0
         data: result,
     });
 }));
-// Delete application (Admin only)
+
 const deleteApplication = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const result = yield tutorApplication_service_1.TutorApplicationService.deleteApplication(id);
@@ -116,7 +116,7 @@ const deleteApplication = (0, catchAsync_1.default)((req, res) => __awaiter(void
         data: result,
     });
 }));
-// Update my application (Applicant only - when in REVISION status)
+
 const updateMyApplication = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const userEmail = (_a = req.user) === null || _a === void 0 ? void 0 : _a.email;

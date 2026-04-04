@@ -15,7 +15,6 @@ import { IPaymentFilters } from './payment.interface';
 import { JwtPayload } from 'jsonwebtoken';
 import StripeConnectService from './stripeConnect.service';
 
-// Get current intent (and client_secret if applicable) by bidId
 export const getCurrentIntentByBidController = catchAsync(
   async (req: Request, res: Response) => {
     const { bidId } = req.params;
@@ -37,7 +36,6 @@ export const getCurrentIntentByBidController = catchAsync(
   }
 );
 
-// Refund escrow payment
 export const refundPaymentController = catchAsync(
   async (req: Request, res: Response) => {
     const { paymentId } = req.params;
@@ -61,7 +59,6 @@ export const refundPaymentController = catchAsync(
   }
 );
 
-// Get payment by ID
 export const getPaymentByIdController = catchAsync(
   async (req: Request, res: Response) => {
     const { paymentId } = req.params;
@@ -85,7 +82,6 @@ export const getPaymentByIdController = catchAsync(
   }
 );
 
-// Get payments with filters and pagination
 export const getPaymentsController = catchAsync(
   async (req: Request, res: Response) => {
     const {
@@ -99,7 +95,6 @@ export const getPaymentsController = catchAsync(
       limit = 10,
     } = req.query;
 
-    // Build filters object
     const filters: IPaymentFilters = {};
     if (status) filters.status = status as any;
     if (clientId)
@@ -133,7 +128,6 @@ export const getPaymentsController = catchAsync(
   }
 );
 
-// Get payment statistics
 export const getPaymentStatsController = catchAsync(
   async (_req: Request, res: Response) => {
     const stats = await getPaymentStatsOverview();
@@ -162,7 +156,6 @@ const deleteStripeAccountController = catchAsync(async (req, res) => {
   });
 });
 
-// Get payment history for poster, tasker, super admin
 const getPaymentHistoryController = catchAsync(
   async (req: Request, res: Response) => {
     const { id } = req.user as JwtPayload;

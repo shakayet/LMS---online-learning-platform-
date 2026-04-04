@@ -1,23 +1,6 @@
 const fs = require('fs');
 const path = require('path');
 
-/**
- * Smart Postman Collection Generator v2.0
- *
- * Features:
- * - Auto-detects ALL modules from src/routes/index.ts
- * - Parses route files to extract endpoints
- * - Reads validation files to generate accurate request bodies
- * - Extracts JSDoc comments for descriptions
- * - Detects auth requirements from route middleware
- * - Converts :param to {{param}} variables
- * - Generates complete collection with all modules
- *
- * Usage:
- *   node scripts/generate-postman-collection.js           # Generate complete collection
- *   node scripts/generate-postman-collection.js auth      # Generate single module
- */
-
 class SmartPostmanGenerator {
   constructor() {
     this.baseUrl = '{{BASE_URL}}';
@@ -26,9 +9,6 @@ class SmartPostmanGenerator {
     this.outputDir = path.join(process.cwd(), 'postman-collections');
   }
 
-  /**
-   * Main entry point - generates complete collection
-   */
   async generateCompleteCollection() {
     console.log('🚀 Starting Smart Postman Collection Generator v2.0...\n');
 
@@ -73,9 +53,6 @@ class SmartPostmanGenerator {
     console.log(`📊 Total endpoints: ${collection.item.reduce((sum, m) => sum + m.item.length, 0)}`);
   }
 
-  /**
-   * Generate single module collection
-   */
   async generateSingleModule(moduleName) {
     console.log(`🚀 Generating collection for module: ${moduleName}\n`);
 
@@ -116,9 +93,6 @@ class SmartPostmanGenerator {
     console.log(`📊 Endpoints: ${collection.item.length}`);
   }
 
-  /**
-   * Detect modules from src/routes/index.ts
-   */
   detectModulesFromRoutes() {
     const modules = [];
 

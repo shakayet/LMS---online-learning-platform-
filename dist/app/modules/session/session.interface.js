@@ -26,7 +26,7 @@ var PAYMENT_STATUS;
     PAYMENT_STATUS["FAILED"] = "FAILED";
     PAYMENT_STATUS["REFUNDED"] = "REFUNDED";
 })(PAYMENT_STATUS || (exports.PAYMENT_STATUS = PAYMENT_STATUS = {}));
-// Completion status for student and teacher separately
+
 var COMPLETION_STATUS;
 (function (COMPLETION_STATUS) {
     COMPLETION_STATUS["NOT_APPLICABLE"] = "NOT_APPLICABLE";

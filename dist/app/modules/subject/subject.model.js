@@ -13,6 +13,6 @@ const subjectSchema = new mongoose_1.Schema({
         default: true,
     },
 }, { timestamps: true });
-// Index for faster queries
+
 subjectSchema.index({ isActive: 1 });
 exports.Subject = (0, mongoose_1.model)('Subject', subjectSchema);

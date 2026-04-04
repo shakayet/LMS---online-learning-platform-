@@ -1,18 +1,13 @@
-/*
-  OpenTelemetry bootstrap with a custom TimelineConsoleExporter.
-  - Auto-instruments Node/HTTP/Express/MongoDB, etc.
-  - Pretty-prints per-request span timeline in console for quick diagnosis.
-*/
-// Lazy-load OpenTelemetry SDK modules to avoid compile errors when dependencies are missing
+
 let NodeSDK: any;
 let Resource: any;
 let SemanticResourceAttributes: any;
 let getNodeAutoInstrumentations: any;
 try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
+
   NodeSDK = require('@opentelemetry/sdk-node').NodeSDK;
   Resource = require('@opentelemetry/resources').Resource;
-  // Updated for OpenTelemetry 2.x: use ATTR_SERVICE_NAME instead of SemanticResourceAttributes.SERVICE_NAME
+
   SemanticResourceAttributes = require('@opentelemetry/semantic-conventions');
   getNodeAutoInstrumentations = require('@opentelemetry/auto-instrumentations-node').getNodeAutoInstrumentations;
 } catch {}
@@ -25,16 +20,13 @@ import { ExportResultCode } from '@opentelemetry/core';
 import { diag, DiagConsoleLogger, DiagLogLevel } from '@opentelemetry/api';
 import { logger } from '../../shared/logger';
 
-// Export a small store to share computed totals with request logger for single timing source
 export const timelineTotalsStore = new Map<string, number>();
 export const getTimelineTotal = (traceId: string): number | undefined => timelineTotalsStore.get(traceId);
 
-// Enable lightweight diagnostics in development
 try {
   diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.ERROR);
 } catch {}
 
-// Custom exporter that prints a compact request timeline
 class TimelineConsoleExporter implements SpanExporter {
   private traces: Map<string, ReadableSpan[]> = new Map();
 
@@ -46,12 +38,11 @@ class TimelineConsoleExporter implements SpanExporter {
         arr.push(span);
         this.traces.set(tid, arr);
 
-        // Heuristic: when http.server span ends, print the timeline
-        const isHttpServer = (span as any).kind === 1 /* SERVER */ &&
+        const isHttpServer = (span as any).kind === 1  &&
           (span.name.startsWith('HTTP') || this.hasHttpAttributes(span));
         if (isHttpServer) {
           this.printTimeline(tid);
-          // cleanup
+
           this.traces.delete(tid);
         }
       }
@@ -82,25 +73,24 @@ class TimelineConsoleExporter implements SpanExporter {
     const children = new Map<string, ReadableSpan[]>();
     for (const s of spans) {
       byId.set(s.spanContext().spanId, s);
-      // Updated for OpenTelemetry 2.x: parentSpanId might be in different location
+
       const pid = (s as any).parentSpanId || '__root__';
       const arr = children.get(pid) || [];
       arr.push(s);
       children.set(pid, arr);
     }
-    // Root http.server span as total source
+
     const httpRoots = spans.filter(s => (s as any).kind === 1 && (s.name.startsWith('HTTP') || (s as any).attributes && ('http.method' in (s as any).attributes)));
     const root = httpRoots.sort((a, b) => (a.startTime[0] - b.startTime[0]) || (a.startTime[1] - b.startTime[1]))[0] || spans[0];
     const startNs = root.startTime[0] * 1e9 + root.startTime[1];
     const endNs = root.endTime[0] * 1e9 + root.endTime[1];
     const totalMs = Math.max(0, Math.round((endNs - startNs) / 1e6));
-    // Share total for single timing source usage in requestLogger
+
     try { timelineTotalsStore.set(traceId, totalMs); } catch {}
 
     const lines: string[] = [];
     lines.push(`⏱️  REQUEST TIMELINE (Total: ${totalMs}ms)`);
 
-    // Severity indicator
     const sev = (ms: number) => (ms >= 300 ? '🐌' : ms >= 50 ? '⚠️' : '✅');
     const durDisp = (ms: number) => {
       if (ms <= 0) return '<1ms';
@@ -111,11 +101,7 @@ class TimelineConsoleExporter implements SpanExporter {
     const skippedIds = new Set<string>();
     const genericSeen = new Set<string>();
 
-    // ----- DB dedup (model + operation + rounded startMs) keep the longest duration -----
-    // Rationale: multiple instrumentation layers (custom DB + mongoose hooks + OTel)
-    // can produce duplicate entries. We dedupe using a stable key and prefer
-    // the most complete (longest) span.
-    const round = (ns: number) => Math.round(ns / 1e6); // ns -> ms rounded
+    const round = (ns: number) => Math.round(ns / 1e6);
     const dbLike = spans.filter(s => s.name.startsWith('🗄️') || s.name.startsWith('mongoose.') || s.name.startsWith('mongodb.'));
     const parseDbKey = (s: ReadableSpan): string | undefined => {
       try {
@@ -124,17 +110,17 @@ class TimelineConsoleExporter implements SpanExporter {
           if (!label) return undefined;
           const [model, op] = label.split('.');
           const startMs = round((s.startTime[0] * 1e9 + s.startTime[1]) - startNs);
-          const bin = Math.floor(startMs / 20) * 20; // 20ms buckets to coalesce dup layers
+          const bin = Math.floor(startMs / 20) * 20;
           return `${model || 'unknown'}|${op || 'op'}|${bin}`;
         }
         if (s.name.startsWith('mongoose.')) {
           const label = s.name.slice('mongoose.'.length);
           const [model, op] = label.split('.');
           const startMs = round((s.startTime[0] * 1e9 + s.startTime[1]) - startNs);
-          const bin = Math.floor(startMs / 20) * 20; // 20ms buckets to coalesce dup layers
+          const bin = Math.floor(startMs / 20) * 20;
           return `${model || 'unknown'}|${op || 'op'}|${bin}`;
         }
-        // mongodb.* often lacks model name; skip dedup for those
+
         return undefined;
       } catch {
         return undefined;
@@ -150,12 +136,12 @@ class TimelineConsoleExporter implements SpanExporter {
         bestByKey.set(key, s);
       } else {
         const currDur = (curr.endTime[0] * 1e9 + curr.endTime[1]) - (curr.startTime[0] * 1e9 + curr.startTime[1]);
-        const almostEqual = Math.abs(dur - currDur) <= 2e6; // <=2ms
+        const almostEqual = Math.abs(dur - currDur) <= 2e6;
         const preferDbLabel = s.name.startsWith('🗄️') && !curr.name.startsWith('🗄️');
         if (dur > currDur || (almostEqual && preferDbLabel)) bestByKey.set(key, s);
       }
     }
-    // Mark duplicates to skip (prefer most complete/longest)
+
     for (const s of dbLike) {
       const key = parseDbKey(s);
       if (!key) continue;
@@ -192,9 +178,9 @@ class TimelineConsoleExporter implements SpanExporter {
     };
 
     const printNode = (s: ReadableSpan, indent: string) => {
-      // Skip spans marked as duplicates
-      if (skippedIds.has(s.spanContext().spanId)) return; // dedup skip
-      // Dedup driver vs custom DB spans: skip mongoose/mongodb only when a matching custom 🗄️ span exists for the same model/op bucket
+
+      if (skippedIds.has(s.spanContext().spanId)) return;
+
       if (s.name.startsWith('mongodb.') || s.name.startsWith('mongoose.')) {
         const key = parseDbKey(s);
         if (key) {
@@ -209,8 +195,8 @@ class TimelineConsoleExporter implements SpanExporter {
       printed.add(key);
       const startMs = Math.max(0, Math.round(((s.startTime[0] * 1e9 + s.startTime[1]) - startNs) / 1e6));
       const endMs = Math.max(0, Math.round(((s.endTime[0] * 1e9 + s.endTime[1]) - startNs) / 1e6));
-      // Lightweight generic dedup: same label within ~10ms bucket (e.g., JWT.sign)
-      const gkey = `${s.name}|${Math.floor(startMs / 100)}`; // 100ms window
+
+      const gkey = `${s.name}|${Math.floor(startMs / 100)}`;
       if (genericSeen.has(gkey) && !s.name.startsWith('🗄️')) return;
       genericSeen.add(gkey);
       const durMs = Math.max(0, Math.round(((s.endTime[0] * 1e9 + s.endTime[1]) - (s.startTime[0] * 1e9 + s.startTime[1])) / 1e6));
@@ -223,7 +209,7 @@ class TimelineConsoleExporter implements SpanExporter {
         .replace(/^Response Serialization$/, '🧩 Response Serialization')
         .replace(/^🌐 HTTP Response Send$/, '🌐 Network: HTTP Response Send')
         .replace(/^Stripe\./, '💳 Stripe: ');
-      // Event lifecycle mapping
+
       const raw = s.name;
       let startTag: string | undefined;
       let endTag: string | undefined;
@@ -235,7 +221,7 @@ class TimelineConsoleExporter implements SpanExporter {
         startTag = 'CALL';
         endTag = 'RETURN';
       } else if (raw.startsWith('Stripe.')) {
-        // Stripe SDK operations (including webhooks.constructEvent)
+
         startTag = 'CALL';
         endTag = 'RESULT';
       } else if (raw.startsWith('🗄️') || raw.startsWith('mongoose.') || raw.startsWith('mongodb.')) {
@@ -244,7 +230,7 @@ class TimelineConsoleExporter implements SpanExporter {
       } else if (raw === '🌐 HTTP Response Send') {
         singleTag = 'SEND';
       } else if (raw.toLowerCase().includes('validate')) {
-        // Explicit Validation lifecycle tags
+
         startTag = 'VALIDATE_START';
         endTag = 'VALIDATE_COMPLETE';
       } else if (raw.startsWith('HTTP') && raw !== '🌐 HTTP Response Send') {
@@ -259,7 +245,6 @@ class TimelineConsoleExporter implements SpanExporter {
         singleTag = 'EXECUTE';
       }
 
-      // Capture events early for special-casing Validation/Error Handler rendering
       const evts: any[] = ((s as any).events || []) as any[];
       const exc = evts.find(e => String(e.name).toLowerCase().includes('exception'));
       const isValidation = raw.toLowerCase().includes('validate');
@@ -268,21 +253,18 @@ class TimelineConsoleExporter implements SpanExporter {
       if (singleTag) {
         lines.push(`${indent}├─ [${startMs}ms] ${label} [${singleTag}] - ${durDisp(durMs)} ${statusErr ? '⚠️' : sev(durMs)}`);
       } else {
-        // Start line
+
         lines.push(`${indent}├─ [${startMs}ms] ${label} [${startTag}]`);
-        // End line rules:
-        // - For Validation with exception, skip COMPLETE and rely on ERROR block only
-        // - Otherwise, print the end tag
+
         if (!(isValidation && (statusErr || !!exc))) {
           lines.push(`${indent}├─ [${endMs}ms] ${label} [${endTag}] - ${durDisp(durMs)} ${statusErr ? '⚠️' : sev(durMs)}`);
         }
       }
 
-      // Inline error details under the span if any exception recorded
       try {
         if (exc) {
           let etype = exc.attributes?.['exception.type'] || 'Error';
-          // Normalize common validator error names for clearer display
+
           if (etype === 'ZodError') etype = 'ValidationError';
           const emsg = exc.attributes?.['exception.message'] || s.status?.message || 'An error occurred';
           const estack = exc.attributes?.['exception.stacktrace'];
@@ -294,7 +276,7 @@ class TimelineConsoleExporter implements SpanExporter {
           const eNs = (exc.time?.[0] || s.endTime[0]) * 1e9 + (exc.time?.[1] || s.endTime[1]);
           const eMs = Math.max(0, Math.round((eNs - startNs) / 1e6));
           const layer = attrs['layer'] || classifyLayer(raw);
-          // Do not render inline error block for Error Handler (it formats error but isn't an error itself)
+
           if (!isErrorHandler) {
             lines.push(`${indent}├─ [${eMs}ms] ❌ ${label.replace(/^.*?:\s*/, '')} [ERROR] - ${durDisp(durMs)} 🔴`);
             lines.push(`${indent}│  🚨 ${etype}: ${emsg}`);
@@ -308,9 +290,6 @@ class TimelineConsoleExporter implements SpanExporter {
         }
       } catch {}
 
-      // Attach DB metrics if present on span attributes
-      // These attributes are set in mongooseMetrics.ts via explain('executionStats')
-      // and include index usage, docs examined, efficiency ratio, execution stage, suggestions.
       if (s.name.startsWith('🗄️')) {
         const attrs: any = (s as any).attributes || {};
         const indexUsed = attrs['db.index_used'];
@@ -319,7 +298,7 @@ class TimelineConsoleExporter implements SpanExporter {
         const efficiency = attrs['db.scan_efficiency'];
         const executionStage = attrs['db.execution_stage'];
         const suggestion = attrs['db.index_suggestion'];
-        // Index display
+
         if (executionStage || indexUsed) {
           const isCollscan = String(executionStage || '').toUpperCase().includes('COLLSCAN') || indexUsed === 'NO_INDEX';
           lines.push(`${indent}│  [${endMs}ms] 📊 Index: ${isCollscan ? 'COLLSCAN ⚠️' : (indexUsed ? `${indexUsed} ✅` : 'n/a')}`);
@@ -336,15 +315,11 @@ class TimelineConsoleExporter implements SpanExporter {
       const nextIndent = `${indent}│  `;
       for (const c of kids) printNode(c, nextIndent);
 
-      // Extra note under Error Handler span for clarity
       if (isErrorHandler) {
         lines.push(`${indent}│  📝 Formatted error response`);
       }
     };
 
-    // ----- Group middleware into a single stacked entry -----
-    // Rationale: 18+ middleware spans clutter output. We collapse them into
-    // one aggregated block and show a brief breakdown of the slowest three.
     const rootChildren = sortChildren(children.get(root.spanContext().spanId) || []);
     const middlewareSpans = rootChildren.filter(s => {
       const n = s.name.toLowerCase();
@@ -356,7 +331,7 @@ class TimelineConsoleExporter implements SpanExporter {
       const mwDurMs = Math.max(0, Math.round((mwEndNs - mwStartNs) / 1e6));
       const mwStartMs = Math.max(0, Math.round((mwStartNs - startNs) / 1e6));
       lines.push(`├─ [${mwStartMs}ms] 🔧 Middleware Stack - ${durDisp(mwDurMs)}`);
-      // Breakdown: top 3 slowest middleware
+
       const top3 = middlewareSpans
         .map(s => ({ s, dur: Math.max(0, Math.round(((s.endTime[0] * 1e9 + s.endTime[1]) - (s.startTime[0] * 1e9 + s.startTime[1])) / 1e6)) }))
         .sort((a, b) => b.dur - a.dur)
@@ -367,8 +342,7 @@ class TimelineConsoleExporter implements SpanExporter {
         const label = name.padEnd(26, '.');
         lines.push(`│  ├─ [${sStartMs}ms] ${label} ${durDisp(dur)}`);
       }
-      // Skip ALL middleware spans from the timeline (we only show the group)
-      // EXCEPT validation spans which are important for debugging
+
       for (const s of middlewareSpans) {
         const name = String(s.name).toLowerCase();
         if (!name.includes('validate')) {
@@ -377,16 +351,12 @@ class TimelineConsoleExporter implements SpanExporter {
       }
     }
 
-
-    // Print controller/service and others under root
     const top = sortChildren(children.get(root.spanContext().spanId) || []).filter(s => !skippedIds.has(s.spanContext().spanId));
     for (const s of top) printNode(s, '');
 
-    // Finally print response send if present and not printed
     const resp = spans.filter(s => s.name === '🌐 HTTP Response Send');
     for (const r of resp) printNode(r, '');
 
-    // Completion line (success/failure depending on status or exceptions)
     const httpStatus = (root as any).attributes?.['http.status_code'];
     const hasErrorSpan = spans.some(s => s.status?.code === 2 || (((s as any).events || []).some((e: any) => String(e.name).toLowerCase().includes('exception'))));
     if (hasErrorSpan || (typeof httpStatus === 'number' && httpStatus >= 400)) {
@@ -395,10 +365,9 @@ class TimelineConsoleExporter implements SpanExporter {
       lines.push(`└─ [${totalMs}ms] ✅ Request Completed Successfully (Total: ${totalMs}ms)`);
     }
 
-    // ERROR SUMMARY block (if any error)
     if (hasErrorSpan || (typeof httpStatus === 'number' && httpStatus >= 400)) {
       try {
-        // Choose earliest exception event for summary
+
         let best: { e: any; s: ReadableSpan } | undefined;
         for (const s of spans) {
           const evts: any[] = ((s as any).events || []) as any[];
@@ -436,7 +405,6 @@ class TimelineConsoleExporter implements SpanExporter {
           lines.push(`⏱️  Failed at: ${eMs}ms (${totalMs > 0 ? Math.round((eMs / totalMs) * 1000) / 10 : 0}% into request)`);
           if (src) lines.push(`📂 Source: ${src}`);
 
-          // Friendly validation summary formatting if message looks like JSON
           let formatted = false;
           if (etype === 'ValidationError') {
             try {
@@ -466,11 +434,10 @@ class TimelineConsoleExporter implements SpanExporter {
       } catch {}
     }
 
-    // 📊 LATENCY BREAKDOWN (moved to very bottom)
     const sumDur = (arr: ReadableSpan[]) => arr.reduce((acc, s) => acc + Math.max(0, Math.round(((s.endTime[0] * 1e9 + s.endTime[1]) - (s.startTime[0] * 1e9 + s.startTime[1])) / 1e6)), 0);
     const dbMs = Array.from(bestByKey.values()).reduce((acc, s) => acc + Math.max(0, Math.round(((s.endTime[0] * 1e9 + s.endTime[1]) - (s.startTime[0] * 1e9 + s.startTime[1])) / 1e6)), 0);
     const serviceMs = sumDur(spans.filter(s => s.name.startsWith('Service: ')));
-    // Network includes response send, any HTTP client spans, and Stripe SDK calls
+
     const networkMs = sumDur(
       spans.filter(s =>
         s.name === '🌐 HTTP Response Send' ||
@@ -481,7 +448,7 @@ class TimelineConsoleExporter implements SpanExporter {
     const middlewareMs = middlewareSpans.length
       ? Math.max(0, Math.round((Math.max(...middlewareSpans.map(s => s.endTime[0] * 1e9 + s.endTime[1])) - Math.min(...middlewareSpans.map(s => s.startTime[0] * 1e9 + s.startTime[1]))) / 1e6))
       : 0;
-    // Do not double count DB under Service; treat DB as a subcomponent line only
+
     const usedMs = serviceMs + networkMs + middlewareMs;
     const otherMs = Math.max(0, totalMs - usedMs);
     const pct = (ms: number) => totalMs > 0 ? Math.round((ms / totalMs) * 1000) / 10 : 0;
@@ -509,24 +476,22 @@ class TimelineConsoleExporter implements SpanExporter {
     try {
       logger.info(lines.join('\n'));
     } catch {
-      // eslint-disable-next-line no-console
+
       console.log(lines.join('\n'));
     }
   }
 }
 
-// Initialize SDK once at process start
 if (NodeSDK && Resource && SemanticResourceAttributes && getNodeAutoInstrumentations) {
   const sdk = new NodeSDK({
     resource: new Resource({
-      // Updated for OpenTelemetry 2.x: use ATTR_SERVICE_NAME constant
+
       [SemanticResourceAttributes.ATTR_SERVICE_NAME || 'service.name']: process.env.OTEL_SERVICE_NAME || 'my-service',
     }),
     instrumentations: [getNodeAutoInstrumentations()],
     spanProcessor: new SimpleSpanProcessor(new TimelineConsoleExporter()),
   });
 
-  // Start immediately
   try {
     const startResult: any = (sdk as any).start?.();
     if (startResult && typeof startResult.catch === 'function') {
@@ -534,7 +499,7 @@ if (NodeSDK && Resource && SemanticResourceAttributes && getNodeAutoInstrumentat
         try {
           logger.error('OpenTelemetry init failed', err as any);
         } catch {
-          // eslint-disable-next-line no-console
+
           console.error('OpenTelemetry init failed', err);
         }
       });
@@ -543,7 +508,7 @@ if (NodeSDK && Resource && SemanticResourceAttributes && getNodeAutoInstrumentat
     try {
       logger.error('OpenTelemetry init failed', err as any);
     } catch {
-      // eslint-disable-next-line no-console
+
       console.error('OpenTelemetry init failed', err);
     }
   }
@@ -551,9 +516,9 @@ if (NodeSDK && Resource && SemanticResourceAttributes && getNodeAutoInstrumentat
   try {
     logger.info('OpenTelemetry SDK modules not found; skipping auto-instrumentation initialization');
   } catch {
-    // eslint-disable-next-line no-console
+
     console.info('OpenTelemetry SDK modules not found; skipping auto-instrumentation initialization');
   }
 }
 
-export {}; // side-effect module
+export {};

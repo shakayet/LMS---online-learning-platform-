@@ -6,20 +6,18 @@ import path from 'path';
 import ApiError from '../../errors/ApiError';
 
 const fileUploadHandler = () => {
-  //create upload folder
+
   const baseUploadDir = path.join(process.cwd(), 'uploads');
   if (!fs.existsSync(baseUploadDir)) {
     fs.mkdirSync(baseUploadDir);
   }
 
-  //folder create for different file
   const createDir = (dirPath: string) => {
     if (!fs.existsSync(dirPath)) {
       fs.mkdirSync(dirPath);
     }
   };
 
-  //create filename
   const storage = multer.diskStorage({
     destination: (req, file, cb) => {
       let uploadDir;
@@ -53,7 +51,6 @@ const fileUploadHandler = () => {
     },
   });
 
-  //file filter
   const filterFilter = (req: Request, file: any, cb: FileFilterCallback) => {
     if (file.fieldname === 'image') {
       if (

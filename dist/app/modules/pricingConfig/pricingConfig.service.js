@@ -16,7 +16,7 @@ exports.PricingConfigService = void 0;
 const http_status_codes_1 = require("http-status-codes");
 const ApiError_1 = __importDefault(require("../../../errors/ApiError"));
 const pricingConfig_model_1 = require("./pricingConfig.model");
-// Default pricing plans (used for initial seeding)
+
 const DEFAULT_PRICING_PLANS = [
     {
         name: 'Flexible',
@@ -61,12 +61,10 @@ const DEFAULT_PRICING_PLANS = [
         sortOrder: 3,
     },
 ];
-/**
- * Get pricing config (creates default if not exists)
- */
+
 const getPricingConfig = () => __awaiter(void 0, void 0, void 0, function* () {
     let config = yield pricingConfig_model_1.PricingConfig.findOne();
-    // If no config exists, create with defaults
+
     if (!config) {
         config = yield pricingConfig_model_1.PricingConfig.create({
             plans: DEFAULT_PRICING_PLANS,
@@ -74,40 +72,34 @@ const getPricingConfig = () => __awaiter(void 0, void 0, void 0, function* () {
     }
     return config;
 });
-/**
- * Get active pricing plans (for public/frontend)
- */
+
 const getActivePricingPlans = () => __awaiter(void 0, void 0, void 0, function* () {
     const config = yield getPricingConfig();
     return config.plans
         .filter((plan) => plan.isActive)
         .sort((a, b) => a.sortOrder - b.sortOrder);
 });
-/**
- * Get pricing for a specific tier (for subscription service)
- */
+
 const getPricingByTier = (tier) => __awaiter(void 0, void 0, void 0, function* () {
     const config = yield getPricingConfig();
     return config.plans.find((plan) => plan.tier === tier && plan.isActive) || null;
 });
-/**
- * Update pricing config (Admin only)
- */
+
 const updatePricingConfig = (plans, adminId) => __awaiter(void 0, void 0, void 0, function* () {
-    // Validate plans
+
     const tiers = plans.map((p) => p.tier);
     const uniqueTiers = new Set(tiers);
     if (tiers.length !== uniqueTiers.size) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'Duplicate tier found in plans');
     }
-    // Validate required tiers exist
+
     const requiredTiers = ['FLEXIBLE', 'REGULAR', 'LONG_TERM'];
     for (const tier of requiredTiers) {
         if (!tiers.includes(tier)) {
             throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, `Missing required tier: ${tier}`);
         }
     }
-    // Validate pricing values
+
     for (const plan of plans) {
         if (plan.pricePerHour <= 0) {
             throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, `Price per hour must be positive for ${plan.name}`);
@@ -119,7 +111,7 @@ const updatePricingConfig = (plans, adminId) => __awaiter(void 0, void 0, void 0
             throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, `Commitment months cannot be negative for ${plan.name}`);
         }
     }
-    // Update or create config
+
     let config = yield pricingConfig_model_1.PricingConfig.findOne();
     if (config) {
         config.plans = plans;
@@ -134,11 +126,9 @@ const updatePricingConfig = (plans, adminId) => __awaiter(void 0, void 0, void 0
     }
     return config;
 });
-/**
- * Update a single plan (Admin only)
- */
+
 const updateSinglePlan = (tier, updates, adminId) => __awaiter(void 0, void 0, void 0, function* () {
-    // Get the Mongoose document directly
+
     let config = yield pricingConfig_model_1.PricingConfig.findOne();
     if (!config) {
         config = yield pricingConfig_model_1.PricingConfig.create({
@@ -149,15 +139,13 @@ const updateSinglePlan = (tier, updates, adminId) => __awaiter(void 0, void 0, v
     if (planIndex === -1) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, `Plan with tier ${tier} not found`);
     }
-    // Merge updates
+
     config.plans[planIndex] = Object.assign(Object.assign(Object.assign({}, config.plans[planIndex]), updates), { tier });
     config.updatedBy = adminId;
     yield config.save();
     return config;
 });
-/**
- * Reset to default pricing (Admin only)
- */
+
 const resetToDefaultPricing = (adminId) => __awaiter(void 0, void 0, void 0, function* () {
     let config = yield pricingConfig_model_1.PricingConfig.findOne();
     if (config) {

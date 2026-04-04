@@ -26,7 +26,7 @@ const createGrade = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, vo
         data: result,
     });
 }));
-// Get all grades
+
 const getAllGrades = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield grade_service_1.GradeService.getAllGrades(req.query);
     (0, sendResponse_1.default)(res, {
@@ -37,7 +37,7 @@ const getAllGrades = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, v
         pagination: result.pagination,
     });
 }));
-// Get single grade
+
 const getSingleGrade = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { gradeId } = req.params;
     const result = yield grade_service_1.GradeService.getSingleGrade(gradeId);
@@ -48,7 +48,7 @@ const getSingleGrade = (0, catchAsync_1.default)((req, res) => __awaiter(void 0,
         data: result,
     });
 }));
-// Update grade
+
 const updateGrade = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { gradeId } = req.params;
     const result = yield grade_service_1.GradeService.updateGrade(gradeId, req.body);
@@ -59,7 +59,7 @@ const updateGrade = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, vo
         data: result,
     });
 }));
-// Delete grade
+
 const deleteGrade = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { gradeId } = req.params;
     const result = yield grade_service_1.GradeService.deleteGrade(gradeId);
@@ -70,7 +70,7 @@ const deleteGrade = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, vo
         data: result,
     });
 }));
-// Get active grades
+
 const getActiveGrades = (0, catchAsync_1.default)((_req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield grade_service_1.GradeService.getActiveGrades();
     (0, sendResponse_1.default)(res, {

@@ -51,7 +51,7 @@ const getUserProfile = (0, catchAsync_1.default)((req, res) => __awaiter(void 0,
 }));
 const updateProfile = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const user = req.user;
-    // All files + text data are in req.body
+
     const payload = Object.assign({}, req.body);
     const result = yield user_service_1.UserService.updateProfileToDB(user, payload);
     (0, sendResponse_1.default)(res, {
@@ -111,7 +111,7 @@ const getUserDetailsById = (0, catchAsync_1.default)((req, res) => __awaiter(voi
         data: result,
     });
 }));
-// ============ ADMIN: STUDENT MANAGEMENT ============
+
 const getAllStudents = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield user_service_1.UserService.getAllStudents(req.query);
     (0, sendResponse_1.default)(res, {
@@ -142,9 +142,7 @@ const unblockStudent = (0, catchAsync_1.default)((req, res) => __awaiter(void 0,
         data: result,
     });
 }));
-/**
- * Admin: Update student profile (without password)
- */
+
 const adminUpdateStudentProfile = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const result = yield user_service_1.UserService.adminUpdateStudentProfile(id, req.body);
@@ -155,7 +153,7 @@ const adminUpdateStudentProfile = (0, catchAsync_1.default)((req, res) => __awai
         data: result,
     });
 }));
-// ============ ADMIN: TUTOR MANAGEMENT ============
+
 const getAllTutors = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield user_service_1.UserService.getAllTutors(req.query);
     (0, sendResponse_1.default)(res, {
@@ -197,9 +195,7 @@ const updateTutorSubjects = (0, catchAsync_1.default)((req, res) => __awaiter(vo
         data: result,
     });
 }));
-/**
- * Admin: Update tutor profile (without password)
- */
+
 const adminUpdateTutorProfile = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const result = yield user_service_1.UserService.adminUpdateTutorProfile(id, req.body);
@@ -210,7 +206,7 @@ const adminUpdateTutorProfile = (0, catchAsync_1.default)((req, res) => __awaite
         data: result,
     });
 }));
-// ============ TUTOR: STATISTICS ============
+
 const getTutorStatistics = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const user = req.user;
     const result = yield user_service_1.UserService.getTutorStatistics(user.id);
@@ -230,17 +226,17 @@ exports.UserController = {
     unblockUser,
     getUserById,
     getUserDetailsById,
-    // Admin: Student Management
+
     getAllStudents,
     blockStudent,
     unblockStudent,
     adminUpdateStudentProfile,
-    // Admin: Tutor Management
+
     getAllTutors,
     blockTutor,
     unblockTutor,
     updateTutorSubjects,
     adminUpdateTutorProfile,
-    // Tutor: Statistics
+
     getTutorStatistics,
 };

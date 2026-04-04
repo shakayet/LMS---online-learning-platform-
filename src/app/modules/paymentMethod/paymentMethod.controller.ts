@@ -4,9 +4,6 @@ import catchAsync from '../../../shared/catchAsync';
 import sendResponse from '../../../shared/sendResponse';
 import { PaymentMethodService } from './paymentMethod.service';
 
-/**
- * Get all saved payment methods
- */
 const getPaymentMethods = catchAsync(async (req: Request, res: Response) => {
   const studentId = req.user!.id as string;
   const result = await PaymentMethodService.getPaymentMethods(studentId);
@@ -19,9 +16,6 @@ const getPaymentMethods = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Create SetupIntent for adding new payment method
- */
 const createSetupIntent = catchAsync(async (req: Request, res: Response) => {
   const studentId = req.user!.id as string;
   const result = await PaymentMethodService.createSetupIntent(studentId);
@@ -34,9 +28,6 @@ const createSetupIntent = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Attach payment method after successful setup
- */
 const attachPaymentMethod = catchAsync(async (req: Request, res: Response) => {
   const studentId = req.user!.id as string;
   const { paymentMethodId, setAsDefault } = req.body;
@@ -55,9 +46,6 @@ const attachPaymentMethod = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Set a payment method as default
- */
 const setDefaultPaymentMethod = catchAsync(async (req: Request, res: Response) => {
   const studentId = req.user!.id as string;
   const { paymentMethodId } = req.params;
@@ -72,9 +60,6 @@ const setDefaultPaymentMethod = catchAsync(async (req: Request, res: Response) =
   });
 });
 
-/**
- * Delete a payment method
- */
 const deletePaymentMethod = catchAsync(async (req: Request, res: Response) => {
   const studentId = req.user!.id as string;
   const { paymentMethodId } = req.params;

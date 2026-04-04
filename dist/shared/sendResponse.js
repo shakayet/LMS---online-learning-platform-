@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const sendResponse = (res, data) => {
-    // 👇 store full response data for logger middleware
+
     res.locals.responsePayload = data;
     const resData = {
         success: data.success,
@@ -10,7 +10,7 @@ const sendResponse = (res, data) => {
         meta: data.meta,
         data: data.data,
     };
-    // Include accessToken if provided (for role updates)
+
     if (data.accessToken) {
         resData.accessToken = data.accessToken;
     }

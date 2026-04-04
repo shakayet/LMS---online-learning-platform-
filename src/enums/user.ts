@@ -3,7 +3,7 @@ export enum USER_ROLES {
   STUDENT = 'STUDENT',
   TUTOR = 'TUTOR',
   APPLICANT = 'APPLICANT',
-  GUEST = 'GUEST', // For public/unauthenticated access
+  GUEST = 'GUEST',
 }
 
 export enum USER_STATUS {

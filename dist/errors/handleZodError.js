@@ -1,37 +1,22 @@
 "use strict";
-// import { ZodError } from 'zod';
-// import { IErrorMessage } from '../types/errors.types';
+
 Object.defineProperty(exports, "__esModule", { value: true });
-// const handleZodError = (error: ZodError) => {
-//   const errorMessages: IErrorMessage[] = error.errors.map(el => {
-//     return {
-//       path: el.path[el.path.length - 1],
-//       message: el.message,
-//     };
-//   });
-//   const statusCode = 400;
-//   return {
-//     statusCode,
-//     message: 'Validation Error',
-//     errorMessages,
-//   };
-// };
-// export default handleZodError;
+
 const zod_1 = require("zod");
 const fastest_levenshtein_1 = require("fastest-levenshtein");
-// Clean the path (always returns string)
+
 const cleanPath = (pathArray) => pathArray.join('.').replace(/^body\./, '');
 const handleZodError = (error) => {
     const allErrorMessages = [];
     const missingFields = [];
     const coveredFields = [];
-    // Collect expected fields for suggestions
+
     const expectedFields = Array.from(new Set(error.errors
         .flatMap(issue => issue.code === zod_1.ZodIssueCode.invalid_type && issue.path.length > 1
         ? [String(issue.path[1])]
         : [])
         .filter(Boolean)));
-    // Single pass over all Zod issues
+
     error.errors.forEach(issue => {
         switch (issue.code) {
             case zod_1.ZodIssueCode.unrecognized_keys: {
@@ -54,11 +39,11 @@ const handleZodError = (error) => {
                 const invalid = issue;
                 const path = cleanPath(invalid.path);
                 if (invalid.received === 'undefined') {
-                    // Missing field
+
                     missingFields.push(path);
                 }
                 else {
-                    // Type mismatch
+
                     allErrorMessages.push({
                         path,
                         message: `Expected ${invalid.expected} for '${path}', but received ${invalid.received}.`,
@@ -74,7 +59,7 @@ const handleZodError = (error) => {
                 break;
         }
     });
-    // Add missing fields that are not covered by typo suggestions
+
     missingFields.forEach(field => {
         if (!coveredFields.includes(field)) {
             allErrorMessages.push({

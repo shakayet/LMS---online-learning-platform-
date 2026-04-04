@@ -24,26 +24,16 @@ import {
   clearUserRooms,
 } from '../app/helpers/presenceHelper';
 
-// -------------------------
-// 🔹 Room Name Generators
-// -------------------------
-// USER_ROOM: unique private room for each user (for personal notifications)
-// CHAT_ROOM: group room for each chat conversation
 const USER_ROOM = (userId: string) => `user::${userId}`;
 const CHAT_ROOM = (chatId: string) => `chat::${chatId}`;
 const TYPING_KEY = (chatId: string, userId: string) => `typing:${chatId}:${userId}`;
-const TYPING_TTL_SECONDS = 5; // throttle window
+const TYPING_TTL_SECONDS = 5;
 const typingThrottle = new NodeCache({ stdTTL: TYPING_TTL_SECONDS, checkperiod: 10, useClones: false });
 
-// -------------------------
-// 🔹 Main Socket Handler
-// -------------------------
 const socket = (io: Server) => {
   io.on('connection', async socket => {
     try {
-      // -----------------------------
-      // 🧩 STEP 1 — Authenticate Socket
-      // -----------------------------
+
       const token =
         (socket.handshake.auth as any)?.token ||
         (socket.handshake.query as any)?.token;
@@ -71,32 +61,23 @@ const socket = (io: Server) => {
         return socket.disconnect(true);
       }
 
-      // -----------------------------
-      // 🧩 STEP 2 — Mark Online & Join Personal Room
-      // -----------------------------
       await setOnline(userId);
       await incrConnCount(userId);
       await updateLastActive(userId);
-      socket.join(USER_ROOM(userId)); // join user’s personal private room
+      socket.join(USER_ROOM(userId));
       logger.info(
         colors.blue(`✅ User ${userId} connected & joined ${USER_ROOM(userId)}`)
       );
       logEvent('socket_connected', `for user_id: ${userId}`);
 
-      // -----------------------------
-      // 🔹 Helper Function: Simplify repetitive event logging & activity update
-      // -----------------------------
       const handleEventProcessed = (event: string, extra?: string) => {
         updateLastActive(userId).catch(() => {});
         logEvent(event, extra);
       };
 
-      // ---------------------------------------------
-      // 🔹 Chat Room Join / Leave Events
-      // ---------------------------------------------
       socket.on('JOIN_CHAT', async ({ chatId }: { chatId: string }) => {
         if (!chatId) return;
-        // Security: Ensure only chat participants can join the room
+
         const allowed = await Chat.exists({ _id: chatId, participants: userId });
         if (!allowed) {
           socket.emit('ACK_ERROR', {
@@ -110,7 +91,6 @@ const socket = (io: Server) => {
         await addUserRoom(userId, chatId);
         handleEventProcessed('JOIN_CHAT', `for chat_id: ${chatId}`);
 
-        // Broadcast to others in the chat that this user is now online
         const lastActive = await getLastActive(userId);
         io.to(CHAT_ROOM(chatId)).emit('USER_ONLINE', {
           userId,
@@ -121,9 +101,6 @@ const socket = (io: Server) => {
           colors.green(`User ${userId} joined chat room ${CHAT_ROOM(chatId)}`)
         );
 
-        // Auto-mark undelivered messages as delivered for this user upon joining the chat.
-        // This fixes cases where messages sent while the user was offline remain stuck at "sent"
-        // after the user logs back in and rejoins rooms.
         try {
           const undelivered = await Message.find(
             {
@@ -172,7 +149,7 @@ const socket = (io: Server) => {
 
       socket.on('LEAVE_CHAT', async ({ chatId }: { chatId: string }) => {
         if (!chatId) return;
-        // Guard: Ensure only participants can leave (consistency & logging)
+
         const allowed = await Chat.exists({ _id: chatId, participants: userId });
         if (!allowed) {
           socket.emit('ACK_ERROR', {
@@ -186,7 +163,6 @@ const socket = (io: Server) => {
         await removeUserRoom(userId, chatId);
         handleEventProcessed('LEAVE_CHAT', `for chat_id: ${chatId}`);
 
-        // Notify others that user went offline in this chat
         const lastActive = await getLastActive(userId);
         io.to(CHAT_ROOM(chatId)).emit('USER_OFFLINE', {
           userId,
@@ -198,19 +174,15 @@ const socket = (io: Server) => {
         );
       });
 
-      // ---------------------------------------------
-      // 🔹 Typing Indicators
-      // ---------------------------------------------
       socket.on('TYPING_START', async ({ chatId }: { chatId: string }) => {
         if (!chatId) return;
-        // Guard: Only participants can emit typing events for a chat
+
         const allowed = await Chat.exists({ _id: chatId, participants: userId });
         if (!allowed) {
           handleEventProcessed('TYPING_START_DENIED', `for chat_id: ${chatId}`);
           return;
         }
 
-        // Throttle typing events per user per chat using in-memory TTL key
         {
           const key = TYPING_KEY(chatId, userId);
           if (typingThrottle.has(key)) {
@@ -226,22 +198,19 @@ const socket = (io: Server) => {
 
       socket.on('TYPING_STOP', async ({ chatId }: { chatId: string }) => {
         if (!chatId) return;
-        // Guard: Only participants can emit typing stop events
+
         const allowed = await Chat.exists({ _id: chatId, participants: userId });
         if (!allowed) {
           handleEventProcessed('TYPING_STOP_DENIED', `for chat_id: ${chatId}`);
           return;
         }
-        // Clear throttle key so next start can emit immediately
+
         typingThrottle.del(TYPING_KEY(chatId, userId));
 
         io.to(CHAT_ROOM(chatId)).emit('TYPING_STOP', { userId, chatId });
         handleEventProcessed('TYPING_STOP', `for chat_id: ${chatId}`);
       });
 
-      // ---------------------------------------------
-      // 🔹 Message Delivery & Read Acknowledgements
-      // ---------------------------------------------
       socket.on(
         'DELIVERED_ACK',
         async ({ messageId }: { messageId: string }) => {
@@ -331,11 +300,6 @@ const socket = (io: Server) => {
         }
       });
 
-      // ---------------------------------------------
-      // 🔹 Call Events (Agora Integration)
-      // ---------------------------------------------
-
-      // Initiate a call
       socket.on(
         'CALL_INITIATE',
         async ({
@@ -351,12 +315,10 @@ const socket = (io: Server) => {
             const { call, token, channelName, uid } =
               await CallService.initiateCall(userId, receiverId, callType, chatId);
 
-            // Get caller info for receiver
             const caller = await User.findById(userId).select(
               'name profilePicture'
             );
 
-            // Send to caller
             socket.emit('CALL_INITIATED', {
               callId: call._id,
               channelName,
@@ -365,7 +327,6 @@ const socket = (io: Server) => {
               callType,
             });
 
-            // Send to receiver
             io.to(USER_ROOM(receiverId)).emit('INCOMING_CALL', {
               callId: call._id,
               channelName,
@@ -388,7 +349,6 @@ const socket = (io: Server) => {
         }
       );
 
-      // Accept a call
       socket.on('CALL_ACCEPT', async ({ callId }: { callId: string }) => {
         try {
           const { call, token, uid } = await CallService.acceptCall(
@@ -396,7 +356,6 @@ const socket = (io: Server) => {
             userId
           );
 
-          // Send token to acceptor
           socket.emit('CALL_ACCEPTED', {
             callId,
             channelName: call.channelName,
@@ -404,7 +363,6 @@ const socket = (io: Server) => {
             uid,
           });
 
-          // Notify caller that call was accepted
           io.to(USER_ROOM(call.initiator.toString())).emit(
             'CALL_ACCEPTED_BY_RECEIVER',
             { callId }
@@ -417,12 +375,10 @@ const socket = (io: Server) => {
         }
       });
 
-      // Reject a call
       socket.on('CALL_REJECT', async ({ callId }: { callId: string }) => {
         try {
           const call = await CallService.rejectCall(callId, userId);
 
-          // Notify caller
           io.to(USER_ROOM(call.initiator.toString())).emit('CALL_REJECTED', {
             callId,
           });
@@ -434,12 +390,10 @@ const socket = (io: Server) => {
         }
       });
 
-      // End a call
       socket.on('CALL_END', async ({ callId }: { callId: string }) => {
         try {
           const call = await CallService.endCall(callId, userId);
 
-          // Notify all participants
           call.participants.forEach(participantId => {
             if (participantId.toString() !== userId) {
               io.to(USER_ROOM(participantId.toString())).emit('CALL_ENDED', {
@@ -456,12 +410,10 @@ const socket = (io: Server) => {
         }
       });
 
-      // Cancel a call (before accepted)
       socket.on('CALL_CANCEL', async ({ callId }: { callId: string }) => {
         try {
           const call = await CallService.cancelCall(callId, userId);
 
-          // Notify receiver
           io.to(USER_ROOM(call.receiver.toString())).emit('CALL_CANCELLED', {
             callId,
           });
@@ -473,8 +425,6 @@ const socket = (io: Server) => {
         }
       });
 
-      // Join a session-based call (for tutoring sessions)
-      // Both participants join the SAME channel based on sessionId
       socket.on(
         'CALL_JOIN_SESSION',
         async ({
@@ -490,7 +440,6 @@ const socket = (io: Server) => {
             const { call, token, channelName, uid, isNew } =
               await CallService.joinSessionCall(userId, sessionId, otherUserId, callType);
 
-            // Send token and channel info to this user
             socket.emit('SESSION_CALL_JOINED', {
               callId: call._id,
               channelName,
@@ -500,7 +449,6 @@ const socket = (io: Server) => {
               isNew,
             });
 
-            // If this is a new call, notify the other user
             if (isNew) {
               const caller = await User.findById(userId).select('name profilePicture');
               io.to(USER_ROOM(otherUserId)).emit('SESSION_CALL_READY', {
@@ -527,7 +475,6 @@ const socket = (io: Server) => {
         }
       );
 
-      // User joined Agora channel
       socket.on(
         'CALL_USER_JOINED_CHANNEL',
         async ({ callId, agoraUid }: { callId: string; agoraUid: number }) => {
@@ -538,7 +485,6 @@ const socket = (io: Server) => {
               agoraUid
             );
 
-            // Notify all participants
             call.participants.forEach(participantId => {
               io.to(USER_ROOM(participantId.toString())).emit(
                 'CALL_PARTICIPANT_JOINED',
@@ -551,7 +497,6 @@ const socket = (io: Server) => {
               );
             });
 
-            // If both joined, notify
             if (activeCount >= 2) {
               call.participants.forEach(participantId => {
                 io.to(USER_ROOM(participantId.toString())).emit(
@@ -577,7 +522,6 @@ const socket = (io: Server) => {
         }
       );
 
-      // User left Agora channel
       socket.on(
         'CALL_USER_LEFT_CHANNEL',
         async ({ callId }: { callId: string }) => {
@@ -587,7 +531,6 @@ const socket = (io: Server) => {
               userId
             );
 
-            // Sync attendance to session if this is a session call
             if (call.sessionId) {
               try {
                 await SessionService.syncAttendanceFromCall(call.sessionId.toString());
@@ -595,14 +538,13 @@ const socket = (io: Server) => {
                   colors.cyan(`Session attendance synced for session: ${call.sessionId}`)
                 );
               } catch (syncErr) {
-                // Don't fail the main operation if sync fails
+
                 logger.warn(
                   colors.yellow(`Failed to sync session attendance: ${String(syncErr)}`)
                 );
               }
             }
 
-            // Notify remaining participants
             call.participants.forEach(participantId => {
               if (participantId.toString() !== userId) {
                 io.to(USER_ROOM(participantId.toString())).emit(
@@ -629,7 +571,6 @@ const socket = (io: Server) => {
         }
       );
 
-      // Enable whiteboard for a call
       socket.on(
         'CALL_ENABLE_WHITEBOARD',
         async ({ callId }: { callId: string }) => {
@@ -637,7 +578,6 @@ const socket = (io: Server) => {
             const { room, token, isNew } =
               await WhiteboardService.getOrCreateRoomForCall(callId, userId);
 
-            // Notify all call participants about whiteboard
             const call = await CallService.getCallById(callId, userId);
 
             call.participants.forEach((participantId: any) => {
@@ -668,20 +608,15 @@ const socket = (io: Server) => {
         }
       );
 
-      // ---------------------------------------------
-      // 🔹 Handle Disconnect Event
-      // ---------------------------------------------
       socket.on('disconnect', async () => {
         try {
           await updateLastActive(userId);
           const remaining = await decrConnCount(userId);
           const lastActive = await getLastActive(userId);
 
-          // Only mark offline and broadcast if no other sessions remain
           if (!remaining || remaining <= 0) {
             await setOffline(userId);
 
-            // Notify all chat rooms this user participated in
             try {
               const rooms = await getUserRooms(userId);
               for (const chatId of rooms || []) {
@@ -714,9 +649,6 @@ const socket = (io: Server) => {
   });
 };
 
-// -------------------------
-// 🔹 Helper: Log formatter
-// -------------------------
 const logEvent = (event: string, extra?: string) => {
   logger.info(`🔔 Event processed: ${event} ${extra || ''}`);
 };

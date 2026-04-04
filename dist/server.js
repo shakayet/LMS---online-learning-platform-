@@ -21,18 +21,18 @@ const socketHelper_1 = require("./helpers/socketHelper");
 const logger_1 = require("./shared/logger");
 const CacheHelper_1 = require("./app/shared/CacheHelper");
 const cron_service_1 = require("./app/services/cron.service");
-// uncaught exception — ensure server closes before exit to avoid EADDRINUSE on respawn
+
 process.on('uncaughtException', error => {
     logger_1.errorLogger.error('UncaughtException Detected', error);
     if (server && typeof server.close === 'function') {
         try {
             server.close(() => {
-                // small delay so OS can release the port cleanly
+
                 setTimeout(() => process.exit(1), 500);
             });
         }
         catch (e) {
-            // fallback if close throws
+
             setTimeout(() => process.exit(1), 500);
         }
     }
@@ -44,13 +44,13 @@ let server;
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            // Environment & config logs
+
             logger_1.logger.info(`🌐 Environment: ${config_1.default.node_env || 'unknown'}`);
             logger_1.logger.info(`🛠️ Debug Mode: ${config_1.default.node_env === 'development' ? 'ON' : 'OFF'}`);
-            // Redis removed; no external cache URL
+
             mongoose_1.default.connect(config_1.default.database_url);
             logger_1.logger.info('🚀 Database connected successfully');
-            //Seed Super Admin after database connection is successful
+
             yield (0, seedAdmin_1.seedSuperAdmin)();
             const port = Number(config_1.default.port) || 5001;
             const host = config_1.default.node_env === 'development'
@@ -60,11 +60,11 @@ function main() {
                 const url = `http://${host}:${port}/`;
                 logger_1.logger.info(`♻️ Application listening on ${url}`);
             });
-            // handle listen errors gracefully
+
             server.on('error', (err) => {
                 if (err && err.code === 'EADDRINUSE') {
                     logger_1.errorLogger.error(`⚠️ Port in use ${host}:${port} (EADDRINUSE)`);
-                    // attempt a graceful retry after closing
+
                     try {
                         server.close(() => {
                             setTimeout(() => {
@@ -79,9 +79,9 @@ function main() {
                     }
                 }
             });
-            // Initialize CacheHelper (in-memory)
+
             const cache = CacheHelper_1.CacheHelper.getInstance();
-            //socket
+
             const io = new socket_io_1.Server(server, {
                 pingTimeout: 60000,
                 cors: {
@@ -89,11 +89,11 @@ function main() {
                 },
             });
             socketHelper_1.socketHelper.socket(io);
-            //@ts-ignore
+
             global.io = io;
-            // Initialize Cron Jobs (session auto-transition, reminders, etc.)
+
             cron_service_1.CronService.initializeCronJobs();
-            // Startup Summary
+
             const summary = [
                 `📝 Startup Summary:`,
                 `      - DB connected ${mongoose_1.default.connection.readyState === 1 ? '✅' : '❌'}`,
@@ -108,7 +108,7 @@ function main() {
             logger_1.errorLogger.error('❌ Database connection failed');
             (0, logger_1.notifyCritical)('Database Connection Failed', (error === null || error === void 0 ? void 0 : error.message) || 'Unknown error');
         }
-        //handle unhandleRejection
+
         process.on('unhandledRejection', error => {
             if (server) {
                 server.close(() => {
@@ -124,7 +124,7 @@ function main() {
     });
 }
 main();
-//SIGTERM
+
 process.on('SIGTERM', () => {
     logger_1.logger.info('SIGTERM IS RECEIVE');
     if (server) {

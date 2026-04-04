@@ -6,13 +6,13 @@ const sessionReviewSchema = new mongoose_1.Schema({
     sessionId: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'Session',
-        required: false, // Optional for admin-created reviews
-        sparse: true, // Allow multiple null values
+        required: false,
+        sparse: true,
     },
     studentId: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'User',
-        required: false, // Optional for admin-created reviews
+        required: false,
     },
     tutorId: {
         type: mongoose_1.Schema.Types.ObjectId,
@@ -70,7 +70,7 @@ const sessionReviewSchema = new mongoose_1.Schema({
     editedAt: {
         type: Date,
     },
-    // Admin-created review fields
+
     isAdminCreated: {
         type: Boolean,
         default: false,
@@ -81,13 +81,13 @@ const sessionReviewSchema = new mongoose_1.Schema({
         maxlength: [100, 'Reviewer name cannot exceed 100 characters'],
     },
 }, { timestamps: true });
-// Indexes
+
 sessionReviewSchema.index({ tutorId: 1, createdAt: -1 });
 sessionReviewSchema.index({ studentId: 1, createdAt: -1 });
-sessionReviewSchema.index({ sessionId: 1 }, { unique: true, sparse: true }); // sparse allows multiple null values
+sessionReviewSchema.index({ sessionId: 1 }, { unique: true, sparse: true });
 sessionReviewSchema.index({ overallRating: 1 });
-// Compound index for public reviews
+
 sessionReviewSchema.index({ tutorId: 1, isPublic: 1 });
-// Index for admin-created reviews
+
 sessionReviewSchema.index({ isAdminCreated: 1 });
 exports.SessionReview = (0, mongoose_1.model)('SessionReview', sessionReviewSchema);

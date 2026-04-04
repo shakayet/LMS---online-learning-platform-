@@ -1,14 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-/*
-  Global Stripe instrumentation patch
-  - Wraps commonly used Stripe SDK resource methods to emit OpenTelemetry spans
-  - Lives in logging folder and loads once during app bootstrap
-  - No changes needed in services/controllers — calls remain the same
-*/
+
 const api_1 = require("@opentelemetry/api");
 const stripe_1 = require("../../config/stripe");
-// Lightweight sanitizer to avoid leaking secrets in span attributes
+
 const sanitize = (value) => {
     try {
         return JSON.parse(JSON.stringify(value, (key, val) => {
@@ -35,7 +30,7 @@ function wrapMethod(resource, methodName, resourceLabel) {
         return tracer.startActiveSpan(opName, span => {
             const start = Date.now();
             try {
-                // Attach minimal request attributes (sanitized)
+
                 try {
                     span.setAttribute('stripe.resource', resourceLabel);
                 }
@@ -91,7 +86,7 @@ function wrapMethod(resource, methodName, resourceLabel) {
                         throw err;
                     });
                 }
-                // Non-promise path (rare for Stripe SDK)
+
                 try {
                     span.setAttribute('stripe.ms', Date.now() - start);
                 }
@@ -121,27 +116,27 @@ function wrapMethod(resource, methodName, resourceLabel) {
     };
 }
 try {
-    // Avoid double-patching in dev hot-reload
+
     if (!stripe_1.stripe.__otel_stripe_patched) {
-        // Accounts
+
         wrapMethod(stripe_1.stripe.accounts, 'create', 'accounts');
         wrapMethod(stripe_1.stripe.accounts, 'retrieve', 'accounts');
         wrapMethod(stripe_1.stripe.accounts, 'del', 'accounts');
         wrapMethod(stripe_1.stripe.accounts, 'list', 'accounts');
-        // Account Links
+
         wrapMethod(stripe_1.stripe.accountLinks, 'create', 'accountLinks');
-        // Payment Intents
+
         wrapMethod(stripe_1.stripe.paymentIntents, 'create', 'paymentIntents');
         wrapMethod(stripe_1.stripe.paymentIntents, 'retrieve', 'paymentIntents');
         wrapMethod(stripe_1.stripe.paymentIntents, 'capture', 'paymentIntents');
         wrapMethod(stripe_1.stripe.paymentIntents, 'cancel', 'paymentIntents');
-        // Transfers
+
         wrapMethod(stripe_1.stripe.transfers, 'create', 'transfers');
-        // Refunds
+
         wrapMethod(stripe_1.stripe.refunds, 'create', 'refunds');
-        // Webhook endpoints (diagnostics)
+
         wrapMethod(stripe_1.stripe.webhookEndpoints, 'list', 'webhookEndpoints');
-        // Webhooks.constructEvent (signature verification)
+
         if (stripe_1.stripe.webhooks && typeof stripe_1.stripe.webhooks.constructEvent === 'function') {
             const originalConstruct = stripe_1.stripe.webhooks.constructEvent.bind(stripe_1.stripe.webhooks);
             stripe_1.stripe.webhooks.constructEvent = function patchedConstructEvent(...args) {

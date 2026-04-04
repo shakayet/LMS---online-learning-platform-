@@ -24,7 +24,6 @@ const createUserToDB = async (payload: Partial<IUser>): Promise<IUser> => {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Failed to create user');
   }
 
-  // Log activity for user registration
   const roleLabel = createUser.role === USER_ROLES.STUDENT ? 'Student' :
                     createUser.role === USER_ROLES.TUTOR ? 'Tutor' : 'User';
   ActivityLogService.logActivity({
@@ -36,32 +35,6 @@ const createUserToDB = async (payload: Partial<IUser>): Promise<IUser> => {
     entityId: createUser._id,
     status: 'success',
   });
-
-  // NOTE: Email verification temporarily disabled
-  // Uncomment below to re-enable OTP email verification
-  /*
-  //send email
-  const otp = generateOTP();
-  const values = {
-    name: createUser.name,
-    otp: otp,
-    email: createUser.email!,
-  };
-  console.log('Sending email to:', createUser.email, 'with OTP:', otp);
-
-  const createAccountTemplate = emailTemplate.createAccount(values);
-  emailHelper.sendEmail(createAccountTemplate);
-
-  //save to DB
-  const authentication = {
-    oneTimeCode: otp,
-    expireAt: new Date(Date.now() + 3 * 60000),
-  };
-  await User.findOneAndUpdate(
-    { _id: createUser._id },
-    { $set: { authentication } }
-  );
-  */
 
   return createUser;
 };
@@ -90,12 +63,6 @@ const updateProfileToDB = async (
     throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
   }
 
-  // //unlink file here
-  // if (payload.image) {
-  //   unlinkFile(isExistUser.image);
-  // }
-
-  //unlink file here
   if (payload.profilePicture) {
     unlinkFile(isExistUser.profilePicture);
   }
@@ -130,17 +97,14 @@ const resendVerifyEmailToDB = async (email: string) => {
     throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
   }
 
-  // Generate new OTP
   const otp = generateOTP();
 
-  // Save OTP to DB
   const authentication = {
     oneTimeCode: otp,
-    expireAt: new Date(Date.now() + 3 * 60000), // 3 minutes
+    expireAt: new Date(Date.now() + 3 * 60000),
   };
   await User.findOneAndUpdate({ email }, { $set: { authentication } });
 
-  // Send email
   const emailData = emailTemplate.createAccount({
     name: isExistUser.name,
     email: isExistUser.email,
@@ -148,7 +112,7 @@ const resendVerifyEmailToDB = async (email: string) => {
   });
   await emailHelper.sendEmail(emailData);
 
-  return { otp }; // optional: just for logging/debugging
+  return { otp };
 };
 
 const updateUserStatus = async (id: string, status: USER_STATUS) => {
@@ -167,7 +131,7 @@ const updateUserStatus = async (id: string, status: USER_STATUS) => {
 };
 
 const getUserById = async (id: string) => {
-  // Only return user info; remove task/bid side data
+
   const user = await User.findById(id)
     .select('-password -authentication')
     .populate({
@@ -187,8 +151,6 @@ const getUserDetailsById = async (id: string) => {
   }
   return user;
 };
-
-// ============ ADMIN: STUDENT MANAGEMENT ============
 
 const getAllStudents = async (query: Record<string, unknown>) => {
   const studentQuery = new QueryBuilder(
@@ -251,8 +213,6 @@ const unblockStudent = async (id: string) => {
 
   return updatedUser;
 };
-
-// ============ ADMIN: TUTOR MANAGEMENT ============
 
 const getAllTutors = async (query: Record<string, unknown>) => {
   const tutorQuery = new QueryBuilder(
@@ -339,10 +299,6 @@ const updateTutorSubjects = async (id: string, subjects: string[]) => {
   return updatedUser;
 };
 
-/**
- * Admin: Update tutor profile (without password)
- * Admin can update all tutor fields except password
- */
 interface AdminUpdateTutorPayload {
   name?: string;
   email?: string;
@@ -372,17 +328,14 @@ const adminUpdateTutorProfile = async (
     throw new ApiError(StatusCodes.BAD_REQUEST, 'User is not a tutor');
   }
 
-  // Build update object
   const updateData: Record<string, unknown> = {};
 
-  // Update basic fields
   if (payload.name) updateData.name = payload.name;
   if (payload.email) updateData.email = payload.email;
   if (payload.phone !== undefined) updateData.phone = payload.phone;
   if (payload.dateOfBirth) updateData.dateOfBirth = payload.dateOfBirth;
   if (payload.location) updateData.location = payload.location;
 
-  // Update tutor profile fields
   if (payload.tutorProfile) {
     const tp = payload.tutorProfile;
     if (tp.address !== undefined) updateData['tutorProfile.address'] = tp.address;
@@ -408,10 +361,6 @@ const adminUpdateTutorProfile = async (
   return updatedUser;
 };
 
-/**
- * Admin: Update student profile (without password)
- * Admin can update all student fields except password
- */
 interface AdminUpdateStudentPayload {
   name?: string;
   email?: string;
@@ -432,10 +381,8 @@ const adminUpdateStudentProfile = async (
     throw new ApiError(StatusCodes.BAD_REQUEST, 'User is not a student');
   }
 
-  // Build update object
   const updateData: Record<string, unknown> = {};
 
-  // Update basic fields
   if (payload.name) updateData.name = payload.name;
   if (payload.email) updateData.email = payload.email;
   if (payload.phone !== undefined) updateData.phone = payload.phone;
@@ -451,11 +398,6 @@ const adminUpdateStudentProfile = async (
   return updatedUser;
 };
 
-// ============ TUTOR STATISTICS ============
-
-/**
- * Calculate tutor level based on completed sessions
- */
 const calculateTutorLevel = (completedSessions: number): TUTOR_LEVEL => {
   if (completedSessions >= 51) {
     return TUTOR_LEVEL.EXPERT;
@@ -465,61 +407,50 @@ const calculateTutorLevel = (completedSessions: number): TUTOR_LEVEL => {
   return TUTOR_LEVEL.STARTER;
 };
 
-/**
- * Get sessions to next level
- */
 const getSessionsToNextLevel = (
   completedSessions: number,
   currentLevel: TUTOR_LEVEL
 ): number | null => {
   switch (currentLevel) {
     case TUTOR_LEVEL.STARTER:
-      return 21 - completedSessions; // Need 21 for INTERMEDIATE
+      return 21 - completedSessions;
     case TUTOR_LEVEL.INTERMEDIATE:
-      return 51 - completedSessions; // Need 51 for EXPERT
+      return 51 - completedSessions;
     case TUTOR_LEVEL.EXPERT:
-      return null; // Already at max level
+      return null;
     default:
       return null;
   }
 };
 
 type TutorStatisticsResponse = {
-  // Level info
+
   currentLevel: TUTOR_LEVEL;
   sessionsToNextLevel: number | null;
   nextLevel: TUTOR_LEVEL | null;
 
-  // Session stats
   totalSessions: number;
   completedSessions: number;
   totalHoursTaught: number;
   totalStudents: number;
 
-  // Ratings
   averageRating: number;
   ratingsCount: number;
 
-  // Earnings
   totalEarnings: number;
   pendingEarnings: number;
 
-  // Feedback
   pendingFeedbackCount: number;
   overdueFeedbackCount: number;
 };
 
-/**
- * Get comprehensive tutor statistics
- */
 const getTutorStatistics = async (tutorId: string): Promise<TutorStatisticsResponse> => {
-  // Verify tutor exists
+
   const tutor = await User.findById(tutorId);
   if (!tutor || tutor.role !== USER_ROLES.TUTOR) {
     throw new ApiError(StatusCodes.FORBIDDEN, 'Only tutors can access this endpoint');
   }
 
-  // Get session stats
   const sessionStats = await Session.aggregate([
     {
       $match: {
@@ -562,7 +493,6 @@ const getTutorStatistics = async (tutorId: string): Promise<TutorStatisticsRespo
     totalStudents: 0,
   };
 
-  // Get earnings
   const earningsStats = await TutorEarnings.aggregate([
     {
       $match: {
@@ -589,13 +519,11 @@ const getTutorStatistics = async (tutorId: string): Promise<TutorStatisticsRespo
     pendingEarnings: 0,
   };
 
-  // Get pending feedback count
   const pendingFeedbackCount = await TutorSessionFeedback.countDocuments({
     tutorId: new Types.ObjectId(tutorId),
     status: FEEDBACK_STATUS.PENDING,
   });
 
-  // Get overdue feedback count
   const now = new Date();
   const overdueFeedbackCount = await TutorSessionFeedback.countDocuments({
     tutorId: new Types.ObjectId(tutorId),
@@ -603,11 +531,9 @@ const getTutorStatistics = async (tutorId: string): Promise<TutorStatisticsRespo
     dueDate: { $lt: now },
   });
 
-  // Calculate level
   const currentLevel = calculateTutorLevel(stats.completedSessions);
   const sessionsToNextLevel = getSessionsToNextLevel(stats.completedSessions, currentLevel);
 
-  // Determine next level
   let nextLevel: TUTOR_LEVEL | null = null;
   if (currentLevel === TUTOR_LEVEL.STARTER) {
     nextLevel = TUTOR_LEVEL.INTERMEDIATE;
@@ -632,25 +558,19 @@ const getTutorStatistics = async (tutorId: string): Promise<TutorStatisticsRespo
   };
 };
 
-/**
- * Update tutor level after session completion
- */
 const updateTutorLevelAfterSession = async (tutorId: string): Promise<void> => {
   const tutor = await User.findById(tutorId);
   if (!tutor || tutor.role !== USER_ROLES.TUTOR) {
     return;
   }
 
-  // Get completed sessions count
   const completedSessions = await Session.countDocuments({
     tutorId: new Types.ObjectId(tutorId),
     status: SESSION_STATUS.COMPLETED,
   });
 
-  // Calculate new level
   const newLevel = calculateTutorLevel(completedSessions);
 
-  // Update if level changed
   if (tutor.tutorProfile?.level !== newLevel) {
     await User.findByIdAndUpdate(tutorId, {
       'tutorProfile.level': newLevel,
@@ -658,7 +578,7 @@ const updateTutorLevelAfterSession = async (tutorId: string): Promise<void> => {
       'tutorProfile.completedSessions': completedSessions,
     });
   } else {
-    // Just update the session count
+
     await User.findByIdAndUpdate(tutorId, {
       'tutorProfile.completedSessions': completedSessions,
     });
@@ -674,18 +594,18 @@ export const UserService = {
   updateUserStatus,
   getUserById,
   getUserDetailsById,
-  // Admin: Student Management
+
   getAllStudents,
   blockStudent,
   unblockStudent,
   adminUpdateStudentProfile,
-  // Admin: Tutor Management
+
   getAllTutors,
   blockTutor,
   unblockTutor,
   updateTutorSubjects,
   adminUpdateTutorProfile,
-  // Tutor Statistics
+
   getTutorStatistics,
   updateTutorLevelAfterSession,
   calculateTutorLevel,

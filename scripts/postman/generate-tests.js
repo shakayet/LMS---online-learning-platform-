@@ -1,27 +1,6 @@
 const fs = require('fs');
 const path = require('path');
 
-/**
- * Enhanced Test Script Generator for Postman Collections
- *
- * Generates comprehensive test scripts with advanced features:
- * - AI-powered dynamic tests
- * - Mongoose schema integration
- * - Contract testing
- * - Performance regression tracking
- * - Security vulnerability testing
- * - Test coverage reports
- *
- * Usage:
- *   node scripts/postman/generate-tests.js                    # Basic generation
- *   node scripts/postman/generate-tests.js --use-schemas      # With schema validation
- *   node scripts/postman/generate-tests.js --ai-powered       # AI-powered tests
- *   node scripts/postman/generate-tests.js --create-baseline  # Create contract baseline
- *   node scripts/postman/generate-tests.js --verify-contract  # Verify against baseline
- *   node scripts/postman/generate-tests.js --run-and-report   # Generate and run with report
- *   node scripts/postman/generate-tests.js --ci-config        # Generate CI/CD config
- */
-
 class TestScriptGenerator {
   constructor(options = {}) {
     this.options = {
@@ -52,15 +31,11 @@ class TestScriptGenerator {
     };
   }
 
-  /**
-   * Main method to generate tests
-   */
   async generate() {
     try {
       console.log('🧪 Enhanced Test Script Generator\n');
       console.log('Options:', this.options, '\n');
 
-      // Load existing collection
       const collectionPath = path.join(
         process.cwd(),
         'postman-collections',
@@ -75,24 +50,20 @@ class TestScriptGenerator {
 
       const collection = JSON.parse(fs.readFileSync(collectionPath, 'utf8'));
 
-      // Load schemas if requested
       if (this.options.useSchemas) {
         console.log('📚 Loading Mongoose schemas...');
         await this.loadMongooseSchemas();
         console.log(`✅ Loaded ${Object.keys(this.schemas).length} schemas\n`);
       }
 
-      // Load baseline for contract testing
       if (this.options.verifyContract) {
         console.log('📋 Loading contract baseline...');
         this.loadBaseline();
       }
 
-      // Process collection
       console.log('🔨 Generating tests...\n');
       this.processCollection(collection);
 
-      // Save updated collection
       const outputPath = this.options.merge
         ? collectionPath
         : path.join(
@@ -101,7 +72,6 @@ class TestScriptGenerator {
             'complete-api-collection-with-tests.json'
           );
 
-      // Backup if merging
       if (this.options.merge && fs.existsSync(collectionPath)) {
         const backupPath = collectionPath.replace(
           '.json',
@@ -114,12 +84,10 @@ class TestScriptGenerator {
       fs.writeFileSync(outputPath, JSON.stringify(collection, null, 2));
       console.log(`\n✅ Collection with tests saved: ${path.basename(outputPath)}`);
 
-      // Save baseline if requested
       if (this.options.createBaseline) {
         this.saveBaseline(collection);
       }
 
-      // Generate reports
       this.generateSummary();
 
       if (this.options.generateReport) {
@@ -135,9 +103,6 @@ class TestScriptGenerator {
     }
   }
 
-  /**
-   * Process entire collection
-   */
   processCollection(collection) {
     if (!collection.item) return;
 
@@ -164,9 +129,6 @@ class TestScriptGenerator {
     });
   }
 
-  /**
-   * Process individual request
-   */
   processRequest(request, moduleName) {
     if (!request.request) return;
 
@@ -177,7 +139,6 @@ class TestScriptGenerator {
     const url = request.request.url.raw || request.request.url;
     const path = this.extractPath(url);
 
-    // Generate tests based on endpoint type
     const tests = this.generateTestsForEndpoint(
       method,
       path,
@@ -185,12 +146,10 @@ class TestScriptGenerator {
       request
     );
 
-    // Add tests to request
     if (!request.event) {
       request.event = [];
     }
 
-    // Remove existing test script if any
     const testEventIndex = request.event.findIndex(
       e => e.listen === 'test'
     );
@@ -198,7 +157,6 @@ class TestScriptGenerator {
       request.event.splice(testEventIndex, 1);
     }
 
-    // Add new test script
     request.event.push({
       listen: 'test',
       script: {
@@ -211,36 +169,27 @@ class TestScriptGenerator {
     this.testResults.byModule[moduleName].generated++;
   }
 
-  /**
-   * Generate tests for specific endpoint
-   */
   generateTestsForEndpoint(method, path, moduleName, request) {
     const tests = [];
 
-    // Add header comment
-    tests.push(`// 🧪 Auto-generated Tests - ${method} ${path}`);
+    tests.push(`
     tests.push('');
 
-    // Determine endpoint type
     const endpointType = this.detectEndpointType(method, path, moduleName);
 
-    // Status code tests
     tests.push(...this.generateStatusCodeTests(method, endpointType));
     this.testResults.byType.statusCode++;
 
-    // Response time tests
     if (this.options.includePerformance) {
       tests.push(...this.generateResponseTimeTests(method, path));
       this.testResults.byType.responseTime++;
     }
 
-    // Schema validation tests
     tests.push(
       ...this.generateSchemaTests(method, path, moduleName, endpointType)
     );
     this.testResults.byType.schema++;
 
-    // Endpoint-specific tests
     switch (endpointType) {
       case 'auth_login':
       case 'auth_register':
@@ -264,24 +213,20 @@ class TestScriptGenerator {
         break;
     }
 
-    // Security tests
     if (this.options.includeSecurity) {
       tests.push(...this.generateSecurityTests(method, path));
       this.testResults.byType.security++;
     }
 
-    // Performance regression tests
     if (this.options.includePerformance) {
       tests.push(...this.generatePerformanceRegressionTests(method, path));
       this.testResults.byType.performance++;
     }
 
-    // Contract tests
     if (this.options.verifyContract) {
       tests.push(...this.generateContractTests(method, path));
     }
 
-    // AI-powered tests
     if (this.options.aiPowered) {
       tests.push(...this.generateAIPoweredTests(method, path, moduleName));
     }
@@ -289,11 +234,8 @@ class TestScriptGenerator {
     return tests;
   }
 
-  /**
-   * Detect endpoint type
-   */
   detectEndpointType(method, path, moduleName) {
-    // Auth patterns
+
     if (path.includes('/login')) return 'auth_login';
     if (path.includes('/register')) return 'auth_register';
     if (path.includes('/logout')) return 'auth_logout';
@@ -301,10 +243,8 @@ class TestScriptGenerator {
     if (path.includes('/forget-password')) return 'auth_forget';
     if (path.includes('/reset-password')) return 'auth_reset';
 
-    // Payment patterns
     if (moduleName === 'payment') return 'payment';
 
-    // CRUD patterns
     if (method === 'POST' && !path.includes(':')) return 'create';
     if (method === 'GET' && path.includes(':id')) return 'read_single';
     if (method === 'GET') return 'read_list';
@@ -314,12 +254,9 @@ class TestScriptGenerator {
     return 'unknown';
   }
 
-  /**
-   * Generate status code tests
-   */
   generateStatusCodeTests(method, endpointType) {
     const tests = [];
-    tests.push('// ✅ Status Code Validation');
+    tests.push('
 
     let expectedCode = 200;
     if (method === 'POST' && endpointType === 'create') expectedCode = 201;
@@ -339,19 +276,15 @@ class TestScriptGenerator {
     return tests;
   }
 
-  /**
-   * Generate response time tests
-   */
   generateResponseTimeTests(method, path) {
     const tests = [];
-    tests.push('// ⏱️ Response Time Validation');
+    tests.push('
 
-    // Determine threshold based on endpoint
-    let threshold = 1000; // Default 1 second
+    let threshold = 1000;
     if (path.includes('/payment')) threshold = 2000;
     if (path.includes('/upload') || path.includes('/file'))
       threshold = 3000;
-    if (method === 'GET' && !path.includes(':')) threshold = 800; // List endpoints
+    if (method === 'GET' && !path.includes(':')) threshold = 800;
 
     tests.push(
       `pm.test("✓ Response time under ${threshold}ms", () => {`
@@ -365,12 +298,9 @@ class TestScriptGenerator {
     return tests;
   }
 
-  /**
-   * Generate schema validation tests
-   */
   generateSchemaTests(method, path, moduleName, endpointType) {
     const tests = [];
-    tests.push('// 📋 Schema Validation');
+    tests.push('
 
     tests.push('pm.test("✓ Response has data property", () => {');
     tests.push('    const response = pm.response.json();');
@@ -378,7 +308,6 @@ class TestScriptGenerator {
     tests.push('});');
     tests.push('');
 
-    // Schema-based validation if available
     if (this.options.useSchemas && this.schemas[moduleName]) {
       tests.push(
         ...this.generateSchemaBasedTests(moduleName, this.schemas[moduleName])
@@ -388,9 +317,6 @@ class TestScriptGenerator {
     return tests;
   }
 
-  /**
-   * Generate schema-based tests (from Mongoose models)
-   */
   generateSchemaBasedTests(moduleName, schema) {
     const tests = [];
 
@@ -426,12 +352,9 @@ class TestScriptGenerator {
     return tests;
   }
 
-  /**
-   * Generate auth-specific tests
-   */
   generateAuthTests(method) {
     const tests = [];
-    tests.push('// 🔐 Authentication Tests');
+    tests.push('
 
     tests.push('pm.test("✓ Access token received", () => {');
     tests.push('    const response = pm.response.json();');
@@ -483,12 +406,9 @@ class TestScriptGenerator {
     return tests;
   }
 
-  /**
-   * Generate create endpoint tests
-   */
   generateCreateTests(moduleName) {
     const tests = [];
-    tests.push('// ➕ Create Operation Tests');
+    tests.push('
 
     tests.push('pm.test("✓ Resource created with ID", () => {');
     tests.push('    const response = pm.response.json();');
@@ -512,22 +432,19 @@ class TestScriptGenerator {
     return tests;
   }
 
-  /**
-   * Generate read endpoint tests
-   */
   generateReadTests(method, path) {
     const tests = [];
-    tests.push('// 📖 Read Operation Tests');
+    tests.push('
 
     if (path.includes(':id')) {
-      // Single item
+
       tests.push('pm.test("✓ Single item retrieved", () => {');
       tests.push('    const response = pm.response.json();');
       tests.push('    pm.expect(response.data).to.be.an("object");');
       tests.push('    pm.expect(response.data).to.have.property("_id");');
       tests.push('});');
     } else {
-      // List
+
       tests.push('pm.test("✓ List retrieved", () => {');
       tests.push('    const response = pm.response.json();');
       tests.push('    pm.expect(response.data).to.be.an("array");');
@@ -546,12 +463,9 @@ class TestScriptGenerator {
     return tests;
   }
 
-  /**
-   * Generate update endpoint tests
-   */
   generateUpdateTests() {
     const tests = [];
-    tests.push('// 🔄 Update Operation Tests');
+    tests.push('
 
     tests.push('pm.test("✓ Update successful", () => {');
     tests.push('    pm.response.to.have.status(200);');
@@ -569,12 +483,9 @@ class TestScriptGenerator {
     return tests;
   }
 
-  /**
-   * Generate delete endpoint tests
-   */
   generateDeleteTests() {
     const tests = [];
-    tests.push('// 🗑️ Delete Operation Tests');
+    tests.push('
 
     tests.push('pm.test("✓ Delete successful", () => {');
     tests.push('    pm.response.to.have.status(200);');
@@ -593,12 +504,9 @@ class TestScriptGenerator {
     return tests;
   }
 
-  /**
-   * Generate payment-specific tests
-   */
   generatePaymentTests() {
     const tests = [];
-    tests.push('// 💳 Payment Tests');
+    tests.push('
 
     tests.push('pm.test("✓ Payment data valid", () => {');
     tests.push('    const response = pm.response.json();');
@@ -617,14 +525,10 @@ class TestScriptGenerator {
     return tests;
   }
 
-  /**
-   * Generate security tests
-   */
   generateSecurityTests(method, path) {
     const tests = [];
-    tests.push('// 🔒 Security Tests');
+    tests.push('
 
-    // Check authorization header for protected routes
     if (!path.includes('/login') && !path.includes('/register')) {
       tests.push('pm.test("✓ Authorization required", () => {');
       tests.push('    const hasAuthHeader = pm.request.headers.has("Authorization");');
@@ -633,7 +537,6 @@ class TestScriptGenerator {
       tests.push('');
     }
 
-    // Check for sensitive data exposure
     tests.push('pm.test("✓ No sensitive data exposed", () => {');
     tests.push('    const responseBody = pm.response.text().toLowerCase();');
     tests.push('    pm.expect(responseBody).to.not.include("password");');
@@ -645,12 +548,9 @@ class TestScriptGenerator {
     return tests;
   }
 
-  /**
-   * Generate performance regression tests
-   */
   generatePerformanceRegressionTests(method, path) {
     const tests = [];
-    tests.push('// 📊 Performance Regression Tests');
+    tests.push('
 
     const varName = this.pathToVarName(method, path);
 
@@ -680,15 +580,12 @@ class TestScriptGenerator {
     return tests;
   }
 
-  /**
-   * Generate contract tests
-   */
   generateContractTests(method, path) {
     const tests = [];
 
     if (!this.baseline) return tests;
 
-    tests.push('// 📋 Contract Validation Tests');
+    tests.push('
     tests.push('pm.test("✓ Response structure matches contract", () => {');
     tests.push('    const response = pm.response.json();');
     tests.push('    // Contract validation logic here');
@@ -700,12 +597,9 @@ class TestScriptGenerator {
     return tests;
   }
 
-  /**
-   * Generate AI-powered tests
-   */
   generateAIPoweredTests(method, path, moduleName) {
     const tests = [];
-    tests.push('// 🤖 AI-Powered Dynamic Tests');
+    tests.push('
 
     tests.push('pm.test("✓ Response data types consistent", () => {');
     tests.push('    const response = pm.response.json();');
@@ -744,9 +638,6 @@ class TestScriptGenerator {
     return tests;
   }
 
-  /**
-   * Load Mongoose schemas from model files
-   */
   async loadMongooseSchemas() {
     const modulesPath = path.join(process.cwd(), 'src', 'app', 'modules');
 
@@ -780,9 +671,6 @@ class TestScriptGenerator {
     }
   }
 
-  /**
-   * Parse Mongoose schema from model file
-   */
   parseMongooseSchema(filePath) {
     const content = fs.readFileSync(filePath, 'utf8');
     const schema = {
@@ -791,7 +679,6 @@ class TestScriptGenerator {
       enums: {},
     };
 
-    // Extract required fields
     const requiredMatches = content.matchAll(
       /(\w+):\s*\{[^}]*required:\s*true/g
     );
@@ -799,13 +686,11 @@ class TestScriptGenerator {
       schema.required.push(match[1]);
     }
 
-    // Extract field types
     const typeMatches = content.matchAll(/(\w+):\s*\{[^}]*type:\s*(\w+)/g);
     for (const match of typeMatches) {
       schema.types[match[1]] = match[2];
     }
 
-    // Extract enums
     const enumMatches = content.matchAll(
       /(\w+):\s*\{[^}]*enum:\s*\[([^\]]+)\]/g
     );
@@ -1178,7 +1063,6 @@ Features:
 `);
 }
 
-// Run if called directly
 if (require.main === module) {
   main().catch(console.error);
 }

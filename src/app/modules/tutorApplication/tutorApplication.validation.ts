@@ -1,9 +1,8 @@
 import { z } from 'zod';
 
-// Create application validation (PUBLIC - creates user + application)
 const createApplicationZodSchema = z.object({
   body: z.object({
-    // Auth fields (new user creation)
+
     email: z
       .string({
         required_error: 'Email is required',
@@ -17,7 +16,6 @@ const createApplicationZodSchema = z.object({
       })
       .min(8, 'Password must be at least 8 characters'),
 
-    // Personal info
     name: z
       .string({
         required_error: 'Name is required',
@@ -40,7 +38,6 @@ const createApplicationZodSchema = z.object({
       .trim()
       .min(5, 'Phone number must be at least 5 characters'),
 
-    // Address (structured)
     street: z
       .string({
         required_error: 'Street is required',
@@ -69,12 +66,10 @@ const createApplicationZodSchema = z.object({
       .trim()
       .min(2, 'City must be at least 2 characters'),
 
-    // Subjects (multiple selection)
     subjects: z
       .array(z.string().trim().min(1, 'Subject cannot be empty'))
       .min(1, 'At least one subject is required'),
 
-    // Documents (all mandatory)
     cv: z
       .string({
         required_error: 'CV is required',
@@ -95,7 +90,6 @@ const createApplicationZodSchema = z.object({
   }),
 });
 
-// Update application status (admin only) - simplified
 const updateApplicationStatusZodSchema = z.object({
   body: z.object({
     status: z
@@ -113,21 +107,18 @@ const updateApplicationStatusZodSchema = z.object({
   }),
 });
 
-// Select for interview (admin only)
 const selectForInterviewZodSchema = z.object({
   body: z.object({
     adminNotes: z.string().trim().optional(),
   }),
 });
 
-// Approve application (admin only)
 const approveApplicationZodSchema = z.object({
   body: z.object({
     adminNotes: z.string().trim().optional(),
   }),
 });
 
-// Reject application (admin only)
 const rejectApplicationZodSchema = z.object({
   body: z.object({
     rejectionReason: z
@@ -139,7 +130,6 @@ const rejectApplicationZodSchema = z.object({
   }),
 });
 
-// Send for revision (admin only)
 const sendForRevisionZodSchema = z.object({
   body: z.object({
     revisionNote: z
@@ -151,7 +141,6 @@ const sendForRevisionZodSchema = z.object({
   }),
 });
 
-// Update my application (applicant only - when in REVISION status)
 const updateMyApplicationZodSchema = z.object({
   body: z.object({
     cv: z.string().url('CV must be a valid URL').optional(),

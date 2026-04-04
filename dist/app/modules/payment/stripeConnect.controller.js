@@ -50,7 +50,7 @@ const getOnboardingLinkController = (0, catchAsync_1.default)((req, res) => __aw
         },
     });
 }));
-// Check onboarding status
+
 const checkOnboardingStatusController = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const user = req.user;
     const userId = user.id;
@@ -65,7 +65,7 @@ const checkOnboardingStatusController = (0, catchAsync_1.default)((req, res) => 
         data: status,
     });
 }));
-// Handle Stripe webhook
+
 const handleStripeWebhookController = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const event = req.body;
     if (!event || !event.type) {

@@ -1,15 +1,7 @@
 #!/usr/bin/env node
 
-/**
- * 🎓 Smart Commit - Complete Tutorial (Senior → Junior Explanation)
- * ==================================================================
- * এই ফাইলটা একদম শুরু থেকে শেষ পর্যন্ত বুঝাবে
- * যেন একজন junior developer ও সহজে বুঝতে পারে
- */
-
 const { execSync } = require('child_process');
 
-// Colors for terminal
 const colors = {
   reset: '\x1b[0m',
   bright: '\x1b[1m',
@@ -61,10 +53,6 @@ function realLife(text) {
   print(`\n   ${c.yellow}🌍 Real Life Example: ${text}${c.reset}`);
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// START TUTORIAL
-// ═══════════════════════════════════════════════════════════════════════════════
-
 print(`
 ${c.bright}${c.cyan}
 ╔══════════════════════════════════════════════════════════════════════════════╗
@@ -75,10 +63,6 @@ ${c.bright}${c.cyan}
 ╚══════════════════════════════════════════════════════════════════════════════╝
 ${c.reset}
 `);
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// PART 1: WHY WE NEED THIS
-// ═══════════════════════════════════════════════════════════════════════════════
 
 section('📚 PART 1: কেন এই Tool দরকার?');
 
@@ -108,10 +92,6 @@ print(`
 realLife(`ধরো তোমার app এ bug হলো। তুমি git log দেখছো কবে এই bug আসলো।
    "update", "update", "fix", "update" - এগুলো দেখে কিছু বুঝবে?
    কিন্তু "fix(payment): handle null in refund" দেখলে সাথে সাথে বুঝবে!`);
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// PART 2: CONVENTIONAL COMMITS
-// ═══════════════════════════════════════════════════════════════════════════════
 
 section('📚 PART 2: Conventional Commits কী?');
 
@@ -200,17 +180,12 @@ print(`
    └── bug fix করেছে
 `);
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// PART 3: HOW THE SCRIPT WORKS
-// ═══════════════════════════════════════════════════════════════════════════════
-
 section('📚 PART 3: Script কিভাবে কাজ করে (Step by Step)');
 
 junior('ভাইয়া, এখন বুঝলাম কেন দরকার। কিন্তু script টা ভেতরে কী করে?');
 
 senior('চলো একদম শুরু থেকে দেখি, প্রতিটা step...');
 
-// STEP 1
 subsection('🔍 STEP 1: Git থেকে Changed Files নেওয়া');
 
 print(`
@@ -251,7 +226,6 @@ realLife(`ধরো তুমি ৩টা file change করেছো:
 
    Git বলবে: M auth.service.ts, A new-helper.ts, D old-code.ts`);
 
-// STEP 2
 subsection('🔍 STEP 2: Files কে Object এ রূপান্তর');
 
 junior('ভাইয়া, "M src/app/auth.ts" এই string দিয়ে কী করবো?');
@@ -282,7 +256,6 @@ print(`
    ✅ এটা দিয়ে check করা সহজ - if (file.isModified) 😊
 `);
 
-// STEP 3
 subsection('🔍 STEP 3: Scope Detection (কোন area তে কাজ করেছো)');
 
 junior('ভাইয়া, file path থেকে scope কিভাবে বের করবো?');
@@ -338,7 +311,6 @@ realLife(`তুমি এই files change করলে:
    সব scopes: [auth, auth, user] → unique: [auth, user]
    Final scope: "auth,user" (multiple scopes)`);
 
-// STEP 4
 subsection('🔍 STEP 4: Diff Analysis (Code এর ভেতরে কী লেখা আছে)');
 
 junior('ভাইয়া, শুধু file path দেখলেই তো হবে না। ভেতরে কী লিখেছি সেটা?');
@@ -400,7 +372,6 @@ if (/export\\s+(class|function)/.test(addedLines)) {
 }
 `);
 
-// STEP 5
 subsection('🔍 STEP 5: Score Calculation & Winner Selection');
 
 junior('ভাইয়া, যদি একসাথে fix ও feat দুটোই match করে?');
@@ -447,7 +418,6 @@ const fixConfidence = (2 / 4) + 0.3 = 0.8 = 80%
 // 80% = ████████░░
 `);
 
-// STEP 6
 subsection('🔍 STEP 6: Smart Subject Generation');
 
 junior('ভাইয়া, type পেলাম। কিন্তু subject কিভাবে লিখবো?');
@@ -524,7 +494,6 @@ function generateSubject(analysis) {
 }
 `);
 
-// STEP 7
 subsection('🔍 STEP 7: Final Message Assembly');
 
 junior('সব পেলাম! এখন কিভাবে জোড়া লাগাবো?');
@@ -565,10 +534,6 @@ print(`
    If > 3 scopes:
      "feat: add modules"  (no scope - too many)
 `);
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// PART 4: COMPLETE FLOW
-// ═══════════════════════════════════════════════════════════════════════════════
 
 section('📚 PART 4: Complete Flow (এক নজরে)');
 
@@ -633,10 +598,6 @@ print(`
    ${c.reset}
 `);
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// PART 5: PRACTICE QUIZ
-// ═══════════════════════════════════════════════════════════════════════════════
-
 section('📚 PART 5: Practice Quiz (নিজে চেষ্টা করো!)');
 
 print(`
@@ -650,10 +611,6 @@ print(`
    Diff contains: "add Google OAuth login", "implement social auth"
 
    ${c.gray}তোমার উত্তর চিন্তা করো...${c.reset}
-
-
-
-
 
    ${c.green}✅ Answer: feat(auth): add auth module${c.reset}
    কারণ:
@@ -672,10 +629,6 @@ print(`
 
    ${c.gray}তোমার উত্তর চিন্তা করো...${c.reset}
 
-
-
-
-
    ${c.green}✅ Answer: fix(payment): fix payment module${c.reset}
    কারণ:
    - payment module এ → scope: payment
@@ -691,10 +644,6 @@ print(`
    - doc/api-reference.md (M)
 
    ${c.gray}তোমার উত্তর চিন্তা করো...${c.reset}
-
-
-
-
 
    ${c.green}✅ Answer: docs: update documentation${c.reset}
    কারণ:
@@ -713,20 +662,12 @@ print(`
 
    ${c.gray}তোমার উত্তর চিন্তা করো...${c.reset}
 
-
-
-
-
    ${c.green}✅ Answer: perf(builder): optimize multiple builders (Query, Aggregation)${c.reset}
    কারণ:
    - builder files → scope: builder
    - "optimize", "caching", "performance" → type: perf
    - 2 builders → subject: "multiple builders (Query, Aggregation)"
 `);
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// PART 6: TIPS & BEST PRACTICES
-// ═══════════════════════════════════════════════════════════════════════════════
 
 section('📚 PART 6: Tips & Best Practices');
 
@@ -782,7 +723,6 @@ print(`
       যেমন: feat(api)!: change response format
 `);
 
-// END
 print(`
 ${c.cyan}${'═'.repeat(75)}${c.reset}
 ${c.bright}${c.green}

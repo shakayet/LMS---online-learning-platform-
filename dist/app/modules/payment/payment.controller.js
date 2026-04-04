@@ -43,7 +43,7 @@ const ApiError_1 = __importDefault(require("../../../errors/ApiError"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const payment_service_1 = __importStar(require("./payment.service"));
 const stripeConnect_service_1 = __importDefault(require("./stripeConnect.service"));
-// Get current intent (and client_secret if applicable) by bidId
+
 exports.getCurrentIntentByBidController = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { bidId } = req.params;
     if (!bidId) {
@@ -59,7 +59,7 @@ exports.getCurrentIntentByBidController = (0, catchAsync_1.default)((req, res) =
         data: result,
     });
 }));
-// Refund escrow payment
+
 exports.refundPaymentController = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { paymentId } = req.params;
     const { reason } = req.body;
@@ -77,7 +77,7 @@ exports.refundPaymentController = (0, catchAsync_1.default)((req, res) => __awai
         },
     });
 }));
-// Get payment by ID
+
 exports.getPaymentByIdController = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { paymentId } = req.params;
     if (!paymentId) {
@@ -94,10 +94,10 @@ exports.getPaymentByIdController = (0, catchAsync_1.default)((req, res) => __awa
         data: payment,
     });
 }));
-// Get payments with filters and pagination
+
 exports.getPaymentsController = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { status, clientId, freelancerId, bidId, dateFrom, dateTo, page = 1, limit = 10, } = req.query;
-    // Build filters object
+
     const filters = {};
     if (status)
         filters.status = status;
@@ -125,7 +125,7 @@ exports.getPaymentsController = (0, catchAsync_1.default)((req, res) => __awaite
         },
     });
 }));
-// Get payment statistics
+
 exports.getPaymentStatsController = (0, catchAsync_1.default)((_req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const stats = yield (0, payment_service_1.getPaymentStatsOverview)();
     (0, sendResponse_1.default)(res, {
@@ -145,7 +145,7 @@ const deleteStripeAccountController = (0, catchAsync_1.default)((req, res) => __
         data: deletedAccount,
     });
 }));
-// Get payment history for poster, tasker, super admin
+
 const getPaymentHistoryController = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.user;
     const query = req.query;

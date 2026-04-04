@@ -17,8 +17,7 @@ const http_status_codes_1 = require("http-status-codes");
 const catchAsync_1 = __importDefault(require("../../../shared/catchAsync"));
 const sendResponse_1 = __importDefault(require("../../../shared/sendResponse"));
 const supportTicket_service_1 = require("./supportTicket.service");
-// ============ USER ROUTES (Student/Tutor) ============
-// Create a new support ticket
+
 const createSupportTicket = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const userId = req.user.id;
     const userRole = req.user.role === 'STUDENT' ? 'STUDENT' : 'TUTOR';
@@ -30,7 +29,7 @@ const createSupportTicket = (0, catchAsync_1.default)((req, res) => __awaiter(vo
         data: result,
     });
 }));
-// Get my tickets (for logged-in user)
+
 const getMyTickets = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const userId = req.user.id;
     const result = yield supportTicket_service_1.SupportTicketService.getMyTickets(userId, req.query);
@@ -42,7 +41,7 @@ const getMyTickets = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, v
         pagination: result.pagination,
     });
 }));
-// Get single ticket (for logged-in user - only their own)
+
 const getMyTicketById = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { ticketId } = req.params;
     const userId = req.user.id;
@@ -54,7 +53,7 @@ const getMyTicketById = (0, catchAsync_1.default)((req, res) => __awaiter(void 0
         data: result,
     });
 }));
-// Get ticket categories (public - for dropdown)
+
 const getTicketCategories = (0, catchAsync_1.default)((_req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const result = supportTicket_service_1.SupportTicketService.getTicketCategories();
     (0, sendResponse_1.default)(res, {
@@ -64,8 +63,7 @@ const getTicketCategories = (0, catchAsync_1.default)((_req, res) => __awaiter(v
         data: result,
     });
 }));
-// ============ ADMIN ROUTES ============
-// Get all tickets (admin only)
+
 const getAllTickets = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield supportTicket_service_1.SupportTicketService.getAllTickets(req.query);
     (0, sendResponse_1.default)(res, {
@@ -76,7 +74,7 @@ const getAllTickets = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
         pagination: result.pagination,
     });
 }));
-// Get single ticket by ID (admin only)
+
 const getTicketById = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { ticketId } = req.params;
     const result = yield supportTicket_service_1.SupportTicketService.getTicketById(ticketId);
@@ -87,7 +85,7 @@ const getTicketById = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
         data: result,
     });
 }));
-// Update ticket status (admin only)
+
 const updateTicketStatus = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { ticketId } = req.params;
     const { status, adminNotes } = req.body;
@@ -99,7 +97,7 @@ const updateTicketStatus = (0, catchAsync_1.default)((req, res) => __awaiter(voi
         data: result,
     });
 }));
-// Update ticket priority (admin only)
+
 const updateTicketPriority = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { ticketId } = req.params;
     const { priority } = req.body;
@@ -111,7 +109,7 @@ const updateTicketPriority = (0, catchAsync_1.default)((req, res) => __awaiter(v
         data: result,
     });
 }));
-// Assign ticket to admin
+
 const assignTicket = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { ticketId } = req.params;
     const { assignedTo } = req.body;
@@ -123,7 +121,7 @@ const assignTicket = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, v
         data: result,
     });
 }));
-// Add admin notes
+
 const addAdminNotes = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { ticketId } = req.params;
     const { adminNotes } = req.body;
@@ -135,7 +133,7 @@ const addAdminNotes = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
         data: result,
     });
 }));
-// Get ticket statistics (admin dashboard)
+
 const getTicketStats = (0, catchAsync_1.default)((_req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield supportTicket_service_1.SupportTicketService.getTicketStats();
     (0, sendResponse_1.default)(res, {

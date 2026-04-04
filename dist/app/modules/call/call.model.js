@@ -78,7 +78,7 @@ const callSchema = new mongoose_1.Schema({
         default: 0,
     },
 }, { timestamps: true });
-// Indexes for faster queries
+
 callSchema.index({ participants: 1 });
 callSchema.index({ initiator: 1, createdAt: -1 });
 callSchema.index({ receiver: 1, createdAt: -1 });

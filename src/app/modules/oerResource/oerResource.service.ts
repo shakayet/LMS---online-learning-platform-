@@ -8,12 +8,10 @@ import {
   IOERSIHit,
 } from './oerResource.interface';
 
-// Cache with 5 minute TTL
 const cache = new NodeCache({ stdTTL: 300, checkperiod: 60 });
 
 const OERSI_API_URL = 'https://oersi.org/resources/api/search/oer_data/_search';
 
-// Subject mapping for OERSI
 const SUBJECT_MAP: Record<string, string> = {
   Mathematics: 'mathematics',
   Mathematik: 'mathematics',
@@ -35,7 +33,6 @@ const SUBJECT_MAP: Record<string, string> = {
   Chemie: 'chemistry',
 };
 
-// Resource type mapping
 const TYPE_MAP: Record<string, string> = {
   PDF: 'text',
   Video: 'video',
@@ -44,29 +41,24 @@ const TYPE_MAP: Record<string, string> = {
   Image: 'image',
 };
 
-// Transform OERSI hit to our resource format
 const transformOERSIHit = (hit: IOERSIHit): IOERResource => {
   const source = hit._source;
 
-  // Get subject from about field
   const subject =
     source.about?.[0]?.prefLabel?.de ||
     source.about?.[0]?.prefLabel?.en ||
     'General';
 
-  // Get grade/educational level
   const grade =
     source.educationalLevel?.[0]?.prefLabel?.de ||
     source.educationalLevel?.[0]?.prefLabel?.en ||
     '';
 
-  // Get resource type
   const type =
     source.learningResourceType?.[0]?.prefLabel?.de ||
     source.learningResourceType?.[0]?.prefLabel?.en ||
     'Document';
 
-  // Get author
   const author = source.creator?.[0]?.name || '';
 
   return {
@@ -86,14 +78,12 @@ const transformOERSIHit = (hit: IOERSIHit): IOERResource => {
   };
 };
 
-// Build Elasticsearch query for OERSI
 const buildElasticsearchQuery = (params: IOERSearchQuery) => {
   const { query, subject, grade, type, page = 1, limit = 20 } = params;
 
   const must: object[] = [];
   const filter: object[] = [];
 
-  // Text search across multiple fields
   if (query && query.trim()) {
     must.push({
       multi_match: {
@@ -105,7 +95,6 @@ const buildElasticsearchQuery = (params: IOERSearchQuery) => {
     });
   }
 
-  // Subject filter
   if (subject) {
     const mappedSubject = SUBJECT_MAP[subject] || subject.toLowerCase();
     filter.push({
@@ -120,7 +109,6 @@ const buildElasticsearchQuery = (params: IOERSearchQuery) => {
     });
   }
 
-  // Grade/educational level filter
   if (grade) {
     filter.push({
       bool: {
@@ -133,7 +121,6 @@ const buildElasticsearchQuery = (params: IOERSearchQuery) => {
     });
   }
 
-  // Resource type filter
   if (type) {
     const mappedType = TYPE_MAP[type] || type.toLowerCase();
     filter.push({
@@ -148,7 +135,6 @@ const buildElasticsearchQuery = (params: IOERSearchQuery) => {
     });
   }
 
-  // Build final query
   const esQuery: Record<string, unknown> = {
     from: (page - 1) * limit,
     size: limit,
@@ -163,7 +149,7 @@ const buildElasticsearchQuery = (params: IOERSearchQuery) => {
       },
     };
   } else {
-    // Default: get recent resources
+
     esQuery.query = { match_all: {} };
     esQuery.sort = [{ datePublished: { order: 'desc' } }];
   }
@@ -171,16 +157,13 @@ const buildElasticsearchQuery = (params: IOERSearchQuery) => {
   return esQuery;
 };
 
-// Search resources from OERSI
 const searchResources = async (
   params: IOERSearchQuery
 ): Promise<IOERSearchResponse> => {
   const { page = 1, limit = 20 } = params;
 
-  // Generate cache key
   const cacheKey = `oer_search_${JSON.stringify(params)}`;
 
-  // Check cache
   const cached = cache.get<IOERSearchResponse>(cacheKey);
   if (cached) {
     return cached;
@@ -193,7 +176,7 @@ const searchResources = async (
       headers: {
         'Content-Type': 'application/json',
       },
-      timeout: 10000, // 10 second timeout
+      timeout: 10000,
     });
 
     const { hits } = response.data;
@@ -208,19 +191,17 @@ const searchResources = async (
       totalPages: Math.ceil(total / limit),
     };
 
-    // Cache the result
     cache.set(cacheKey, result);
 
     return result;
   } catch (error) {
-    // Log error but don't expose details to client
+
     if (axios.isAxiosError(error)) {
       console.error('OERSI API Error:', error.message);
     } else {
       console.error('OER Search Error:', error);
     }
 
-    // Return empty result on error
     return {
       resources: [],
       total: 0,
@@ -231,7 +212,6 @@ const searchResources = async (
   }
 };
 
-// Get available subjects (static list based on common German school subjects)
 const getAvailableSubjects = () => {
   return [
     { id: 'Mathematics', label: 'Mathematik', labelEn: 'Mathematics' },
@@ -249,7 +229,6 @@ const getAvailableSubjects = () => {
   ];
 };
 
-// Get available resource types
 const getAvailableTypes = () => {
   return [
     { id: 'Video', label: 'Video' },
@@ -260,7 +239,6 @@ const getAvailableTypes = () => {
   ];
 };
 
-// Get available grades
 const getAvailableGrades = () => {
   return [
     { id: 'Klasse 1-4', label: 'Klasse 1-4 (Grundschule)' },

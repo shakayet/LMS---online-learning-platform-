@@ -9,7 +9,7 @@ import { User } from '../user/user.model';
 import { TutorApplication } from '../tutorApplication/tutorApplication.model';
 
 const createSubject = async (payload: ISubject): Promise<ISubject> => {
-  // Check if subject with the same name already exists
+
   const existingSubject = await Subject.findOne({ name: payload.name });
   if (existingSubject) {
     throw new ApiError(
@@ -22,7 +22,6 @@ const createSubject = async (payload: ISubject): Promise<ISubject> => {
   return result;
 };
 
-// Get all subjects with filtering, searching, pagination
 const getAllSubjects = async (query: Record<string, unknown>) => {
   const subjectQuery = new QueryBuilder(Subject.find(), query)
     .search(['name'])
@@ -40,7 +39,6 @@ const getAllSubjects = async (query: Record<string, unknown>) => {
   };
 };
 
-// Get single subject by ID
 const getSingleSubject = async (id: string): Promise<ISubject | null> => {
   const result = await Subject.findById(id);
 
@@ -51,18 +49,16 @@ const getSingleSubject = async (id: string): Promise<ISubject | null> => {
   return result;
 };
 
-// Update subject
 const updateSubject = async (
   id: string,
   payload: Partial<ISubject>
 ): Promise<ISubject | null> => {
-  // Check if subject exists
+
   const subject = await Subject.findById(id);
   if (!subject) {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Subject not found');
   }
 
-  // If updating name, check for uniqueness
   if (payload.name && payload.name !== subject.name) {
     const existingSubject = await Subject.findOne({ name: payload.name });
     if (existingSubject) {
@@ -81,14 +77,12 @@ const updateSubject = async (
   return result;
 };
 
-// Hard delete subject (permanently removes from database)
 const deleteSubject = async (id: string): Promise<ISubject | null> => {
   const subject = await Subject.findById(id);
   if (!subject) {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Subject not found');
   }
 
-  // Check for active trial requests using this subject
   const activeTrialRequests = await TrialRequest.countDocuments({
     subject: id,
     status: { $in: ['PENDING', 'ACCEPTED'] },
@@ -100,7 +94,6 @@ const deleteSubject = async (id: string): Promise<ISubject | null> => {
     );
   }
 
-  // Check for active session requests using this subject
   const activeSessionRequests = await SessionRequest.countDocuments({
     subject: id,
     status: { $in: ['PENDING', 'ACCEPTED'] },
@@ -112,19 +105,16 @@ const deleteSubject = async (id: string): Promise<ISubject | null> => {
     );
   }
 
-  // Remove subject reference from tutors' subject arrays
   await User.updateMany(
     { subjects: id },
     { $pull: { subjects: id } }
   );
 
-  // Remove subject reference from tutor applications
   await TutorApplication.updateMany(
     { subjects: id },
     { $pull: { subjects: id } }
   );
 
-  // Hard delete
   const result = await Subject.findByIdAndDelete(id);
   return result;
 };

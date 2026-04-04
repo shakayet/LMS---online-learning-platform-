@@ -17,9 +17,7 @@ const http_status_codes_1 = require("http-status-codes");
 const catchAsync_1 = __importDefault(require("../../../shared/catchAsync"));
 const sendResponse_1 = __importDefault(require("../../../shared/sendResponse"));
 const sessionReview_service_1 = require("./sessionReview.service");
-/**
- * Create a new review
- */
+
 const createReview = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const studentId = req.user.id;
     const result = yield sessionReview_service_1.SessionReviewService.createReview(studentId, req.body);
@@ -30,9 +28,7 @@ const createReview = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, v
         data: result,
     });
 }));
-/**
- * Get student's reviews
- */
+
 const getMyReviews = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const studentId = req.user.id;
     const result = yield sessionReview_service_1.SessionReviewService.getMyReviews(studentId, req.query);
@@ -44,9 +40,7 @@ const getMyReviews = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, v
         pagination: result.meta,
     });
 }));
-/**
- * Get tutor's reviews
- */
+
 const getTutorReviews = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const { tutorId } = req.params;
@@ -60,9 +54,7 @@ const getTutorReviews = (0, catchAsync_1.default)((req, res) => __awaiter(void 0
         pagination: result.meta,
     });
 }));
-/**
- * Get single review
- */
+
 const getSingleReview = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const result = yield sessionReview_service_1.SessionReviewService.getSingleReview(id);
@@ -73,9 +65,7 @@ const getSingleReview = (0, catchAsync_1.default)((req, res) => __awaiter(void 0
         data: result,
     });
 }));
-/**
- * Get review by session ID
- */
+
 const getReviewBySession = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { sessionId } = req.params;
     const result = yield sessionReview_service_1.SessionReviewService.getReviewBySession(sessionId);
@@ -86,9 +76,7 @@ const getReviewBySession = (0, catchAsync_1.default)((req, res) => __awaiter(voi
         data: result,
     });
 }));
-/**
- * Update review
- */
+
 const updateReview = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const studentId = req.user.id;
@@ -100,9 +88,7 @@ const updateReview = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, v
         data: result,
     });
 }));
-/**
- * Delete review
- */
+
 const deleteReview = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const studentId = req.user.id;
@@ -114,9 +100,7 @@ const deleteReview = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, v
         data: null,
     });
 }));
-/**
- * Get tutor's review statistics
- */
+
 const getTutorStats = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { tutorId } = req.params;
     const result = yield sessionReview_service_1.SessionReviewService.getTutorStats(tutorId);
@@ -127,9 +111,7 @@ const getTutorStats = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
         data: result,
     });
 }));
-/**
- * Toggle review visibility (Admin only)
- */
+
 const toggleVisibility = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const { isPublic } = req.body;
@@ -141,9 +123,7 @@ const toggleVisibility = (0, catchAsync_1.default)((req, res) => __awaiter(void 
         data: result,
     });
 }));
-/**
- * Link orphaned reviews to sessions (Admin only - migration helper)
- */
+
 const linkOrphanedReviews = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield sessionReview_service_1.SessionReviewService.linkOrphanedReviews();
     (0, sendResponse_1.default)(res, {
@@ -153,9 +133,7 @@ const linkOrphanedReviews = (0, catchAsync_1.default)((req, res) => __awaiter(vo
         data: result,
     });
 }));
-/**
- * Admin: Create a review for a tutor (without session requirement)
- */
+
 const adminCreateReview = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield sessionReview_service_1.SessionReviewService.adminCreateReview(req.body);
     (0, sendResponse_1.default)(res, {
@@ -165,9 +143,7 @@ const adminCreateReview = (0, catchAsync_1.default)((req, res) => __awaiter(void
         data: result,
     });
 }));
-/**
- * Admin: Update any review
- */
+
 const adminUpdateReview = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const result = yield sessionReview_service_1.SessionReviewService.adminUpdateReview(id, req.body);
@@ -178,9 +154,7 @@ const adminUpdateReview = (0, catchAsync_1.default)((req, res) => __awaiter(void
         data: result,
     });
 }));
-/**
- * Admin: Delete any review
- */
+
 const adminDeleteReview = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     yield sessionReview_service_1.SessionReviewService.adminDeleteReview(id);
@@ -202,7 +176,7 @@ exports.SessionReviewController = {
     getTutorStats,
     toggleVisibility,
     linkOrphanedReviews,
-    // Admin functions
+
     adminCreateReview,
     adminUpdateReview,
     adminDeleteReview,

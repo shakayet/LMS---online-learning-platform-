@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.maybeLogCors = exports.isOriginAllowed = exports.allowedOrigins = void 0;
 const logger_1 = require("../../shared/logger");
-// Allowed origins for CORS
+
 exports.allowedOrigins = [
     'http://localhost:3000',
     'http://localhost:3001',
@@ -14,44 +14,44 @@ exports.allowedOrigins = [
     'https://task-titans-admin.vercel.app',
     'https://tier-elected-proc-cumulative.trycloudflare.com',
     'https://directory-supplements-adapter-designs.trycloudflare.com',
-    // Add common development origins
+
     'http://127.0.0.1:3000',
     'http://127.0.0.1:3001',
     'http://127.0.0.1:3002',
     'http://localhost:3002',
     'http://127.0.0.1:5173',
     'http://127.0.0.1:5174',
-    // Local backend preview ports for static test pages
+
     'http://localhost:5000',
     'http://localhost:5001',
     'http://127.0.0.1:5000',
     'http://127.0.0.1:5001',
     'http://10.10.7.33:5001',
-    // Dev server alternate ports
+
     'http://localhost:5003',
     'http://127.0.0.1:5003',
     'http://localhost:5005',
     'http://127.0.0.1:5005',
-    // Production frontend
+
     'https://lms-frontend-dun-three.vercel.app',
-    // Production server
+
     'http://195.35.6.13:3000',
     'http://195.35.6.13:5005',
     'https://195.35.6.13:3000',
     'https://195.35.6.13:5005',
 ];
-// Enable with env CORS_DEBUG=true or CORS_DEBUG=1
+
 const CORS_DEBUG = String(process.env.CORS_DEBUG || '').toLowerCase() === 'true' ||
     process.env.CORS_DEBUG === '1';
 const corsLogMap = new Map();
-const CORS_LOG_WINDOW_MS = 60000; // log at most once per origin per minute
+const CORS_LOG_WINDOW_MS = 60000;
 const isOriginAllowed = (origin) => {
     if (!origin)
-        return true; // allow non-browser clients (Postman/mobile)
+        return true;
     return exports.allowedOrigins.includes(origin);
 };
 exports.isOriginAllowed = isOriginAllowed;
-// Rate-limited CORS decision logging
+
 const maybeLogCors = (origin, allowed) => {
     if (!CORS_DEBUG)
         return;

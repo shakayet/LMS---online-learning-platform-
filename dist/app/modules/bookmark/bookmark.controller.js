@@ -17,7 +17,7 @@ const http_status_codes_1 = require("http-status-codes");
 const catchAsync_1 = __importDefault(require("../../../shared/catchAsync"));
 const sendResponse_1 = __importDefault(require("../../../shared/sendResponse"));
 const bookmark_service_1 = require("./bookmark.service");
-// Toggle bookmark (add if not exists, remove if exists)
+
 const toggleBookmark = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const user = req.user;
     const userId = user.id;
@@ -30,7 +30,7 @@ const toggleBookmark = (0, catchAsync_1.default)((req, res) => __awaiter(void 0,
         data: result.bookmark,
     });
 }));
-// Fetch All bookmarks of current user
+
 const getUserBookmarks = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const user = req.user;
     const userId = user.id;

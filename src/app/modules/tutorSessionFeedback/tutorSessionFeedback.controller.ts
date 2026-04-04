@@ -4,7 +4,6 @@ import catchAsync from '../../../shared/catchAsync';
 import sendResponse from '../../../shared/sendResponse';
 import { TutorSessionFeedbackService } from './tutorSessionFeedback.service';
 
-// Submit feedback for a session (tutor action)
 const submitFeedback = catchAsync(async (req: Request, res: Response) => {
   const tutorId = req.user!.id as string;
   const result = await TutorSessionFeedbackService.submitFeedback(tutorId, req.body);
@@ -17,7 +16,6 @@ const submitFeedback = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// Get pending feedbacks for logged-in tutor
 const getPendingFeedbacks = catchAsync(async (req: Request, res: Response) => {
   const tutorId = req.user!.id as string;
   const result = await TutorSessionFeedbackService.getPendingFeedbacks(tutorId, req.query);
@@ -31,7 +29,6 @@ const getPendingFeedbacks = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// Get all submitted feedbacks for logged-in tutor
 const getTutorFeedbacks = catchAsync(async (req: Request, res: Response) => {
   const tutorId = req.user!.id as string;
   const result = await TutorSessionFeedbackService.getTutorFeedbacks(tutorId, req.query);
@@ -45,7 +42,6 @@ const getTutorFeedbacks = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// Get feedback for a specific session
 const getFeedbackBySession = catchAsync(async (req: Request, res: Response) => {
   const { sessionId } = req.params;
   const userId = req.user!.id as string;
@@ -59,7 +55,6 @@ const getFeedbackBySession = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// Get feedbacks received by logged-in student
 const getMyReceivedFeedbacks = catchAsync(async (req: Request, res: Response) => {
   const studentId = req.user!.id as string;
   const result = await TutorSessionFeedbackService.getStudentFeedbacks(studentId, req.query);
@@ -73,7 +68,6 @@ const getMyReceivedFeedbacks = catchAsync(async (req: Request, res: Response) =>
   });
 });
 
-// Admin: Get forfeited payments summary
 const getForfeitedPaymentsSummary = catchAsync(async (req: Request, res: Response) => {
   const { month, year } = req.query;
   const result = await TutorSessionFeedbackService.getForfeitedPaymentsSummary({
@@ -89,7 +83,6 @@ const getForfeitedPaymentsSummary = catchAsync(async (req: Request, res: Respons
   });
 });
 
-// Admin: Get list of forfeited feedbacks
 const getForfeitedFeedbacksList = catchAsync(async (req: Request, res: Response) => {
   const result = await TutorSessionFeedbackService.getForfeitedFeedbacksList(req.query);
 

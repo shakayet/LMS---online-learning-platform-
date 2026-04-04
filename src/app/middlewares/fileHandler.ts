@@ -8,9 +8,6 @@ import ApiError from '../../errors/ApiError';
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import cloudinary from 'cloudinary';
 
-// ===============================
-// Types
-// ===============================
 type IFolderName = 'images' | 'media' | 'documents';
 
 interface ProcessedFiles {
@@ -37,18 +34,12 @@ interface CloudProvider {
   delete: (fileUrl: string) => Promise<void>;
 }
 
-// ===============================
-// Configuration
-// ===============================
 const allowedTypes: Record<IFolderName, string[]> = {
   images: ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'],
   media: ['video/mp4', 'video/webm', 'audio/mpeg', 'audio/ogg', 'audio/wav', 'audio/webm'],
   documents: ['application/pdf'],
 };
 
-// ===============================
-// Cloud Providers (Strategy)
-// ===============================
 const s3 = new S3Client({
   region: process.env.AWS_REGION!,
   credentials: {
@@ -133,14 +124,10 @@ const CLOUD_PROVIDERS: Record<'s3' | 'cloudinary', CloudProvider> = {
   cloudinary: CloudinaryProvider,
 };
 
-// ===============================
-// Helpers
-// ===============================
 const ensureDir = (dir: string) => {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 };
 
-// Human-readable size (e.g., 50.86 KB)
 const formatBytes = (bytes?: number) => {
   if (!bytes || bytes <= 0) return '0 B';
   const sizes = ['B', 'KB', 'MB', 'GB'];
@@ -269,7 +256,6 @@ const groupFilesByField = (
   return byField;
 };
 
-// Simplify files for logging, keyed by field name
 const buildFilesLogSummary = (filesByField: Record<string, Express.Multer.File[]>) => {
   const out: Record<string, any> = {};
   for (const [field, arr] of Object.entries(filesByField)) {
@@ -349,9 +335,6 @@ const normalizeOptions = (
   return { ...base, storageMode, cloudProvider, maxFileSizeMB, maxFilesTotal };
 };
 
-// ===============================
-// Middleware
-// ===============================
 export const fileHandler = (
   options?: FileHandlerOptions | string[] | Array<string | { name: string; maxCount?: number }>
 ) => {
@@ -397,8 +380,6 @@ export const fileHandler = (
           req.body = { ...req.body, ...processedFiles };
         }
 
-
-
         next();
       } catch (error) {
         next(error);
@@ -407,9 +388,6 @@ export const fileHandler = (
   };
 };
 
-// ===============================
-// File Deletion
-// ===============================
 export const deleteFile = async (
   fileUrl: string,
   storageMode?: 'local' | 'memory',
@@ -436,9 +414,6 @@ export const deleteFile = async (
   }
 };
 
-// ===============================
-// Error Mapper
-// ===============================
 const mapMulterError = (
   err: multer.MulterError,
   opts?: { maxFileSizeMB?: number; maxFilesTotal?: number }

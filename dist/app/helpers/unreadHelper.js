@@ -15,7 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UnreadHelper = exports.clearUnreadCount = exports.incrementUnreadCount = exports.setUnreadCount = exports.getUnreadCountCached = void 0;
 const node_cache_1 = __importDefault(require("node-cache"));
 const memory = new node_cache_1.default({ stdTTL: 0, checkperiod: 120, useClones: false });
-const CHAT_UNREAD_PREFIX = 'chat:unread_count:'; // chat:unread_count:<chatId>
+const CHAT_UNREAD_PREFIX = 'chat:unread_count:';
 const chatKey = (chatId) => `${CHAT_UNREAD_PREFIX}${String(chatId)}`;
 const getUnreadCountCached = (chatId, userId) => __awaiter(void 0, void 0, void 0, function* () {
     const key = chatKey(chatId);

@@ -3,8 +3,8 @@ import { Model, Types } from 'mongoose';
 export type IChat = {
   participants: [Types.ObjectId];
   status: Boolean;
-  trialRequestId?: Types.ObjectId; // Link to trial request that created this chat
-  sessionRequestId?: Types.ObjectId; // Link to session request that created this chat
+  trialRequestId?: Types.ObjectId;
+  sessionRequestId?: Types.ObjectId;
 };
 
 export type ChatModel = Model<IChat, Record<string, unknown>>;

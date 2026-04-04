@@ -1,7 +1,6 @@
 import { Schema, model } from 'mongoose';
 import { IMessage, MessageModel } from './message.interface';
 
-// Attachment Schema
 const AttachmentSchema = new Schema(
   {
     type: {
@@ -15,12 +14,11 @@ const AttachmentSchema = new Schema(
     mime: { type: String },
     width: { type: Number },
     height: { type: Number },
-    duration: { type: Number }, // For audio/video
+    duration: { type: Number },
   },
   { _id: false }
 );
 
-// Session Proposal Schema (in-chat booking)
 const SessionProposalSchema = new Schema(
   {
     subject: {
@@ -38,11 +36,11 @@ const SessionProposalSchema = new Schema(
     },
     duration: {
       type: Number,
-      required: true, // in minutes
+      required: true,
     },
     price: {
       type: Number,
-      required: true, // in EUR
+      required: true,
     },
     description: {
       type: String,
@@ -81,7 +79,6 @@ const SessionProposalSchema = new Schema(
   { _id: false }
 );
 
-// Message Schema
 const messageSchema = new Schema<IMessage, MessageModel>(
   {
     chatId: {
@@ -108,30 +105,25 @@ const messageSchema = new Schema<IMessage, MessageModel>(
       default: 'text',
     },
 
-    // Unified attachment system
     attachments: {
       type: [AttachmentSchema],
       default: [],
     },
 
-    // In-chat booking (tutoring marketplace)
     sessionProposal: {
       type: SessionProposalSchema,
       required: false,
     },
 
-    // Delivery & read tracking
     deliveredTo: [{ type: Schema.Types.ObjectId, ref: 'User', default: [] }],
     readBy: [{ type: Schema.Types.ObjectId, ref: 'User', default: [] }],
 
-    // Message status
     status: {
       type: String,
       enum: ['sent', 'delivered', 'seen'],
       default: 'sent',
     },
 
-    // Edit tracking
     editedAt: { type: Date },
   },
   {
@@ -139,12 +131,10 @@ const messageSchema = new Schema<IMessage, MessageModel>(
   }
 );
 
-// Indexes
 messageSchema.index({ chatId: 1, createdAt: -1 });
 messageSchema.index({ sender: 1, createdAt: -1 });
-messageSchema.index({ 'sessionProposal.status': 1 }); // For filtering proposals
+messageSchema.index({ 'sessionProposal.status': 1 });
 
-// Pre-save: Set proposal expiration (24 hours)
 messageSchema.pre('save', function (next) {
   if (
     this.type === 'session_proposal' &&
@@ -153,13 +143,12 @@ messageSchema.pre('save', function (next) {
     !this.sessionProposal.expiresAt
   ) {
     const expirationDate = new Date();
-    expirationDate.setHours(expirationDate.getHours() + 24); // 24 hours from now
+    expirationDate.setHours(expirationDate.getHours() + 24);
     this.sessionProposal.expiresAt = expirationDate;
   }
   next();
 });
 
-// Virtual field: 'content' as alias for 'text' (for frontend compatibility)
 messageSchema.virtual('content').get(function () {
   return this.text;
 });
@@ -168,11 +157,9 @@ messageSchema.virtual('content').set(function (value: string) {
   this.text = value;
 });
 
-// Ensure virtuals are included in JSON/Object output
 messageSchema.set('toJSON', { virtuals: true });
 messageSchema.set('toObject', { virtuals: true });
 
-// Auto-populate sender on find queries
 messageSchema.pre('find', function () {
   this.populate('sender', '_id name profilePicture');
 });

@@ -3,7 +3,6 @@ import ApiError from '../../../errors/ApiError';
 import { IPricingConfig, IPricingPlan } from './pricingConfig.interface';
 import { PricingConfig } from './pricingConfig.model';
 
-// Default pricing plans (used for initial seeding)
 const DEFAULT_PRICING_PLANS: IPricingPlan[] = [
   {
     name: 'Flexible',
@@ -49,13 +48,9 @@ const DEFAULT_PRICING_PLANS: IPricingPlan[] = [
   },
 ];
 
-/**
- * Get pricing config (creates default if not exists)
- */
 const getPricingConfig = async (): Promise<IPricingConfig> => {
   let config = await PricingConfig.findOne();
 
-  // If no config exists, create with defaults
   if (!config) {
     config = await PricingConfig.create({
       plans: DEFAULT_PRICING_PLANS,
@@ -65,9 +60,6 @@ const getPricingConfig = async (): Promise<IPricingConfig> => {
   return config;
 };
 
-/**
- * Get active pricing plans (for public/frontend)
- */
 const getActivePricingPlans = async (): Promise<IPricingPlan[]> => {
   const config = await getPricingConfig();
   return config.plans
@@ -75,9 +67,6 @@ const getActivePricingPlans = async (): Promise<IPricingPlan[]> => {
     .sort((a, b) => a.sortOrder - b.sortOrder);
 };
 
-/**
- * Get pricing for a specific tier (for subscription service)
- */
 const getPricingByTier = async (
   tier: 'FLEXIBLE' | 'REGULAR' | 'LONG_TERM'
 ): Promise<IPricingPlan | null> => {
@@ -85,21 +74,17 @@ const getPricingByTier = async (
   return config.plans.find((plan) => plan.tier === tier && plan.isActive) || null;
 };
 
-/**
- * Update pricing config (Admin only)
- */
 const updatePricingConfig = async (
   plans: IPricingPlan[],
   adminId: string
 ): Promise<IPricingConfig> => {
-  // Validate plans
+
   const tiers = plans.map((p) => p.tier);
   const uniqueTiers = new Set(tiers);
   if (tiers.length !== uniqueTiers.size) {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Duplicate tier found in plans');
   }
 
-  // Validate required tiers exist
   const requiredTiers = ['FLEXIBLE', 'REGULAR', 'LONG_TERM'];
   for (const tier of requiredTiers) {
     if (!tiers.includes(tier as 'FLEXIBLE' | 'REGULAR' | 'LONG_TERM')) {
@@ -110,7 +95,6 @@ const updatePricingConfig = async (
     }
   }
 
-  // Validate pricing values
   for (const plan of plans) {
     if (plan.pricePerHour <= 0) {
       throw new ApiError(
@@ -132,7 +116,6 @@ const updatePricingConfig = async (
     }
   }
 
-  // Update or create config
   let config = await PricingConfig.findOne();
 
   if (config) {
@@ -149,15 +132,12 @@ const updatePricingConfig = async (
   return config;
 };
 
-/**
- * Update a single plan (Admin only)
- */
 const updateSinglePlan = async (
   tier: 'FLEXIBLE' | 'REGULAR' | 'LONG_TERM',
   updates: Partial<IPricingPlan>,
   adminId: string
 ): Promise<IPricingConfig> => {
-  // Get the Mongoose document directly
+
   let config = await PricingConfig.findOne();
 
   if (!config) {
@@ -171,11 +151,10 @@ const updateSinglePlan = async (
     throw new ApiError(StatusCodes.NOT_FOUND, `Plan with tier ${tier} not found`);
   }
 
-  // Merge updates
   config.plans[planIndex] = {
     ...config.plans[planIndex],
     ...updates,
-    tier, // Ensure tier cannot be changed
+    tier,
   };
 
   config.updatedBy = adminId;
@@ -184,9 +163,6 @@ const updateSinglePlan = async (
   return config;
 };
 
-/**
- * Reset to default pricing (Admin only)
- */
 const resetToDefaultPricing = async (adminId: string): Promise<IPricingConfig> => {
   let config = await PricingConfig.findOne();
 

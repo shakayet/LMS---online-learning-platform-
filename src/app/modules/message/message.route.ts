@@ -14,7 +14,7 @@ router.post(
   fileUploadHandler(),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      // Ensure these are always arrays
+
       const images: string[] = getMultipleFilesPath(req.files, 'image') ?? [];
       const media: string[] = getMultipleFilesPath(req.files, 'media') ?? [];
       const docs: string[] = getMultipleFilesPath(req.files, 'doc') ?? [];
@@ -74,14 +74,12 @@ router.get(
   MessageController.getMessage
 );
 
-// Get all messages in a chat (alias route for frontend compatibility)
 router.get(
   '/chat/:chatId',
   auth(USER_ROLES.STUDENT, USER_ROLES.TUTOR, USER_ROLES.SUPER_ADMIN),
   MessageController.getChatMessages
 );
 
-// Mark all messages in a chat as read
 router.post(
   '/chat/:chatId/read',
   auth(USER_ROLES.STUDENT, USER_ROLES.TUTOR, USER_ROLES.SUPER_ADMIN),

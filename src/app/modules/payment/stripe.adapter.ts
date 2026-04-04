@@ -1,9 +1,6 @@
 import { stripe, dollarsToCents, handleStripeError, DEFAULT_CURRENCY } from '../../../config/stripe';
 import Stripe from 'stripe';
 
-// Centralized Stripe adapter to keep payment.service.ts clean and consistent
-// Only wraps Stripe API calls; business logic stays in services.
-
 export type CreateExpressAccountParams = {
   email: string;
   firstName: string;

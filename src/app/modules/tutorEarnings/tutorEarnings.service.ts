@@ -13,14 +13,12 @@ import { stripe } from '../../../config/stripe';
 import { StripeAccount } from '../payment/payment.model';
 import { emailHelper } from '../../../helpers/emailHelper';
 
-// Level configuration
 const LEVEL_CONFIG = {
   [TUTOR_LEVEL.STARTER]: { minSessions: 0, maxSessions: 20, hourlyRate: 15, levelNumber: 1 },
   [TUTOR_LEVEL.INTERMEDIATE]: { minSessions: 21, maxSessions: 50, hourlyRate: 17, levelNumber: 2 },
   [TUTOR_LEVEL.EXPERT]: { minSessions: 51, maxSessions: Infinity, hourlyRate: 20, levelNumber: 3 },
 };
 
-// Get next level info
 const getNextLevel = (currentLevel: TUTOR_LEVEL): { level: TUTOR_LEVEL; hourlyRate: number; levelNumber: number } | null => {
   if (currentLevel === TUTOR_LEVEL.STARTER) {
     return {
@@ -36,27 +34,23 @@ const getNextLevel = (currentLevel: TUTOR_LEVEL): { level: TUTOR_LEVEL; hourlyRa
       levelNumber: LEVEL_CONFIG[TUTOR_LEVEL.EXPERT].levelNumber,
     };
   }
-  return null; // Already at max level
+  return null;
 };
 
-/**
- * Generate tutor earnings for all tutors (called at month-end after billing)
- */
 const generateTutorEarnings = async (
   month: number,
   year: number,
-  commissionRate: number = 0 // No commission - tutor gets 100%
+  commissionRate: number = 0
 ): Promise<ITutorEarnings[]> => {
   const periodStart = new Date(year, month - 1, 1);
   const periodEnd = new Date(year, month, 0, 23, 59, 59);
 
-  // Get all active tutors
   const tutors = await User.find({ role: USER_ROLES.TUTOR });
 
   const earnings: ITutorEarnings[] = [];
 
   for (const tutor of tutors) {
-    // Check if payout already exists
+
     const existingPayout = await TutorEarnings.findOne({
       tutorId: tutor._id,
       payoutMonth: month,
@@ -64,23 +58,20 @@ const generateTutorEarnings = async (
     });
 
     if (existingPayout) {
-      continue; // Skip if already generated
+      continue;
     }
 
-    // Get completed sessions for this tutor in billing period
-    // NEW: Query by teacherCompletionStatus - only sessions where feedback was submitted
     const sessions = await Session.find({
       tutorId: tutor._id,
       teacherCompletionStatus: COMPLETION_STATUS.COMPLETED,
-      isTrial: false,  // Exclude free trial sessions - teacher doesn't get paid for trials
+      isTrial: false,
       teacherCompletedAt: { $gte: periodStart, $lte: periodEnd },
     }).populate('studentId', 'name');
 
     if (sessions.length === 0) {
-      continue; // Skip tutors with no sessions
+      continue;
     }
 
-    // Build line items - use teacherCompletedAt for date
     const lineItems: IEarningLineItem[] = sessions.map(session => ({
       sessionId: session._id as Types.ObjectId,
       studentName: (session.studentId as any).name,
@@ -91,7 +82,6 @@ const generateTutorEarnings = async (
       tutorEarning: session.totalPrice * (1 - commissionRate),
     }));
 
-    // Create earnings record
     const earning = await TutorEarnings.create({
       tutorId: tutor._id,
       payoutMonth: month,
@@ -109,9 +99,6 @@ const generateTutorEarnings = async (
   return earnings;
 };
 
-/**
- * Get tutor's earnings history
- */
 const getMyEarnings = async (tutorId: string, query: Record<string, unknown>) => {
   const earningsQuery = new QueryBuilder(
     TutorEarnings.find({ tutorId }),
@@ -128,9 +115,6 @@ const getMyEarnings = async (tutorId: string, query: Record<string, unknown>) =>
   return { data: result, meta };
 };
 
-/**
- * Get all earnings (Admin)
- */
 const getAllEarnings = async (query: Record<string, unknown>) => {
   const earningsQuery = new QueryBuilder(
     TutorEarnings.find().populate('tutorId', 'name email'),
@@ -148,9 +132,6 @@ const getAllEarnings = async (query: Record<string, unknown>) => {
   return { data: result, meta };
 };
 
-/**
- * Get single earnings record
- */
 const getSingleEarning = async (id: string): Promise<ITutorEarnings | null> => {
   const earning = await TutorEarnings.findById(id)
     .populate('tutorId', 'name email')
@@ -163,9 +144,6 @@ const getSingleEarning = async (id: string): Promise<ITutorEarnings | null> => {
   return earning;
 };
 
-/**
- * Initiate payout to tutor (Stripe Connect transfer)
- */
 const initiatePayout = async (
   id: string,
   payload: { notes?: string }
@@ -192,7 +170,6 @@ const initiatePayout = async (
 
   const tutor = earning.tutorId as any;
 
-  // Look up tutor's Stripe Connect account
   const stripeAccount = await StripeAccount.findOne({ userId: tutor._id });
   if (!stripeAccount || !stripeAccount.onboardingCompleted) {
     throw new ApiError(
@@ -208,9 +185,8 @@ const initiatePayout = async (
     );
   }
 
-  // Create Stripe Connect transfer
   const transfer = await stripe.transfers.create({
-    amount: Math.round(earning.netEarnings * 100), // Convert to cents
+    amount: Math.round(earning.netEarnings * 100),
     currency: 'eur',
     destination: stripeAccount.stripeAccountId,
     transfer_group: earning.payoutReference,
@@ -232,9 +208,6 @@ const initiatePayout = async (
   return earning;
 };
 
-/**
- * Mark payout as completed (Called by Stripe webhook or manual)
- */
 const markAsPaid = async (
   id: string,
   payload: {
@@ -261,7 +234,6 @@ const markAsPaid = async (
 
   await earning.save();
 
-  // Send email notification to tutor
   const tutor = await User.findById(earning.tutorId);
   if (tutor?.email) {
     const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -289,9 +261,6 @@ const markAsPaid = async (
   return earning;
 };
 
-/**
- * Mark payout as failed
- */
 const markAsFailed = async (
   id: string,
   failureReason: string
@@ -307,7 +276,6 @@ const markAsFailed = async (
 
   await earning.save();
 
-  // Send email notification to tutor
   const tutor = await User.findById(earning.tutorId);
   if (tutor?.email) {
     const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -335,11 +303,6 @@ const markAsFailed = async (
   return earning;
 };
 
-// ============ PAYOUT SETTINGS ============
-
-/**
- * Get tutor's payout settings
- */
 const getPayoutSettings = async (tutorId: string) => {
   const tutor = await User.findById(tutorId);
 
@@ -353,9 +316,6 @@ const getPayoutSettings = async (tutorId: string) => {
   };
 };
 
-/**
- * Update tutor's payout settings
- */
 const updatePayoutSettings = async (
   tutorId: string,
   payload: { recipient: string; iban: string }
@@ -381,16 +341,11 @@ const updatePayoutSettings = async (
   };
 };
 
-// ============ TUTOR STATS & LEVEL PROGRESS ============
-
-/**
- * Response type for tutor stats
- */
 type TutorStatsResponse = {
-  // Level Progress
+
   level: {
-    current: number; // 1, 2, 3
-    name: string; // STARTER, INTERMEDIATE, EXPERT
+    current: number;
+    name: string;
     hourlyRate: number;
   };
   nextLevel: {
@@ -401,7 +356,6 @@ type TutorStatsResponse = {
     progressPercent: number;
   } | null;
 
-  // Stats
   stats: {
     totalSessions: number;
     completedSessions: number;
@@ -409,14 +363,12 @@ type TutorStatsResponse = {
     totalStudents: number;
   };
 
-  // Earnings
   earnings: {
     currentMonth: number;
     totalEarnings: number;
     pendingPayout: number;
   };
 
-  // Trial Sessions
   trialStats: {
     totalTrials: number;
     convertedTrials: number;
@@ -424,9 +376,6 @@ type TutorStatsResponse = {
   };
 };
 
-/**
- * Get tutor's comprehensive stats including level progress
- */
 const getMyStats = async (tutorId: string): Promise<TutorStatsResponse> => {
   const tutor = await User.findById(tutorId);
 
@@ -438,7 +387,6 @@ const getMyStats = async (tutorId: string): Promise<TutorStatsResponse> => {
   const currentLevel = tutorProfile?.level || TUTOR_LEVEL.STARTER;
   const completedSessions = tutorProfile?.completedSessions || 0;
 
-  // Calculate level progress
   const currentLevelConfig = LEVEL_CONFIG[currentLevel];
   const nextLevelInfo = getNextLevel(currentLevel);
 
@@ -461,19 +409,16 @@ const getMyStats = async (tutorId: string): Promise<TutorStatsResponse> => {
     };
   }
 
-  // Get current month dates
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
 
-  // Get current month earnings
   const currentMonthEarnings = await TutorEarnings.findOne({
     tutorId: new Types.ObjectId(tutorId),
     payoutMonth: now.getMonth() + 1,
     payoutYear: now.getFullYear(),
   });
 
-  // Get pending payouts total
   const pendingPayouts = await TutorEarnings.aggregate([
     {
       $match: {
@@ -489,7 +434,6 @@ const getMyStats = async (tutorId: string): Promise<TutorStatsResponse> => {
     },
   ]);
 
-  // Get trial session stats
   const trialStats = await Session.aggregate([
     {
       $match: {
@@ -541,9 +485,6 @@ const getMyStats = async (tutorId: string): Promise<TutorStatsResponse> => {
   };
 };
 
-/**
- * Get earnings history formatted for frontend display
- */
 const getEarningsHistory = async (tutorId: string, page = 1, limit = 10) => {
   const skip = (page - 1) * limit;
 
@@ -587,7 +528,7 @@ export const TutorEarningsService = {
   initiatePayout,
   markAsPaid,
   markAsFailed,
-  // New methods
+
   getPayoutSettings,
   updatePayoutSettings,
   getMyStats,

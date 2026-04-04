@@ -1,19 +1,15 @@
 import Stripe from 'stripe';
 
-// Initialize Stripe with secret key
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-07-30.basil' as Stripe.LatestApiVersion,
   typescript: true,
 });
 
-// Platform configuration constants
 export const PLATFORM_FEE_PERCENTAGE =
   Number(process.env.PLATFORM_FEE_PERCENTAGE) || 20;
 
-// Default currency for payments
 export const DEFAULT_CURRENCY = 'usd';
 
-// Utility functions for payment calculations
 export const dollarsToCents = (dollars: number): number => {
   return Math.round(dollars * 100);
 };
@@ -31,7 +27,6 @@ export const calculateFreelancerAmount = (totalAmount: number): number => {
   return totalAmount - platformFee;
 };
 
-// Error handling utility
 export const handleStripeError = (error: any): string => {
   if (error.type === 'StripeCardError') {
     return `Card error: ${error.message}`;
@@ -50,7 +45,6 @@ export const handleStripeError = (error: any): string => {
   }
 };
 
-// Stripe configuration object
 export const stripeConfig = {
   publishableKey: process.env.STRIPE_PUBLISHABLE_KEY!,
   webhookSecret: process.env.STRIPE_WEBHOOK_SECRET!,

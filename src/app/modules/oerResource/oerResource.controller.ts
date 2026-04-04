@@ -4,7 +4,6 @@ import catchAsync from '../../../shared/catchAsync';
 import sendResponse from '../../../shared/sendResponse';
 import { OERResourceService } from './oerResource.service';
 
-// Search OER resources
 const searchResources = catchAsync(async (req: Request, res: Response) => {
   const { query, subject, grade, type, page, limit } = req.query;
 
@@ -31,7 +30,6 @@ const searchResources = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// Get available filter options
 const getFilterOptions = catchAsync(async (_req: Request, res: Response) => {
   const subjects = OERResourceService.getAvailableSubjects();
   const types = OERResourceService.getAvailableTypes();

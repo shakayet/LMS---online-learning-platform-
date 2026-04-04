@@ -8,11 +8,11 @@ export interface JwtUser extends JwtPayload {
 }
 
 declare global {
-  // eslint-disable-next-line no-var
+
   var io: SocketIOServer | undefined;
 
   namespace Express {
-    // eslint-disable-next-line @typescript-eslint/no-empty-interface
+
     interface User extends JwtUser {}
 
     interface Request {

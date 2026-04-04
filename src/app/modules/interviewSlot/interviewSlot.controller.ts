@@ -4,9 +4,6 @@ import catchAsync from '../../../shared/catchAsync';
 import sendResponse from '../../../shared/sendResponse';
 import { InterviewSlotService } from './interviewSlot.service';
 
-/**
- * Create interview slot (Admin only)
- */
 const createInterviewSlot = catchAsync(async (req: Request, res: Response) => {
   const adminId = req.user?.id as string;
   const result = await InterviewSlotService.createInterviewSlot(adminId, req.body);
@@ -19,11 +16,6 @@ const createInterviewSlot = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Get all interview slots
- * Admin: See all slots
- * Applicant: See only available slots
- */
 const getAllInterviewSlots = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user?.id as string | undefined;
   const userRole = req.user?.role as string | undefined;
@@ -38,9 +30,6 @@ const getAllInterviewSlots = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Get single interview slot
- */
 const getSingleInterviewSlot = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const result = await InterviewSlotService.getSingleInterviewSlot(id);
@@ -53,9 +42,6 @@ const getSingleInterviewSlot = catchAsync(async (req: Request, res: Response) =>
   });
 });
 
-/**
- * Book interview slot (Applicant)
- */
 const bookInterviewSlot = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const applicantId = req.user?.id as string;
@@ -75,9 +61,6 @@ const bookInterviewSlot = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Cancel interview slot
- */
 const cancelInterviewSlot = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const userId = req.user?.id as string;
@@ -97,9 +80,6 @@ const cancelInterviewSlot = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Reschedule interview slot (Applicant)
- */
 const rescheduleInterviewSlot = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const applicantId = req.user?.id as string;
@@ -119,9 +99,6 @@ const rescheduleInterviewSlot = catchAsync(async (req: Request, res: Response) =
   });
 });
 
-/**
- * Mark interview as completed (Admin only)
- */
 const markAsCompleted = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const result = await InterviewSlotService.markAsCompleted(id);
@@ -134,9 +111,6 @@ const markAsCompleted = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Update interview slot (Admin only)
- */
 const updateInterviewSlot = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const result = await InterviewSlotService.updateInterviewSlot(id, req.body);
@@ -149,9 +123,6 @@ const updateInterviewSlot = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Delete interview slot (Admin only)
- */
 const deleteInterviewSlot = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const result = await InterviewSlotService.deleteInterviewSlot(id);
@@ -164,9 +135,6 @@ const deleteInterviewSlot = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Get my booked interview slot (Applicant only)
- */
 const getMyBookedInterview = catchAsync(async (req: Request, res: Response) => {
   const applicantId = req.user?.id as string;
   const result = await InterviewSlotService.getMyBookedInterview(applicantId);
@@ -181,9 +149,6 @@ const getMyBookedInterview = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Get all scheduled meetings (Admin only)
- */
 const getScheduledMeetings = catchAsync(async (req: Request, res: Response) => {
   const result = await InterviewSlotService.getScheduledMeetings(req.query);
 
@@ -196,9 +161,6 @@ const getScheduledMeetings = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Get meeting token for interview video call
- */
 const getMeetingToken = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const userId = req.user?.id as string;

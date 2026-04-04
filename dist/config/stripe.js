@@ -5,16 +5,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.stripeConfig = exports.handleStripeError = exports.calculateFreelancerAmount = exports.calculatePlatformFee = exports.centsToDollars = exports.dollarsToCents = exports.DEFAULT_CURRENCY = exports.PLATFORM_FEE_PERCENTAGE = exports.stripe = void 0;
 const stripe_1 = __importDefault(require("stripe"));
-// Initialize Stripe with secret key
+
 exports.stripe = new stripe_1.default(process.env.STRIPE_SECRET_KEY, {
     apiVersion: '2025-07-30.basil',
     typescript: true,
 });
-// Platform configuration constants
+
 exports.PLATFORM_FEE_PERCENTAGE = Number(process.env.PLATFORM_FEE_PERCENTAGE) || 20;
-// Default currency for payments
+
 exports.DEFAULT_CURRENCY = 'usd';
-// Utility functions for payment calculations
+
 const dollarsToCents = (dollars) => {
     return Math.round(dollars * 100);
 };
@@ -32,7 +32,7 @@ const calculateFreelancerAmount = (totalAmount) => {
     return totalAmount - platformFee;
 };
 exports.calculateFreelancerAmount = calculateFreelancerAmount;
-// Error handling utility
+
 const handleStripeError = (error) => {
     if (error.type === 'StripeCardError') {
         return `Card error: ${error.message}`;
@@ -57,7 +57,7 @@ const handleStripeError = (error) => {
     }
 };
 exports.handleStripeError = handleStripeError;
-// Stripe configuration object
+
 exports.stripeConfig = {
     publishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
     webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,

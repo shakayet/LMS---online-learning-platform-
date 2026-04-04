@@ -26,7 +26,7 @@ const createSubject = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
         data: result,
     });
 }));
-// Get all subjects
+
 const getAllSubjects = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield subject_service_1.SubjectService.getAllSubjects(req.query);
     (0, sendResponse_1.default)(res, {
@@ -37,7 +37,7 @@ const getAllSubjects = (0, catchAsync_1.default)((req, res) => __awaiter(void 0,
         pagination: result.pagination,
     });
 }));
-// Get single subject
+
 const getSingleSubject = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { subjectId } = req.params;
     const result = yield subject_service_1.SubjectService.getSingleSubject(subjectId);
@@ -48,7 +48,7 @@ const getSingleSubject = (0, catchAsync_1.default)((req, res) => __awaiter(void 
         data: result,
     });
 }));
-// Update subject
+
 const updateSubject = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { subjectId } = req.params;
     const result = yield subject_service_1.SubjectService.updateSubject(subjectId, req.body);
@@ -59,7 +59,7 @@ const updateSubject = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
         data: result,
     });
 }));
-// Delete subject
+
 const deleteSubject = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { subjectId } = req.params;
     const result = yield subject_service_1.SubjectService.deleteSubject(subjectId);
@@ -70,7 +70,7 @@ const deleteSubject = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
         data: result,
     });
 }));
-// Get active subjects
+
 const getActiveSubjects = (0, catchAsync_1.default)((_req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield subject_service_1.SubjectService.getActiveSubjects();
     (0, sendResponse_1.default)(res, {

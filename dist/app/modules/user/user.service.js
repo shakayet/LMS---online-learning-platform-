@@ -35,7 +35,7 @@ const createUserToDB = (payload) => __awaiter(void 0, void 0, void 0, function* 
     if (!createUser) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'Failed to create user');
     }
-    // Log activity for user registration
+
     const roleLabel = createUser.role === user_1.USER_ROLES.STUDENT ? 'Student' :
         createUser.role === user_1.USER_ROLES.TUTOR ? 'Tutor' : 'User';
     activityLog_service_1.ActivityLogService.logActivity({
@@ -47,31 +47,7 @@ const createUserToDB = (payload) => __awaiter(void 0, void 0, void 0, function* 
         entityId: createUser._id,
         status: 'success',
     });
-    // NOTE: Email verification temporarily disabled
-    // Uncomment below to re-enable OTP email verification
-    /*
-    //send email
-    const otp = generateOTP();
-    const values = {
-      name: createUser.name,
-      otp: otp,
-      email: createUser.email!,
-    };
-    console.log('Sending email to:', createUser.email, 'with OTP:', otp);
-  
-    const createAccountTemplate = emailTemplate.createAccount(values);
-    emailHelper.sendEmail(createAccountTemplate);
-  
-    //save to DB
-    const authentication = {
-      oneTimeCode: otp,
-      expireAt: new Date(Date.now() + 3 * 60000),
-    };
-    await User.findOneAndUpdate(
-      { _id: createUser._id },
-      { $set: { authentication } }
-    );
-    */
+
     return createUser;
 });
 const getUserProfileFromDB = (user) => __awaiter(void 0, void 0, void 0, function* () {
@@ -89,11 +65,7 @@ const updateProfileToDB = (user, payload) => __awaiter(void 0, void 0, void 0, f
     if (!isExistUser) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "User doesn't exist!");
     }
-    // //unlink file here
-    // if (payload.image) {
-    //   unlinkFile(isExistUser.image);
-    // }
-    //unlink file here
+
     if (payload.profilePicture) {
         (0, unlinkFile_1.default)(isExistUser.profilePicture);
     }
@@ -121,22 +93,22 @@ const resendVerifyEmailToDB = (email) => __awaiter(void 0, void 0, void 0, funct
     if (!isExistUser) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "User doesn't exist!");
     }
-    // Generate new OTP
+
     const otp = (0, generateOTP_1.default)();
-    // Save OTP to DB
+
     const authentication = {
         oneTimeCode: otp,
-        expireAt: new Date(Date.now() + 3 * 60000), // 3 minutes
+        expireAt: new Date(Date.now() + 3 * 60000),
     };
     yield user_model_1.User.findOneAndUpdate({ email }, { $set: { authentication } });
-    // Send email
+
     const emailData = emailTemplate_1.emailTemplate.createAccount({
         name: isExistUser.name,
         email: isExistUser.email,
         otp,
     });
     yield emailHelper_1.emailHelper.sendEmail(emailData);
-    return { otp }; // optional: just for logging/debugging
+    return { otp };
 });
 const updateUserStatus = (id, status) => __awaiter(void 0, void 0, void 0, function* () {
     const user = yield user_model_1.User.isExistUserById(id);
@@ -147,7 +119,7 @@ const updateUserStatus = (id, status) => __awaiter(void 0, void 0, void 0, funct
     return updatedUser;
 });
 const getUserById = (id) => __awaiter(void 0, void 0, void 0, function* () {
-    // Only return user info; remove task/bid side data
+
     const user = yield user_model_1.User.findById(id)
         .select('-password -authentication')
         .populate({
@@ -166,7 +138,7 @@ const getUserDetailsById = (id) => __awaiter(void 0, void 0, void 0, function* (
     }
     return user;
 });
-// ============ ADMIN: STUDENT MANAGEMENT ============
+
 const getAllStudents = (query) => __awaiter(void 0, void 0, void 0, function* () {
     const studentQuery = new QueryBuilder_1.default(user_model_1.User.find({ role: user_1.USER_ROLES.STUDENT }).select('-password -authentication'), query)
         .search(['name', 'email'])
@@ -209,7 +181,7 @@ const unblockStudent = (id) => __awaiter(void 0, void 0, void 0, function* () {
     const updatedUser = yield user_model_1.User.findByIdAndUpdate(id, { status: user_1.USER_STATUS.ACTIVE }, { new: true }).select('-password -authentication');
     return updatedUser;
 });
-// ============ ADMIN: TUTOR MANAGEMENT ============
+
 const getAllTutors = (query) => __awaiter(void 0, void 0, void 0, function* () {
     const tutorQuery = new QueryBuilder_1.default(user_model_1.User.find({ role: user_1.USER_ROLES.TUTOR })
         .select('-password -authentication')
@@ -276,9 +248,9 @@ const adminUpdateTutorProfile = (id, payload) => __awaiter(void 0, void 0, void 
     if (user.role !== user_1.USER_ROLES.TUTOR) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'User is not a tutor');
     }
-    // Build update object
+
     const updateData = {};
-    // Update basic fields
+
     if (payload.name)
         updateData.name = payload.name;
     if (payload.email)
@@ -289,7 +261,7 @@ const adminUpdateTutorProfile = (id, payload) => __awaiter(void 0, void 0, void 
         updateData.dateOfBirth = payload.dateOfBirth;
     if (payload.location)
         updateData.location = payload.location;
-    // Update tutor profile fields
+
     if (payload.tutorProfile) {
         const tp = payload.tutorProfile;
         if (tp.address !== undefined)
@@ -323,9 +295,9 @@ const adminUpdateStudentProfile = (id, payload) => __awaiter(void 0, void 0, voi
     if (user.role !== user_1.USER_ROLES.STUDENT) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'User is not a student');
     }
-    // Build update object
+
     const updateData = {};
-    // Update basic fields
+
     if (payload.name)
         updateData.name = payload.name;
     if (payload.email)
@@ -339,10 +311,7 @@ const adminUpdateStudentProfile = (id, payload) => __awaiter(void 0, void 0, voi
     const updatedUser = yield user_model_1.User.findByIdAndUpdate(id, { $set: updateData }, { new: true }).select('-password -authentication');
     return updatedUser;
 });
-// ============ TUTOR STATISTICS ============
-/**
- * Calculate tutor level based on completed sessions
- */
+
 const calculateTutorLevel = (completedSessions) => {
     if (completedSessions >= 51) {
         return user_interface_1.TUTOR_LEVEL.EXPERT;
@@ -352,31 +321,27 @@ const calculateTutorLevel = (completedSessions) => {
     }
     return user_interface_1.TUTOR_LEVEL.STARTER;
 };
-/**
- * Get sessions to next level
- */
+
 const getSessionsToNextLevel = (completedSessions, currentLevel) => {
     switch (currentLevel) {
         case user_interface_1.TUTOR_LEVEL.STARTER:
-            return 21 - completedSessions; // Need 21 for INTERMEDIATE
+            return 21 - completedSessions;
         case user_interface_1.TUTOR_LEVEL.INTERMEDIATE:
-            return 51 - completedSessions; // Need 51 for EXPERT
+            return 51 - completedSessions;
         case user_interface_1.TUTOR_LEVEL.EXPERT:
-            return null; // Already at max level
+            return null;
         default:
             return null;
     }
 };
-/**
- * Get comprehensive tutor statistics
- */
+
 const getTutorStatistics = (tutorId) => __awaiter(void 0, void 0, void 0, function* () {
-    // Verify tutor exists
+
     const tutor = yield user_model_1.User.findById(tutorId);
     if (!tutor || tutor.role !== user_1.USER_ROLES.TUTOR) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.FORBIDDEN, 'Only tutors can access this endpoint');
     }
-    // Get session stats
+
     const sessionStats = yield session_model_1.Session.aggregate([
         {
             $match: {
@@ -417,7 +382,7 @@ const getTutorStatistics = (tutorId) => __awaiter(void 0, void 0, void 0, functi
         totalHours: 0,
         totalStudents: 0,
     };
-    // Get earnings
+
     const earningsStats = yield tutorEarnings_model_1.TutorEarnings.aggregate([
         {
             $match: {
@@ -442,22 +407,22 @@ const getTutorStatistics = (tutorId) => __awaiter(void 0, void 0, void 0, functi
         totalEarnings: 0,
         pendingEarnings: 0,
     };
-    // Get pending feedback count
+
     const pendingFeedbackCount = yield tutorSessionFeedback_model_1.TutorSessionFeedback.countDocuments({
         tutorId: new mongoose_1.Types.ObjectId(tutorId),
         status: tutorSessionFeedback_interface_1.FEEDBACK_STATUS.PENDING,
     });
-    // Get overdue feedback count
+
     const now = new Date();
     const overdueFeedbackCount = yield tutorSessionFeedback_model_1.TutorSessionFeedback.countDocuments({
         tutorId: new mongoose_1.Types.ObjectId(tutorId),
         status: tutorSessionFeedback_interface_1.FEEDBACK_STATUS.PENDING,
         dueDate: { $lt: now },
     });
-    // Calculate level
+
     const currentLevel = calculateTutorLevel(stats.completedSessions);
     const sessionsToNextLevel = getSessionsToNextLevel(stats.completedSessions, currentLevel);
-    // Determine next level
+
     let nextLevel = null;
     if (currentLevel === user_interface_1.TUTOR_LEVEL.STARTER) {
         nextLevel = user_interface_1.TUTOR_LEVEL.INTERMEDIATE;
@@ -481,23 +446,21 @@ const getTutorStatistics = (tutorId) => __awaiter(void 0, void 0, void 0, functi
         overdueFeedbackCount,
     };
 });
-/**
- * Update tutor level after session completion
- */
+
 const updateTutorLevelAfterSession = (tutorId) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const tutor = yield user_model_1.User.findById(tutorId);
     if (!tutor || tutor.role !== user_1.USER_ROLES.TUTOR) {
         return;
     }
-    // Get completed sessions count
+
     const completedSessions = yield session_model_1.Session.countDocuments({
         tutorId: new mongoose_1.Types.ObjectId(tutorId),
         status: session_interface_1.SESSION_STATUS.COMPLETED,
     });
-    // Calculate new level
+
     const newLevel = calculateTutorLevel(completedSessions);
-    // Update if level changed
+
     if (((_a = tutor.tutorProfile) === null || _a === void 0 ? void 0 : _a.level) !== newLevel) {
         yield user_model_1.User.findByIdAndUpdate(tutorId, {
             'tutorProfile.level': newLevel,
@@ -506,7 +469,7 @@ const updateTutorLevelAfterSession = (tutorId) => __awaiter(void 0, void 0, void
         });
     }
     else {
-        // Just update the session count
+
         yield user_model_1.User.findByIdAndUpdate(tutorId, {
             'tutorProfile.completedSessions': completedSessions,
         });
@@ -521,18 +484,18 @@ exports.UserService = {
     updateUserStatus,
     getUserById,
     getUserDetailsById,
-    // Admin: Student Management
+
     getAllStudents,
     blockStudent,
     unblockStudent,
     adminUpdateStudentProfile,
-    // Admin: Tutor Management
+
     getAllTutors,
     blockTutor,
     unblockTutor,
     updateTutorSubjects,
     adminUpdateTutorProfile,
-    // Tutor Statistics
+
     getTutorStatistics,
     updateTutorLevelAfterSession,
     calculateTutorLevel,

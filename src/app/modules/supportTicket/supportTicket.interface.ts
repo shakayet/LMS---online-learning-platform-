@@ -1,6 +1,5 @@
 import { Model, Types } from 'mongoose';
 
-// Support ticket categories - predefined options for dropdown
 export enum TICKET_CATEGORY {
   TECHNICAL_ISSUE = 'TECHNICAL_ISSUE',
   PAYMENT_BILLING = 'PAYMENT_BILLING',
@@ -11,7 +10,6 @@ export enum TICKET_CATEGORY {
   OTHER = 'OTHER',
 }
 
-// Ticket status for admin to track
 export enum TICKET_STATUS {
   OPEN = 'OPEN',
   IN_PROGRESS = 'IN_PROGRESS',
@@ -19,7 +17,6 @@ export enum TICKET_STATUS {
   CLOSED = 'CLOSED',
 }
 
-// Ticket priority for admin to prioritize
 export enum TICKET_PRIORITY {
   LOW = 'LOW',
   MEDIUM = 'MEDIUM',

@@ -6,13 +6,13 @@ const sessionReviewSchema = new Schema<ISessionReview>(
     sessionId: {
       type: Schema.Types.ObjectId,
       ref: 'Session',
-      required: false, // Optional for admin-created reviews
-      sparse: true, // Allow multiple null values
+      required: false,
+      sparse: true,
     },
     studentId: {
       type: Schema.Types.ObjectId,
       ref: 'User',
-      required: false, // Optional for admin-created reviews
+      required: false,
     },
     tutorId: {
       type: Schema.Types.ObjectId,
@@ -70,7 +70,7 @@ const sessionReviewSchema = new Schema<ISessionReview>(
     editedAt: {
       type: Date,
     },
-    // Admin-created review fields
+
     isAdminCreated: {
       type: Boolean,
       default: false,
@@ -84,15 +84,13 @@ const sessionReviewSchema = new Schema<ISessionReview>(
   { timestamps: true }
 );
 
-// Indexes
 sessionReviewSchema.index({ tutorId: 1, createdAt: -1 });
 sessionReviewSchema.index({ studentId: 1, createdAt: -1 });
 
 sessionReviewSchema.index({ overallRating: 1 });
 
-// Compound index for public reviews
 sessionReviewSchema.index({ tutorId: 1, isPublic: 1 });
-// Index for admin-created reviews
+
 sessionReviewSchema.index({ isAdminCreated: 1 });
 
 export const SessionReview = model<ISessionReview, SessionReviewModel>(

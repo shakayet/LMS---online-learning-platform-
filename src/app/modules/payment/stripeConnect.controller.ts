@@ -54,7 +54,6 @@ const getOnboardingLinkController = catchAsync(
   }
 );
 
-// Check onboarding status
 const checkOnboardingStatusController = catchAsync(
   async (req: Request, res: Response) => {
     const user = req.user as JwtPayload;
@@ -75,7 +74,6 @@ const checkOnboardingStatusController = catchAsync(
   }
 );
 
-// Handle Stripe webhook
 const handleStripeWebhookController = catchAsync(
   async (req: Request, res: Response) => {
     const event = req.body;

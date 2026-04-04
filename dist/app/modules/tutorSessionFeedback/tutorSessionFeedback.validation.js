@@ -70,7 +70,7 @@ const updateFeedbackZodSchema = zod_1.z
     }),
 })
     .refine(data => {
-    // If feedbackType is being set to TEXT, feedbackText must be provided
+
     if (data.body.feedbackType === tutorSessionFeedback_interface_1.FEEDBACK_TYPE.TEXT && !data.body.feedbackText) {
         return false;
     }
@@ -80,7 +80,7 @@ const updateFeedbackZodSchema = zod_1.z
     path: ['body', 'feedbackText'],
 })
     .refine(data => {
-    // If feedbackType is being set to AUDIO, feedbackAudioUrl must be provided
+
     if (data.body.feedbackType === tutorSessionFeedback_interface_1.FEEDBACK_TYPE.AUDIO && !data.body.feedbackAudioUrl) {
         return false;
     }

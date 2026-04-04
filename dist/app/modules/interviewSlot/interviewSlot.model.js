@@ -56,20 +56,20 @@ const interviewSlotSchema = new mongoose_1.Schema({
         type: Date,
     },
 }, { timestamps: true });
-// Indexes for performance
+
 interviewSlotSchema.index({ adminId: 1 });
 interviewSlotSchema.index({ applicantId: 1 });
 interviewSlotSchema.index({ applicationId: 1 });
 interviewSlotSchema.index({ status: 1 });
 interviewSlotSchema.index({ startTime: 1, endTime: 1 });
-// Validate endTime is after startTime
+
 interviewSlotSchema.pre('save', function (next) {
     if (this.endTime <= this.startTime) {
         next(new Error('End time must be after start time'));
     }
     next();
 });
-// Prevent overlapping slots for same admin
+
 interviewSlotSchema.pre('save', function (next) {
     return __awaiter(this, void 0, void 0, function* () {
         if (this.isNew || this.isModified('startTime') || this.isModified('endTime')) {

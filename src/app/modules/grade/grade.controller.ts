@@ -15,7 +15,6 @@ const createGrade = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// Get all grades
 const getAllGrades = catchAsync(async (req: Request, res: Response) => {
   const result = await GradeService.getAllGrades(req.query);
 
@@ -28,7 +27,6 @@ const getAllGrades = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// Get single grade
 const getSingleGrade = catchAsync(async (req: Request, res: Response) => {
   const { gradeId } = req.params;
   const result = await GradeService.getSingleGrade(gradeId);
@@ -41,7 +39,6 @@ const getSingleGrade = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// Update grade
 const updateGrade = catchAsync(async (req: Request, res: Response) => {
   const { gradeId } = req.params;
   const result = await GradeService.updateGrade(gradeId, req.body);
@@ -54,7 +51,6 @@ const updateGrade = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// Delete grade
 const deleteGrade = catchAsync(async (req: Request, res: Response) => {
   const { gradeId } = req.params;
   const result = await GradeService.deleteGrade(gradeId);
@@ -67,7 +63,6 @@ const deleteGrade = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// Get active grades
 const getActiveGrades = catchAsync(async (_req: Request, res: Response) => {
   const result = await GradeService.getActiveGrades();
 

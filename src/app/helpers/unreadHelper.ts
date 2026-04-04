@@ -2,7 +2,7 @@ import NodeCache from 'node-cache';
 const memory = new NodeCache({ stdTTL: 0, checkperiod: 120, useClones: false });
 type UnreadMap = Record<string, number>;
 
-const CHAT_UNREAD_PREFIX = 'chat:unread_count:'; // chat:unread_count:<chatId>
+const CHAT_UNREAD_PREFIX = 'chat:unread_count:';
 
 const chatKey = (chatId: string) => `${CHAT_UNREAD_PREFIX}${String(chatId)}`;
 

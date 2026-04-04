@@ -6,7 +6,6 @@ import { CallValidation } from './call.validation';
 
 const router = express.Router();
 
-// Initiate a new call
 router.post(
   '/initiate',
   auth(),
@@ -14,7 +13,6 @@ router.post(
   CallController.initiateCall
 );
 
-// Accept a call
 router.post(
   '/:callId/accept',
   auth(),
@@ -22,7 +20,6 @@ router.post(
   CallController.acceptCall
 );
 
-// Reject a call
 router.post(
   '/:callId/reject',
   auth(),
@@ -30,7 +27,6 @@ router.post(
   CallController.rejectCall
 );
 
-// End a call
 router.post(
   '/:callId/end',
   auth(),
@@ -38,7 +34,6 @@ router.post(
   CallController.endCall
 );
 
-// Cancel a call (before accepted)
 router.post(
   '/:callId/cancel',
   auth(),
@@ -46,7 +41,6 @@ router.post(
   CallController.cancelCall
 );
 
-// Refresh token for ongoing call
 router.post(
   '/:callId/refresh-token',
   auth(),
@@ -54,7 +48,6 @@ router.post(
   CallController.refreshToken
 );
 
-// Get call history
 router.get(
   '/history',
   auth(),
@@ -62,7 +55,6 @@ router.get(
   CallController.getCallHistory
 );
 
-// Get single call details
 router.get(
   '/:callId',
   auth(),
@@ -70,7 +62,6 @@ router.get(
   CallController.getCallById
 );
 
-// Get active participants of a call
 router.get(
   '/:callId/participants',
   auth(),

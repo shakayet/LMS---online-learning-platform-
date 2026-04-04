@@ -51,21 +51,15 @@ const message_model_1 = require("../message/message.model");
 const QueryBuilder_1 = __importDefault(require("../../builder/QueryBuilder"));
 const jwtHelper_1 = require("../../../helpers/jwtHelper");
 const config_1 = __importDefault(require("../../../config"));
-/**
- * Create trial request (First-time Student or Guest ONLY)
- * For returning students, use SessionRequest module instead
- * Automatically creates User account when trial request is created
- */
+
 const createTrialRequest = (studentId, payload) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o;
-    // Validate subject exists
+
     const subjectExists = yield subject_model_1.Subject.findById(payload.subject);
     if (!subjectExists) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, 'Subject not found');
     }
-    // Validate based on age
-    // Under 18: guardian info required
-    // 18+: student email/password required
+
     if ((_a = payload.studentInfo) === null || _a === void 0 ? void 0 : _a.isUnder18) {
         if (!((_b = payload.studentInfo) === null || _b === void 0 ? void 0 : _b.guardianInfo)) {
             throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'Guardian information is required for students under 18');
@@ -79,7 +73,7 @@ const createTrialRequest = (studentId, payload) => __awaiter(void 0, void 0, voi
             throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'Password is required for students 18 and above');
         }
     }
-    // If logged-in student, verify and check eligibility
+
     if (studentId) {
         const student = yield user_model_1.User.findById(studentId);
         if (!student) {
@@ -88,11 +82,11 @@ const createTrialRequest = (studentId, payload) => __awaiter(void 0, void 0, voi
         if (student.role !== user_1.USER_ROLES.STUDENT) {
             throw new ApiError_1.default(http_status_codes_1.StatusCodes.FORBIDDEN, 'Only students can create trial requests');
         }
-        // Returning students should use SessionRequest, not TrialRequest
+
         if ((_e = student.studentProfile) === null || _e === void 0 ? void 0 : _e.hasCompletedTrial) {
             throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'You have already completed a trial. Please use the session request feature for additional tutoring sessions.');
         }
-        // Check if student has pending trial request
+
         const pendingTrialRequest = yield trialRequest_model_1.TrialRequest.findOne({
             studentId: new mongoose_1.Types.ObjectId(studentId),
             status: trialRequest_interface_1.TRIAL_REQUEST_STATUS.PENDING,
@@ -100,7 +94,7 @@ const createTrialRequest = (studentId, payload) => __awaiter(void 0, void 0, voi
         if (pendingTrialRequest) {
             throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'You already have a pending trial request. Please wait for a tutor to accept or cancel it.');
         }
-        // Also check for pending session request
+
         const pendingSessionRequest = yield sessionRequest_model_1.SessionRequest.findOne({
             studentId: new mongoose_1.Types.ObjectId(studentId),
             status: sessionRequest_interface_1.SESSION_REQUEST_STATUS.PENDING,
@@ -110,17 +104,17 @@ const createTrialRequest = (studentId, payload) => __awaiter(void 0, void 0, voi
         }
     }
     else {
-        // Guest user - check by email for previous trials and pending requests
+
         const emailToCheck = ((_f = payload.studentInfo) === null || _f === void 0 ? void 0 : _f.isUnder18)
             ? (_h = (_g = payload.studentInfo) === null || _g === void 0 ? void 0 : _g.guardianInfo) === null || _h === void 0 ? void 0 : _h.email
             : (_j = payload.studentInfo) === null || _j === void 0 ? void 0 : _j.email;
         if (emailToCheck) {
-            // Check if user already exists with this email
+
             const existingUser = yield user_model_1.User.findOne({ email: emailToCheck.toLowerCase() });
             if (existingUser) {
                 throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'An account with this email already exists. Please log in to create a trial request.');
             }
-            // Check if guest has already completed a trial
+
             const previousAcceptedTrial = yield trialRequest_model_1.TrialRequest.findOne({
                 $or: [
                     { 'studentInfo.email': emailToCheck },
@@ -131,7 +125,7 @@ const createTrialRequest = (studentId, payload) => __awaiter(void 0, void 0, voi
             if (previousAcceptedTrial) {
                 throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'You have already completed a trial with this email. Please log in to request more sessions.');
             }
-            // Check for pending requests
+
             const pendingRequest = yield trialRequest_model_1.TrialRequest.findOne({
                 $or: [
                     { 'studentInfo.email': emailToCheck },
@@ -144,15 +138,14 @@ const createTrialRequest = (studentId, payload) => __awaiter(void 0, void 0, voi
             }
         }
     }
-    // Auto-create User account for guest users when trial request is created
-    // Uses MongoDB transaction to prevent orphaned users if any step fails
+
     let createdStudentId = studentId;
     let accessToken;
     let refreshToken;
     let userInfo;
     let trialRequest;
     if (!studentId && payload.studentInfo) {
-        // Determine email and password based on age
+
         const isUnder18 = payload.studentInfo.isUnder18;
         const email = isUnder18
             ? (_k = payload.studentInfo.guardianInfo) === null || _k === void 0 ? void 0 : _k.email
@@ -167,11 +160,11 @@ const createTrialRequest = (studentId, payload) => __awaiter(void 0, void 0, voi
             ? (_o = payload.studentInfo.guardianInfo) === null || _o === void 0 ? void 0 : _o.phone
             : undefined;
         if (email && password) {
-            // Transaction: User + TrialRequest created together or not at all
+
             const dbSession = yield mongoose_1.default.startSession();
             dbSession.startTransaction();
             try {
-                // Create new User account within transaction
+
                 const [newUser] = yield user_model_1.User.create([{
                         name: name,
                         email: email.toLowerCase(),
@@ -185,7 +178,7 @@ const createTrialRequest = (studentId, payload) => __awaiter(void 0, void 0, voi
                         },
                     }], { session: dbSession });
                 createdStudentId = newUser._id.toString();
-                // Generate JWT tokens for auto-login (pure computation, won't fail DB)
+
                 accessToken = jwtHelper_1.jwtHelper.createToken({ id: newUser._id, role: newUser.role, email: newUser.email }, config_1.default.jwt.jwt_secret, config_1.default.jwt.jwt_expire_in);
                 refreshToken = jwtHelper_1.jwtHelper.createToken({ id: newUser._id, role: newUser.role, email: newUser.email }, config_1.default.jwt.jwt_refresh_secret, config_1.default.jwt.jwt_refresh_expire_in);
                 userInfo = {
@@ -194,7 +187,7 @@ const createTrialRequest = (studentId, payload) => __awaiter(void 0, void 0, voi
                     email: newUser.email,
                     role: newUser.role,
                 };
-                // Create trial request within same transaction
+
                 const [createdRequest] = yield trialRequest_model_1.TrialRequest.create([Object.assign(Object.assign({}, payload), { studentId: new mongoose_1.Types.ObjectId(createdStudentId), status: trialRequest_interface_1.TRIAL_REQUEST_STATUS.PENDING })], { session: dbSession });
                 trialRequest = createdRequest;
                 yield dbSession.commitTransaction();
@@ -208,21 +201,21 @@ const createTrialRequest = (studentId, payload) => __awaiter(void 0, void 0, voi
             }
         }
         else {
-            // No email/password - create trial request without user account
+
             trialRequest = yield trialRequest_model_1.TrialRequest.create(Object.assign(Object.assign({}, payload), { status: trialRequest_interface_1.TRIAL_REQUEST_STATUS.PENDING }));
         }
     }
     else {
-        // Logged-in student - create trial request directly (user already exists)
+
         trialRequest = yield trialRequest_model_1.TrialRequest.create(Object.assign(Object.assign({}, payload), { studentId: createdStudentId ? new mongoose_1.Types.ObjectId(createdStudentId) : undefined, status: trialRequest_interface_1.TRIAL_REQUEST_STATUS.PENDING }));
-        // Increment student trial request count
+
         if (studentId) {
             yield user_model_1.User.findByIdAndUpdate(studentId, {
                 $inc: { 'studentProfile.trialRequestsCount': 1 },
             });
         }
     }
-    // Send real-time notification to matching tutors via socket (AFTER transaction committed)
+
     const io = global.io;
     if (io) {
         const matchingTutors = yield user_model_1.User.find({
@@ -240,8 +233,7 @@ const createTrialRequest = (studentId, payload) => __awaiter(void 0, void 0, voi
         });
         console.log(`Trial request notification sent to ${matchingTutors.length} tutors`);
     }
-    // TODO: Send email notification to admin
-    // TODO: Send confirmation email to student
+
     return {
         trialRequest,
         accessToken,
@@ -249,9 +241,7 @@ const createTrialRequest = (studentId, payload) => __awaiter(void 0, void 0, voi
         user: userInfo,
     };
 });
-/**
- * Get single trial request
- */
+
 const getSingleTrialRequest = (id) => __awaiter(void 0, void 0, void 0, function* () {
     const request = yield trialRequest_model_1.TrialRequest.findById(id)
         .populate('studentId', 'name email profilePicture phone')
@@ -263,16 +253,10 @@ const getSingleTrialRequest = (id) => __awaiter(void 0, void 0, void 0, function
     }
     return request;
 });
-/**
- * Get available trial requests matching tutor's subjects (Tutor)
- * Returns PENDING requests where:
- * - Tutor teaches the requested subject
- * - Request is not expired
- * - Request was not created by the tutor's own students (future consideration)
- */
+
 const getAvailableTrialRequests = (tutorId, query) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;
-    // Verify tutor exists and is verified
+
     const tutor = yield user_model_1.User.findById(tutorId);
     if (!tutor || tutor.role !== user_1.USER_ROLES.TUTOR) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.FORBIDDEN, 'Only tutors can access this endpoint');
@@ -280,7 +264,7 @@ const getAvailableTrialRequests = (tutorId, query) => __awaiter(void 0, void 0, 
     if (!((_a = tutor.tutorProfile) === null || _a === void 0 ? void 0 : _a.isVerified)) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.FORBIDDEN, 'Only verified tutors can view available requests');
     }
-    // Get tutor's subjects
+
     const tutorSubjectIds = ((_b = tutor.tutorProfile) === null || _b === void 0 ? void 0 : _b.subjects) || [];
     if (tutorSubjectIds.length === 0) {
         return {
@@ -289,11 +273,11 @@ const getAvailableTrialRequests = (tutorId, query) => __awaiter(void 0, void 0, 
         };
     }
     const now = new Date();
-    // Build query for pending requests matching tutor's subjects
+
     const requestQuery = new QueryBuilder_1.default(trialRequest_model_1.TrialRequest.find({
         status: trialRequest_interface_1.TRIAL_REQUEST_STATUS.PENDING,
         subject: { $in: tutorSubjectIds },
-        expiresAt: { $gt: now }, // Not expired
+        expiresAt: { $gt: now },
     })
         .populate('subject', 'name icon description')
         .select('-studentInfo.password -studentInfo.guardianInfo.password'), query)
@@ -302,7 +286,7 @@ const getAvailableTrialRequests = (tutorId, query) => __awaiter(void 0, void 0, 
         .paginate();
     const requests = yield requestQuery.modelQuery;
     const paginationInfo = yield requestQuery.getPaginationInfo();
-    // Calculate student age from DOB for each request
+
     const requestsWithAge = requests.map(request => {
         var _a;
         const reqObj = request.toObject();
@@ -318,17 +302,14 @@ const getAvailableTrialRequests = (tutorId, query) => __awaiter(void 0, void 0, 
         data: requestsWithAge,
     };
 });
-/**
- * Get tutor's accepted trial requests (Tutor)
- * Returns requests the tutor has accepted with their status
- */
+
 const getMyAcceptedTrialRequests = (tutorId, query) => __awaiter(void 0, void 0, void 0, function* () {
-    // Verify tutor exists
+
     const tutor = yield user_model_1.User.findById(tutorId);
     if (!tutor || tutor.role !== user_1.USER_ROLES.TUTOR) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.FORBIDDEN, 'Only tutors can access this endpoint');
     }
-    // Build query for accepted requests by this tutor
+
     const requestQuery = new QueryBuilder_1.default(trialRequest_model_1.TrialRequest.find({
         acceptedTutorId: new mongoose_1.Types.ObjectId(tutorId),
     })
@@ -346,15 +327,10 @@ const getMyAcceptedTrialRequests = (tutorId, query) => __awaiter(void 0, void 0,
         data: requests,
     };
 });
-/**
- * Accept trial request (Tutor)
- * Creates chat and connects student with tutor
- * Sends introductory message to chat
- * Marks student as having completed trial
- */
+
 const acceptTrialRequest = (requestId, tutorId, introductoryMessage) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c;
-    // Verify tutor FIRST (before atomic update, so we don't accept then fail)
+
     const tutor = yield user_model_1.User.findById(tutorId);
     if (!tutor || tutor.role !== user_1.USER_ROLES.TUTOR) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.FORBIDDEN, 'Only tutors can accept requests');
@@ -362,7 +338,7 @@ const acceptTrialRequest = (requestId, tutorId, introductoryMessage) => __awaite
     if (!((_a = tutor.tutorProfile) === null || _a === void 0 ? void 0 : _a.isVerified)) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.FORBIDDEN, 'Only verified tutors can accept requests');
     }
-    // Verify tutor teaches this subject - need to check request first
+
     const requestCheck = yield trialRequest_model_1.TrialRequest.findById(requestId);
     if (!requestCheck) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, 'Trial request not found');
@@ -374,8 +350,7 @@ const acceptTrialRequest = (requestId, tutorId, introductoryMessage) => __awaite
     if (!tutorSubjectIds.includes(requestSubjectId)) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'You do not teach this subject');
     }
-    // Atomic update: only one teacher can accept (prevents race condition)
-    // All validations passed, now atomically claim the request
+
     const request = yield trialRequest_model_1.TrialRequest.findOneAndUpdate({
         _id: requestId,
         status: trialRequest_interface_1.TRIAL_REQUEST_STATUS.PENDING,
@@ -386,7 +361,7 @@ const acceptTrialRequest = (requestId, tutorId, introductoryMessage) => __awaite
         acceptedAt: new Date(),
     }, { new: true }).populate('subject', 'name');
     if (!request) {
-        // Another teacher accepted between our check and update, or it expired
+
         const existing = yield trialRequest_model_1.TrialRequest.findById(requestId);
         if ((existing === null || existing === void 0 ? void 0 : existing.status) === trialRequest_interface_1.TRIAL_REQUEST_STATUS.ACCEPTED) {
             throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'This trial request has already been accepted by another tutor');
@@ -398,29 +373,28 @@ const acceptTrialRequest = (requestId, tutorId, introductoryMessage) => __awaite
         }
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'This trial request is no longer available');
     }
-    // Prepare chat participants
-    // If studentId exists (logged-in user), use it; otherwise, create chat with tutor only for now
+
     const chatParticipants = request.studentId
         ? [request.studentId, new mongoose_1.Types.ObjectId(tutorId)]
         : [new mongoose_1.Types.ObjectId(tutorId)];
-    // Check if chat already exists between tutor and student (to avoid duplicate chats)
+
     let chat = yield chat_model_1.Chat.findOne({
         participants: { $all: chatParticipants },
     });
     if (chat) {
-        // Reuse existing chat, update trial request reference
+
         chat.trialRequestId = request._id;
-        chat.sessionRequestId = undefined; // Clear session reference for trial
+        chat.sessionRequestId = undefined;
         yield chat.save();
     }
     else {
-        // Create new chat only if none exists
+
         chat = yield chat_model_1.Chat.create({
             participants: chatParticipants,
             trialRequestId: request._id,
         });
     }
-    // Send introductory message if provided
+
     if (introductoryMessage && introductoryMessage.trim()) {
         yield message_model_1.Message.create({
             chatId: chat._id,
@@ -429,23 +403,23 @@ const acceptTrialRequest = (requestId, tutorId, introductoryMessage) => __awaite
             type: 'text',
         });
     }
-    // Update chatId on the request (status/tutor/acceptedAt already set atomically above)
+
     yield trialRequest_model_1.TrialRequest.findByIdAndUpdate(requestId, { chatId: chat._id });
-    // Mark student as having completed trial (so they use SessionRequest next time)
+
     if (request.studentId) {
         yield user_model_1.User.findByIdAndUpdate(request.studentId, {
             $set: { 'studentProfile.hasCompletedTrial': true },
         });
     }
-    // Send real-time notification to student via socket
+
     const io = global.io;
     if (io) {
-        // Populate the request with tutor info for the notification
+
         const populatedRequest = yield trialRequest_model_1.TrialRequest.findById(request._id)
             .populate('acceptedTutorId', 'name email profilePicture')
             .populate('subject', 'name icon description')
             .populate('chatId');
-        // Emit to student's personal room
+
         if (request.studentId) {
             io.to(`user::${request.studentId.toString()}`).emit('TRIAL_REQUEST_ACCEPTED', {
                 trialRequest: populatedRequest,
@@ -458,12 +432,12 @@ const acceptTrialRequest = (requestId, tutorId, introductoryMessage) => __awaite
             });
             console.log(`Trial acceptance notification sent to student ${request.studentId}`);
         }
-        // Also notify other tutors that this request is no longer available
+
         const otherTutors = yield user_model_1.User.find({
             role: user_1.USER_ROLES.TUTOR,
             'tutorProfile.isVerified': true,
             'tutorProfile.subjects': request.subject,
-            _id: { $ne: tutorId }, // Exclude the accepting tutor
+            _id: { $ne: tutorId },
         }).select('_id');
         otherTutors.forEach(otherTutor => {
             io.to(`user::${otherTutor._id.toString()}`).emit('TRIAL_REQUEST_TAKEN', {
@@ -471,81 +445,71 @@ const acceptTrialRequest = (requestId, tutorId, introductoryMessage) => __awaite
             });
         });
     }
-    // TODO: Send email to student
+
     return request;
 });
-/**
- * Cancel trial request (Student)
- * Can be cancelled by studentId (logged-in) or by email (guest)
- */
+
 const cancelTrialRequest = (requestId, studentIdOrEmail, cancellationReason) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;
     const request = yield trialRequest_model_1.TrialRequest.findById(requestId);
     if (!request) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, 'Trial request not found');
     }
-    // Verify ownership - check both studentId and studentInfo.email
+
     const isOwnerByStudentId = request.studentId && request.studentId.toString() === studentIdOrEmail;
     const isOwnerByEmail = ((_b = (_a = request.studentInfo) === null || _a === void 0 ? void 0 : _a.email) === null || _b === void 0 ? void 0 : _b.toLowerCase()) === studentIdOrEmail.toLowerCase();
     if (!isOwnerByStudentId && !isOwnerByEmail) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.FORBIDDEN, 'You can only cancel your own trial requests');
     }
-    // Can only cancel PENDING requests
+
     if (request.status !== trialRequest_interface_1.TRIAL_REQUEST_STATUS.PENDING) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'Only pending trial requests can be cancelled');
     }
-    // Update request
+
     request.status = trialRequest_interface_1.TRIAL_REQUEST_STATUS.CANCELLED;
     request.cancellationReason = cancellationReason;
     request.cancelledAt = new Date();
     yield request.save();
     return request;
 });
-/**
- * Extend trial request (Student)
- * Adds 7 more days to expiration (max 1 extension)
- */
+
 const extendTrialRequest = (requestId, studentIdOrEmail) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c, _d, _e;
     const request = yield trialRequest_model_1.TrialRequest.findById(requestId);
     if (!request) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, 'Trial request not found');
     }
-    // Verify ownership
+
     const isOwnerByStudentId = request.studentId && request.studentId.toString() === studentIdOrEmail;
     const isOwnerByEmail = ((_b = (_a = request.studentInfo) === null || _a === void 0 ? void 0 : _a.email) === null || _b === void 0 ? void 0 : _b.toLowerCase()) === studentIdOrEmail.toLowerCase();
     const isOwnerByGuardianEmail = ((_e = (_d = (_c = request.studentInfo) === null || _c === void 0 ? void 0 : _c.guardianInfo) === null || _d === void 0 ? void 0 : _d.email) === null || _e === void 0 ? void 0 : _e.toLowerCase()) === studentIdOrEmail.toLowerCase();
     if (!isOwnerByStudentId && !isOwnerByEmail && !isOwnerByGuardianEmail) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.FORBIDDEN, 'You can only extend your own trial requests');
     }
-    // Can only extend PENDING requests
+
     if (request.status !== trialRequest_interface_1.TRIAL_REQUEST_STATUS.PENDING) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'Only pending trial requests can be extended');
     }
-    // Check extension limit (max 1)
+
     if (request.extensionCount && request.extensionCount >= 1) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'Trial request can only be extended once');
     }
-    // Extend by 7 days
+
     const newExpiresAt = new Date();
     newExpiresAt.setDate(newExpiresAt.getDate() + 7);
     request.expiresAt = newExpiresAt;
     request.isExtended = true;
     request.extensionCount = (request.extensionCount || 0) + 1;
-    request.finalExpiresAt = undefined; // Reset final deadline
-    request.reminderSentAt = undefined; // Reset reminder
+    request.finalExpiresAt = undefined;
+    request.reminderSentAt = undefined;
     yield request.save();
-    // TODO: Send confirmation email
+
     return request;
 });
-/**
- * Send reminders for expiring requests (Cron job)
- * Finds requests where expiresAt has passed but no reminder sent yet
- * Sets finalExpiresAt to 3 days from now
- */
+
 const sendExpirationReminders = () => __awaiter(void 0, void 0, void 0, function* () {
     const now = new Date();
-    // Find expired requests that haven't received reminder
+
     const expiredRequests = yield trialRequest_model_1.TrialRequest.find({
         status: trialRequest_interface_1.TRIAL_REQUEST_STATUS.PENDING,
         expiresAt: { $lt: now },
@@ -553,35 +517,18 @@ const sendExpirationReminders = () => __awaiter(void 0, void 0, void 0, function
     });
     let reminderCount = 0;
     for (const request of expiredRequests) {
-        // Set reminder sent and final deadline (3 days)
+
         const finalDeadline = new Date();
         finalDeadline.setDate(finalDeadline.getDate() + 3);
         request.reminderSentAt = now;
         request.finalExpiresAt = finalDeadline;
         yield request.save();
-        // TODO: Send email notification
-        // const email = request.studentInfo?.isUnder18
-        //   ? request.studentInfo?.guardianInfo?.email
-        //   : request.studentInfo?.email;
-        // await sendEmail({
-        //   to: email,
-        //   subject: 'Your Trial Request is Expiring',
-        //   template: 'trial-request-expiring',
-        //   data: {
-        //     name: request.studentInfo?.name,
-        //     expiresAt: finalDeadline,
-        //     extendUrl: `${FRONTEND_URL}/trial-requests/${request._id}/extend`,
-        //     cancelUrl: `${FRONTEND_URL}/trial-requests/${request._id}/cancel`,
-        //   }
-        // });
+
         reminderCount++;
     }
     return reminderCount;
 });
-/**
- * Auto-delete requests after final deadline (Cron job)
- * Deletes requests where finalExpiresAt has passed with no response
- */
+
 const autoDeleteExpiredRequests = () => __awaiter(void 0, void 0, void 0, function* () {
     const now = new Date();
     const result = yield trialRequest_model_1.TrialRequest.deleteMany({
@@ -590,10 +537,7 @@ const autoDeleteExpiredRequests = () => __awaiter(void 0, void 0, void 0, functi
     });
     return result.deletedCount;
 });
-/**
- * Auto-expire trial requests (Cron job - legacy)
- * Marks as EXPIRED instead of delete (for records)
- */
+
 const expireOldRequests = () => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield trialRequest_model_1.TrialRequest.updateMany({
         status: trialRequest_interface_1.TRIAL_REQUEST_STATUS.PENDING,

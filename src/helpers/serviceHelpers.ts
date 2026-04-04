@@ -2,10 +2,8 @@ import mongoose, { Model, Types } from 'mongoose';
 import ApiError from '../errors/ApiError';
 import { StatusCodes } from 'http-status-codes';
 
-// Type for ID parameters that can be either string or ObjectId
 type IdType = string | Types.ObjectId;
 
-// Common query options for helper operations
 type QueryOpts = {
   projection?: Record<string, 0 | 1>;
   lean?: boolean;
@@ -19,20 +17,11 @@ export const validateObjectIdOrThrow = (id: IdType, field = 'id'): void => {
   }
 };
 
-// Helper to exclude soft deleted docs by default
 export const notDeleted = (extra: Record<string, unknown> = {}) => ({
   isDeleted: { $ne: true },
   ...extra,
 });
 
-/**
- * Generic function to find a document by ID with error handling
- * @param model - Mongoose model
- * @param id - Document ID (string or ObjectId)
- * @param entityName - Name of the entity for error messages
- * @returns Found document
- * @throws ApiError if document not found
- */
 export const findByIdOrThrow = async <T>(
   model: Model<T>,
   id: IdType,
@@ -50,15 +39,6 @@ export const findByIdOrThrow = async <T>(
   return document as T;
 };
 
-/**
- * Generic function to update a document by ID with validation
- * @param model - Mongoose model
- * @param id - Document ID (string or ObjectId)
- * @param updateData - Data to update
- * @param entityName - Name of the entity for error messages
- * @returns Updated document
- * @throws ApiError if document not found
- */
 export const updateByIdOrThrow = async <T>(
   model: Model<T>,
   id: IdType,
@@ -74,22 +54,14 @@ export const updateByIdOrThrow = async <T>(
   if (opts.session) q = q.session(opts.session);
   if (opts.projection) q = q.select(opts.projection);
   const updatedDocument = await q;
-  
+
   if (!updatedDocument) {
     throw new ApiError(StatusCodes.NOT_FOUND, `${entityName} not found (${String(id)})`);
   }
-  
+
   return updatedDocument as T;
 };
 
-/**
- * Generic function to delete a document by ID with validation
- * @param model - Mongoose model
- * @param id - Document ID (string or ObjectId)
- * @param entityName - Name of the entity for error messages
- * @returns Deleted document
- * @throws ApiError if document not found
- */
 export const deleteByIdOrThrow = async <T>(
   model: Model<T>,
   id: IdType,
@@ -103,14 +75,6 @@ export const deleteByIdOrThrow = async <T>(
   return deletedDocument;
 };
 
-/**
- * Generic function to soft delete a document (set isDeleted: true)
- * @param model - Mongoose model
- * @param id - Document ID (string or ObjectId)
- * @param entityName - Name of the entity for error messages
- * @returns Updated document
- * @throws ApiError if document not found
- */
 export const softDeleteByIdOrThrow = async <T>(
   model: Model<T>,
   id: IdType,
@@ -126,11 +90,11 @@ export const softDeleteByIdOrThrow = async <T>(
   if (opts.session) q = q.session(opts.session);
   if (opts.projection) q = q.select(opts.projection);
   const updatedDocument = await q;
-  
+
   if (!updatedDocument) {
     throw new ApiError(StatusCodes.NOT_FOUND, `${entityName} not found (${String(id)})`);
   }
-  
+
   return updatedDocument as T;
 };
 
@@ -149,20 +113,14 @@ export const restoreByIdOrThrow = async <T>(
   if (opts.session) q = q.session(opts.session);
   if (opts.projection) q = q.select(opts.projection);
   const updatedDocument = await q;
-  
+
   if (!updatedDocument) {
     throw new ApiError(StatusCodes.NOT_FOUND, `${entityName} not found (${String(id)})`);
   }
-  
+
   return updatedDocument as T;
 };
 
-/**
- * Check if a document exists by ID
- * @param model - Mongoose model
- * @param id - Document ID (string or ObjectId)
- * @returns Boolean indicating existence
- */
 export const existsById = async <T>(
   model: Model<T>,
   id: IdType
@@ -172,12 +130,6 @@ export const existsById = async <T>(
   return !!res;
 };
 
-/**
- * Get document count with optional filter
- * @param model - Mongoose model
- * @param filter - Optional filter conditions
- * @returns Document count
- */
 export const getCount = async <T>(
   model: Model<T>,
   filter: Record<string, unknown> = {}
@@ -187,11 +139,6 @@ export const getCount = async <T>(
   return await model.countDocuments(filter);
 };
 
-/**
- * Run a set of operations inside a MongoDB transaction
- * @param fn - Callback that receives the session and returns a result
- * @returns Result of the callback after commit
- */
 export const withTransaction = async <T>(
   fn: (session: mongoose.ClientSession) => Promise<T>,
   opts?: {
@@ -226,12 +173,6 @@ export const withTransaction = async <T>(
   }
 };
 
-/**
- * Ensure a document's status matches expected value(s), otherwise throw
- * @param currentStatus - The current status value
- * @param expected - A single expected status or a list of allowed statuses
- * @param options - Optional error customization
- */
 export const ensureStatusOrThrow = <S extends string | number>(
   currentStatus: S,
   expected: S | S[],
@@ -250,13 +191,6 @@ export const ensureStatusOrThrow = <S extends string | number>(
   }
 };
 
-/**
- * Ensure the acting user owns the entity (by owner key), otherwise throw
- * @param entity - The document to check
- * @param ownerKey - The key that holds the owner's id (e.g. 'userId')
- * @param userId - The acting user's id
- * @param options - Optional error customization
- */
 type OwnerCandidate = Types.ObjectId | string | undefined | null;
 const toIdStr = (v: OwnerCandidate) => (v ? v.toString() : '');
 

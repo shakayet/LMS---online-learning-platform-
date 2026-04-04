@@ -10,13 +10,11 @@ import {
 } from './supportTicket.interface';
 import { SupportTicket } from './supportTicket.model';
 
-// Generate unique ticket number
 const generateTicketNumber = async (): Promise<string> => {
   const date = new Date();
   const year = date.getFullYear().toString().slice(-2);
   const month = (date.getMonth() + 1).toString().padStart(2, '0');
 
-  // Find the last ticket of this month
   const lastTicket = await SupportTicket.findOne({
     ticketNumber: { $regex: `^TKT-${year}${month}` },
   })
@@ -32,7 +30,6 @@ const generateTicketNumber = async (): Promise<string> => {
   return `TKT-${year}${month}-${sequence.toString().padStart(4, '0')}`;
 };
 
-// Create a new support ticket (for students/tutors)
 const createSupportTicket = async (
   userId: string,
   userRole: 'STUDENT' | 'TUTOR',
@@ -53,7 +50,6 @@ const createSupportTicket = async (
   return result;
 };
 
-// Get all tickets for a user (my tickets)
 const getMyTickets = async (userId: string, query: Record<string, unknown>) => {
   const ticketQuery = new QueryBuilder(
     SupportTicket.find({ user: userId }).populate('assignedTo', 'name email'),
@@ -70,7 +66,6 @@ const getMyTickets = async (userId: string, query: Record<string, unknown>) => {
   return { data, pagination };
 };
 
-// Get single ticket by ID (for user - only their own)
 const getMyTicketById = async (
   ticketId: string,
   userId: string
@@ -87,9 +82,6 @@ const getMyTicketById = async (
   return ticket;
 };
 
-// ============ ADMIN FUNCTIONS ============
-
-// Get all tickets (admin only)
 const getAllTickets = async (query: Record<string, unknown>) => {
   const ticketQuery = new QueryBuilder(
     SupportTicket.find()
@@ -109,7 +101,6 @@ const getAllTickets = async (query: Record<string, unknown>) => {
   return { data, pagination };
 };
 
-// Get single ticket by ID (admin - any ticket)
 const getTicketById = async (ticketId: string): Promise<ISupportTicket | null> => {
   const ticket = await SupportTicket.findById(ticketId)
     .populate('user', 'name email profilePicture phone')
@@ -122,7 +113,6 @@ const getTicketById = async (ticketId: string): Promise<ISupportTicket | null> =
   return ticket;
 };
 
-// Update ticket status (admin only)
 const updateTicketStatus = async (
   ticketId: string,
   status: TICKET_STATUS,
@@ -157,7 +147,6 @@ const updateTicketStatus = async (
   return result;
 };
 
-// Update ticket priority (admin only)
 const updateTicketPriority = async (
   ticketId: string,
   priority: TICKET_PRIORITY
@@ -178,7 +167,6 @@ const updateTicketPriority = async (
   return result;
 };
 
-// Assign ticket to admin (admin only)
 const assignTicket = async (
   ticketId: string,
   adminId: string
@@ -205,7 +193,6 @@ const assignTicket = async (
   return result;
 };
 
-// Add admin notes (admin only)
 const addAdminNotes = async (
   ticketId: string,
   adminNotes: string
@@ -226,23 +213,22 @@ const addAdminNotes = async (
   return result;
 };
 
-// Get ticket statistics (admin dashboard)
 const getTicketStats = async () => {
   const [statusStats, categoryStats, priorityStats, recentTickets] =
     await Promise.all([
-      // Status distribution
+
       SupportTicket.aggregate([
         { $group: { _id: '$status', count: { $sum: 1 } } },
       ]),
-      // Category distribution
+
       SupportTicket.aggregate([
         { $group: { _id: '$category', count: { $sum: 1 } } },
       ]),
-      // Priority distribution
+
       SupportTicket.aggregate([
         { $group: { _id: '$priority', count: { $sum: 1 } } },
       ]),
-      // Recent tickets count (last 7 days)
+
       SupportTicket.countDocuments({
         createdAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
       }),
@@ -269,7 +255,6 @@ const getTicketStats = async () => {
   };
 };
 
-// Get ticket categories (for dropdown in frontend)
 const getTicketCategories = () => {
   return Object.entries(TICKET_CATEGORY).map(([key, value]) => ({
     value,

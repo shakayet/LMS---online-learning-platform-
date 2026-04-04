@@ -5,7 +5,6 @@ import {
   BILLING_STATUS,
 } from './monthlyBilling.interface';
 
-// Line Item Schema
 const BillingLineItemSchema = new Schema(
   {
     sessionId: {
@@ -27,7 +26,7 @@ const BillingLineItemSchema = new Schema(
     },
     duration: {
       type: Number,
-      required: true, // minutes
+      required: true,
     },
     pricePerHour: {
       type: Number,
@@ -94,7 +93,7 @@ const monthlyBillingSchema = new Schema<IMonthlyBilling>(
     subtotal: {
       type: Number,
       default: 0,
-      // Auto-calculated in pre-save hook
+
     },
     tax: {
       type: Number,
@@ -103,7 +102,7 @@ const monthlyBillingSchema = new Schema<IMonthlyBilling>(
     total: {
       type: Number,
       default: 0,
-      // Auto-calculated in pre-save hook
+
     },
     status: {
       type: String,
@@ -128,7 +127,7 @@ const monthlyBillingSchema = new Schema<IMonthlyBilling>(
     invoiceNumber: {
       type: String,
       unique: true,
-      // Not required - auto-generated in pre-save hook
+
     },
     notes: {
       type: String,
@@ -142,22 +141,19 @@ const monthlyBillingSchema = new Schema<IMonthlyBilling>(
   { timestamps: true }
 );
 
-// Indexes
 monthlyBillingSchema.index({ studentId: 1, billingYear: -1, billingMonth: -1 });
 monthlyBillingSchema.index({ status: 1 });
 
 monthlyBillingSchema.index({ stripeInvoiceId: 1 });
 
-// Compound unique index to prevent duplicate billings
 monthlyBillingSchema.index(
   { studentId: 1, billingYear: 1, billingMonth: 1 },
   { unique: true }
 );
 
-// Pre-save: Generate invoice number
 monthlyBillingSchema.pre('save', function (next) {
   if (this.isNew && !this.invoiceNumber) {
-    const year = this.billingYear.toString().slice(-2); // Last 2 digits
+    const year = this.billingYear.toString().slice(-2);
     const month = this.billingMonth.toString().padStart(2, '0');
     const random = Math.random().toString(36).substring(2, 8).toUpperCase();
     this.invoiceNumber = `INV-${year}${month}-${random}`;
@@ -165,7 +161,6 @@ monthlyBillingSchema.pre('save', function (next) {
   next();
 });
 
-// Pre-save: Calculate totals
 monthlyBillingSchema.pre('save', function (next) {
   if (this.lineItems && this.lineItems.length > 0) {
     this.totalSessions = this.lineItems.length;

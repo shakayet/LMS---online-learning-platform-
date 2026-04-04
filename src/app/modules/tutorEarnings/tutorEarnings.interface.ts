@@ -1,11 +1,11 @@
 import { Model, Types } from 'mongoose';
 
 export enum PAYOUT_STATUS {
-  PENDING = 'PENDING',           // Earnings calculated, not yet paid
-  PROCESSING = 'PROCESSING',     // Payout initiated in Stripe
-  PAID = 'PAID',                 // Successfully transferred to tutor
-  FAILED = 'FAILED',             // Payout failed
-  REFUNDED = 'REFUNDED',         // Payment was refunded
+  PENDING = 'PENDING',
+  PROCESSING = 'PROCESSING',
+  PAID = 'PAID',
+  FAILED = 'FAILED',
+  REFUNDED = 'REFUNDED',
 }
 
 export type IEarningLineItem = {
@@ -13,42 +13,37 @@ export type IEarningLineItem = {
   studentName: string;
   subject: string;
   completedAt: Date;
-  duration: number;              // minutes
-  sessionPrice: number;          // EUR (full session price)
-  tutorEarning: number;          // EUR (after platform commission)
+  duration: number;
+  sessionPrice: number;
+  tutorEarning: number;
 };
 
 export type ITutorEarnings = {
   tutorId: Types.ObjectId;
 
-  // Payout period
-  payoutMonth: number;           // 1-12
-  payoutYear: number;            // 2024
-  periodStart: Date;             // First day of month
-  periodEnd: Date;               // Last day of month
+  payoutMonth: number;
+  payoutYear: number;
+  periodStart: Date;
+  periodEnd: Date;
 
-  // Sessions included
   lineItems: IEarningLineItem[];
   totalSessions: number;
-  totalHours: number;            // Total hours taught
+  totalHours: number;
 
-  // Earnings breakdown
-  grossEarnings: number;         // Total session prices
-  platformCommission: number;    // Platform's cut (e.g., 20%)
-  commissionRate: number;        // 0.20 (20%)
-  netEarnings: number;           // Amount tutor receives
+  grossEarnings: number;
+  platformCommission: number;
+  commissionRate: number;
+  netEarnings: number;
 
-  // Payout details
   status: PAYOUT_STATUS;
-  stripeTransferId?: string;     // Stripe Connect transfer ID
-  stripePayoutId?: string;       // Stripe payout ID
+  stripeTransferId?: string;
+  stripePayoutId?: string;
   paidAt?: Date;
-  paymentMethod?: string;        // bank_account, etc.
+  paymentMethod?: string;
 
-  // Metadata
   notes?: string;
   failureReason?: string;
-  payoutReference: string;       // Unique payout reference
+  payoutReference: string;
 };
 
 export type TutorEarningsModel = Model<ITutorEarnings>;

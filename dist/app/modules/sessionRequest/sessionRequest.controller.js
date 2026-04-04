@@ -17,7 +17,7 @@ const http_status_codes_1 = require("http-status-codes");
 const catchAsync_1 = __importDefault(require("../../../shared/catchAsync"));
 const sendResponse_1 = __importDefault(require("../../../shared/sendResponse"));
 const sessionRequest_service_1 = require("./sessionRequest.service");
-// Create session request (Student only - must be logged in and have completed trial)
+
 const createSessionRequest = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const studentId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
@@ -36,7 +36,7 @@ const createSessionRequest = (0, catchAsync_1.default)((req, res) => __awaiter(v
         data: result,
     });
 }));
-// Get matching session requests (Tutor)
+
 const getMatchingSessionRequests = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const tutorId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
@@ -56,7 +56,7 @@ const getMatchingSessionRequests = (0, catchAsync_1.default)((req, res) => __awa
         pagination: result.meta,
     });
 }));
-// Get my session requests (Student)
+
 const getMySessionRequests = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const studentId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
@@ -76,7 +76,7 @@ const getMySessionRequests = (0, catchAsync_1.default)((req, res) => __awaiter(v
         pagination: result.meta,
     });
 }));
-// Get all session requests (Admin)
+
 const getAllSessionRequests = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield sessionRequest_service_1.SessionRequestService.getAllSessionRequests(req.query);
     (0, sendResponse_1.default)(res, {
@@ -87,7 +87,7 @@ const getAllSessionRequests = (0, catchAsync_1.default)((req, res) => __awaiter(
         pagination: result.meta,
     });
 }));
-// Get single session request
+
 const getSingleSessionRequest = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const result = yield sessionRequest_service_1.SessionRequestService.getSingleSessionRequest(id);
@@ -98,7 +98,7 @@ const getSingleSessionRequest = (0, catchAsync_1.default)((req, res) => __awaite
         data: result,
     });
 }));
-// Accept session request (Tutor)
+
 const acceptSessionRequest = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const { id } = req.params;
@@ -119,7 +119,7 @@ const acceptSessionRequest = (0, catchAsync_1.default)((req, res) => __awaiter(v
         data: result,
     });
 }));
-// Cancel session request (Student)
+
 const cancelSessionRequest = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const { id } = req.params;
@@ -139,7 +139,7 @@ const cancelSessionRequest = (0, catchAsync_1.default)((req, res) => __awaiter(v
         data: result,
     });
 }));
-// Extend session request (Student)
+
 const extendSessionRequest = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const { id } = req.params;
@@ -159,7 +159,7 @@ const extendSessionRequest = (0, catchAsync_1.default)((req, res) => __awaiter(v
         data: result,
     });
 }));
-// Send expiration reminders (Admin/Cron)
+
 const sendExpirationReminders = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const count = yield sessionRequest_service_1.SessionRequestService.sendExpirationReminders();
     (0, sendResponse_1.default)(res, {
@@ -169,7 +169,7 @@ const sendExpirationReminders = (0, catchAsync_1.default)((req, res) => __awaite
         data: { reminderCount: count },
     });
 }));
-// Auto-delete expired requests (Admin/Cron)
+
 const autoDeleteExpiredRequests = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const count = yield sessionRequest_service_1.SessionRequestService.autoDeleteExpiredRequests();
     (0, sendResponse_1.default)(res, {
@@ -179,7 +179,7 @@ const autoDeleteExpiredRequests = (0, catchAsync_1.default)((req, res) => __awai
         data: { deletedCount: count },
     });
 }));
-// Expire old session requests (Admin/Cron)
+
 const expireOldRequests = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const expiredCount = yield sessionRequest_service_1.SessionRequestService.expireOldRequests();
     (0, sendResponse_1.default)(res, {
@@ -189,7 +189,7 @@ const expireOldRequests = (0, catchAsync_1.default)((req, res) => __awaiter(void
         data: { expiredCount },
     });
 }));
-// Get my accepted requests - unified trial + session (Tutor)
+
 const getMyAcceptedRequests = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const tutorId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;

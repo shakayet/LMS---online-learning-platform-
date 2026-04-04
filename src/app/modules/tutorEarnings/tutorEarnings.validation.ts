@@ -21,7 +21,7 @@ const generateTutorEarningsZodSchema = z.object({
       .min(0, 'Commission rate must be between 0-1')
       .max(1, 'Commission rate must be between 0-1')
       .optional()
-      .default(0.2), // 20% default
+      .default(0.2),
   }),
 });
 

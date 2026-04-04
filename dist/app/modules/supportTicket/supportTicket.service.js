@@ -18,12 +18,12 @@ const QueryBuilder_1 = __importDefault(require("../../builder/QueryBuilder"));
 const ApiError_1 = __importDefault(require("../../../errors/ApiError"));
 const supportTicket_interface_1 = require("./supportTicket.interface");
 const supportTicket_model_1 = require("./supportTicket.model");
-// Generate unique ticket number
+
 const generateTicketNumber = () => __awaiter(void 0, void 0, void 0, function* () {
     const date = new Date();
     const year = date.getFullYear().toString().slice(-2);
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    // Find the last ticket of this month
+
     const lastTicket = yield supportTicket_model_1.SupportTicket.findOne({
         ticketNumber: { $regex: `^TKT-${year}${month}` },
     })
@@ -36,14 +36,14 @@ const generateTicketNumber = () => __awaiter(void 0, void 0, void 0, function* (
     }
     return `TKT-${year}${month}-${sequence.toString().padStart(4, '0')}`;
 });
-// Create a new support ticket (for students/tutors)
+
 const createSupportTicket = (userId, userRole, payload) => __awaiter(void 0, void 0, void 0, function* () {
     const ticketNumber = yield generateTicketNumber();
     const ticketData = Object.assign(Object.assign({}, payload), { ticketNumber, user: userId, userRole, status: supportTicket_interface_1.TICKET_STATUS.OPEN, priority: supportTicket_interface_1.TICKET_PRIORITY.MEDIUM });
     const result = yield supportTicket_model_1.SupportTicket.create(ticketData);
     return result;
 });
-// Get all tickets for a user (my tickets)
+
 const getMyTickets = (userId, query) => __awaiter(void 0, void 0, void 0, function* () {
     const ticketQuery = new QueryBuilder_1.default(supportTicket_model_1.SupportTicket.find({ user: userId }).populate('assignedTo', 'name email'), query)
         .filter()
@@ -54,7 +54,7 @@ const getMyTickets = (userId, query) => __awaiter(void 0, void 0, void 0, functi
     const pagination = yield ticketQuery.getPaginationInfo();
     return { data, pagination };
 });
-// Get single ticket by ID (for user - only their own)
+
 const getMyTicketById = (ticketId, userId) => __awaiter(void 0, void 0, void 0, function* () {
     const ticket = yield supportTicket_model_1.SupportTicket.findOne({
         _id: ticketId,
@@ -65,8 +65,7 @@ const getMyTicketById = (ticketId, userId) => __awaiter(void 0, void 0, void 0, 
     }
     return ticket;
 });
-// ============ ADMIN FUNCTIONS ============
-// Get all tickets (admin only)
+
 const getAllTickets = (query) => __awaiter(void 0, void 0, void 0, function* () {
     const ticketQuery = new QueryBuilder_1.default(supportTicket_model_1.SupportTicket.find()
         .populate('user', 'name email profilePicture')
@@ -80,7 +79,7 @@ const getAllTickets = (query) => __awaiter(void 0, void 0, void 0, function* () 
     const pagination = yield ticketQuery.getPaginationInfo();
     return { data, pagination };
 });
-// Get single ticket by ID (admin - any ticket)
+
 const getTicketById = (ticketId) => __awaiter(void 0, void 0, void 0, function* () {
     const ticket = yield supportTicket_model_1.SupportTicket.findById(ticketId)
         .populate('user', 'name email profilePicture phone')
@@ -90,7 +89,7 @@ const getTicketById = (ticketId) => __awaiter(void 0, void 0, void 0, function* 
     }
     return ticket;
 });
-// Update ticket status (admin only)
+
 const updateTicketStatus = (ticketId, status, adminNotes) => __awaiter(void 0, void 0, void 0, function* () {
     const ticket = yield supportTicket_model_1.SupportTicket.findById(ticketId);
     if (!ticket) {
@@ -114,7 +113,7 @@ const updateTicketStatus = (ticketId, status, adminNotes) => __awaiter(void 0, v
         .populate('assignedTo', 'name email');
     return result;
 });
-// Update ticket priority (admin only)
+
 const updateTicketPriority = (ticketId, priority) => __awaiter(void 0, void 0, void 0, function* () {
     const ticket = yield supportTicket_model_1.SupportTicket.findById(ticketId);
     if (!ticket) {
@@ -125,7 +124,7 @@ const updateTicketPriority = (ticketId, priority) => __awaiter(void 0, void 0, v
         .populate('assignedTo', 'name email');
     return result;
 });
-// Assign ticket to admin (admin only)
+
 const assignTicket = (ticketId, adminId) => __awaiter(void 0, void 0, void 0, function* () {
     const ticket = yield supportTicket_model_1.SupportTicket.findById(ticketId);
     if (!ticket) {
@@ -141,7 +140,7 @@ const assignTicket = (ticketId, adminId) => __awaiter(void 0, void 0, void 0, fu
         .populate('assignedTo', 'name email');
     return result;
 });
-// Add admin notes (admin only)
+
 const addAdminNotes = (ticketId, adminNotes) => __awaiter(void 0, void 0, void 0, function* () {
     const ticket = yield supportTicket_model_1.SupportTicket.findById(ticketId);
     if (!ticket) {
@@ -152,22 +151,22 @@ const addAdminNotes = (ticketId, adminNotes) => __awaiter(void 0, void 0, void 0
         .populate('assignedTo', 'name email');
     return result;
 });
-// Get ticket statistics (admin dashboard)
+
 const getTicketStats = () => __awaiter(void 0, void 0, void 0, function* () {
     const [statusStats, categoryStats, priorityStats, recentTickets] = yield Promise.all([
-        // Status distribution
+
         supportTicket_model_1.SupportTicket.aggregate([
             { $group: { _id: '$status', count: { $sum: 1 } } },
         ]),
-        // Category distribution
+
         supportTicket_model_1.SupportTicket.aggregate([
             { $group: { _id: '$category', count: { $sum: 1 } } },
         ]),
-        // Priority distribution
+
         supportTicket_model_1.SupportTicket.aggregate([
             { $group: { _id: '$priority', count: { $sum: 1 } } },
         ]),
-        // Recent tickets count (last 7 days)
+
         supportTicket_model_1.SupportTicket.countDocuments({
             createdAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
         }),
@@ -191,7 +190,7 @@ const getTicketStats = () => __awaiter(void 0, void 0, void 0, function* () {
         priorityDistribution: priorityStats,
     };
 });
-// Get ticket categories (for dropdown in frontend)
+
 const getTicketCategories = () => {
     return Object.entries(supportTicket_interface_1.TICKET_CATEGORY).map(([key, value]) => ({
         value,

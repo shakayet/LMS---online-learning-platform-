@@ -16,7 +16,6 @@ const schoolTypeSchema = new Schema<ISchoolType>(
   { timestamps: true }
 );
 
-// Index for faster queries
 schoolTypeSchema.index({ isActive: 1 });
 
 export const SchoolType = model<ISchoolType, SchoolTypeModel>('SchoolType', schoolTypeSchema);

@@ -1,9 +1,6 @@
-/*
-  Monkey-patch bcrypt.hash and bcrypt.compare to emit spans.
-  Import this module early in app bootstrap.
-*/
+
 import { trace } from '@opentelemetry/api';
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+
 const bcrypt = require('bcrypt');
 
 const tracer = trace.getTracer('app');

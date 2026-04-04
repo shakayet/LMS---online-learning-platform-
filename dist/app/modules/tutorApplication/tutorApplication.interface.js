@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.APPLICATION_STATUS = void 0;
-// Application status flow: SUBMITTED → SELECTED_FOR_INTERVIEW → APPROVED/REJECTED
+
 var APPLICATION_STATUS;
 (function (APPLICATION_STATUS) {
     APPLICATION_STATUS["SUBMITTED"] = "SUBMITTED";

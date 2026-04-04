@@ -52,7 +52,7 @@ const studentSubscriptionSchema = new Schema<IStudentSubscription>(
     },
     prepaidHoursUsed: {
       type: Number,
-      default: 0,  // Hours already covered by upfront payment
+      default: 0,
     },
     stripeCustomerId: {
       type: String,
@@ -77,24 +77,22 @@ const studentSubscriptionSchema = new Schema<IStudentSubscription>(
   { timestamps: true }
 );
 
-// Indexes
 studentSubscriptionSchema.index({ studentId: 1, status: 1 });
 studentSubscriptionSchema.index({ status: 1, endDate: 1 });
 studentSubscriptionSchema.index({ tier: 1 });
 
-// Pre-save: Calculate endDate based on tier
 studentSubscriptionSchema.pre('save', function (next) {
   if (this.isNew && !this.endDate) {
     const endDate = new Date(this.startDate);
 
     if (this.tier === SUBSCRIPTION_TIER.FLEXIBLE) {
-      // Flexible: No end date (set to 100 years from now)
+
       endDate.setFullYear(endDate.getFullYear() + 100);
     } else if (this.tier === SUBSCRIPTION_TIER.REGULAR) {
-      // Regular: 1 month
+
       endDate.setMonth(endDate.getMonth() + 1);
     } else if (this.tier === SUBSCRIPTION_TIER.LONG_TERM) {
-      // Long-term: 3 months
+
       endDate.setMonth(endDate.getMonth() + 3);
     }
 
@@ -103,7 +101,6 @@ studentSubscriptionSchema.pre('save', function (next) {
   next();
 });
 
-// Pre-save: Set price based on tier
 studentSubscriptionSchema.pre('save', function (next) {
   if (this.isNew && !this.pricePerHour) {
     if (this.tier === SUBSCRIPTION_TIER.FLEXIBLE) {

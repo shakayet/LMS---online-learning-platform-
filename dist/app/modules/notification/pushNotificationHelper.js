@@ -16,21 +16,21 @@ exports.pushNotificationHelper = void 0;
 const logger_1 = require("../../../shared/logger");
 const config_1 = __importDefault(require("../../../config"));
 const firebase_admin_1 = __importDefault(require("firebase-admin"));
-// Decode Base64 Firebase service account
-const serviceAccountJson = Buffer.from(config_1.default.firebase_api_key_base64, // the Base64 string from .env
+
+const serviceAccountJson = Buffer.from(config_1.default.firebase_api_key_base64,
 'base64').toString('utf8');
-// Parse it as JSON
+
 const serviceAccount = JSON.parse(serviceAccountJson);
-// Initialize Firebase SDK
+
 firebase_admin_1.default.initializeApp({
     credential: firebase_admin_1.default.credential.cert(serviceAccount),
 });
-// Multiple users
+
 const sendPushNotifications = (values) => __awaiter(void 0, void 0, void 0, function* () {
     const res = yield firebase_admin_1.default.messaging().sendEachForMulticast(values);
     logger_1.logger.info('Notifications sent successfully', res);
 });
-// Single user
+
 const sendPushNotification = (values) => __awaiter(void 0, void 0, void 0, function* () {
     const res = yield firebase_admin_1.default.messaging().send(values);
     logger_1.logger.info('Notification sent successfully', res);

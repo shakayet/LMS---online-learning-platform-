@@ -1,29 +1,7 @@
 #!/usr/bin/env node
 
-/**
- * Smart Commit Message Generator v3.0
- * ====================================
- * Generates DETAILED commit messages with bullet points showing exactly what changed.
- *
- * Output Format:
- *   feat: update payment integration and user module
- *   - Enhanced PaymentService with new Stripe methods
- *   - Updated UserController error handling
- *   - Added validation schemas for payment flow
- *   - Updated environment configuration
- *
- * Usage:
- *   npm run commit           # Analyze and suggest
- *   npm run commit:auto      # Commit with selection
- *   npm run commit:staged    # Only staged files
- */
-
 const { execSync } = require('child_process');
 const readline = require('readline');
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// Configuration
-// ═══════════════════════════════════════════════════════════════════════════════
 
 const CONFIG = {
   types: {
@@ -55,10 +33,6 @@ const CONFIG = {
   },
 };
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// Git Operations
-// ═══════════════════════════════════════════════════════════════════════════════
-
 function runGit(command) {
   try {
     return execSync(`git ${command}`, { encoding: 'utf-8' }).trim();
@@ -67,15 +41,14 @@ function runGit(command) {
   }
 }
 
-// Files/folders to ignore in analysis
 const IGNORE_PATTERNS = [
-  /^dist\//,           // Compiled output
-  /^node_modules\//,   // Dependencies
-  /\.map$/,            // Source maps
-  /\.lock$/,           // Lock files (analyzed separately)
-  /^\.git\//,          // Git internals
-  /^coverage\//,       // Test coverage
-  /\.log$/,            // Log files
+  /^dist\//,
+  /^node_modules\//,
+  /\.map$/,
+  /\.lock$/,
+  /^\.git\//,
+  /^coverage\//,
+  /\.log$/,
 ];
 
 function shouldIgnoreFile(filePath) {
@@ -96,7 +69,7 @@ function getChangedFiles(stagedOnly = false) {
       isDeleted: status === 'D',
       isModified: status === 'M',
     };
-  }).filter(f => f.path && !shouldIgnoreFile(f.path)); // Ignore dist/ etc.
+  }).filter(f => f.path && !shouldIgnoreFile(f.path));
 }
 
 function getFileDiff(filePath, stagedOnly = false) {
@@ -139,10 +112,6 @@ function getBuilderPurpose(builderName) {
   return purposes[builderName] || 'utilities';
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// File Analysis - Extract Detailed Info
-// ═══════════════════════════════════════════════════════════════════════════════
-
 function extractFileDetails(filePath, fileInfo, stagedOnly) {
   const normalizedPath = filePath.replace(/\\/g, '/');
   const fileName = getShortPath(filePath);
@@ -158,14 +127,13 @@ function extractFileDetails(filePath, fileInfo, stagedOnly) {
     category: null,
     builderName: null,
     scriptType: null,
-    description: null, // Human-readable description of change
+    description: null,
     addedFunctions: [],
     addedClasses: [],
     linesAdded: 0,
     linesRemoved: 0,
   };
 
-  // Detect file type
   const typePatterns = {
     service: /\.service\.(ts|js)$/,
     controller: /\.controller\.(ts|js)$/,
@@ -184,21 +152,18 @@ function extractFileDetails(filePath, fileInfo, stagedOnly) {
     }
   }
 
-  // Extract module name
   const moduleMatch = normalizedPath.match(/modules\/(\w+)\//);
   if (moduleMatch) {
     result.module = moduleMatch[1];
     result.category = 'module';
   }
 
-  // Detect builder
   const builderMatch = normalizedPath.match(/(\w+)Builder/i);
   if (builderMatch) {
     result.builderName = builderMatch[1];
     result.category = 'builder';
   }
 
-  // Detect script type
   if (normalizedPath.includes('scripts/')) {
     result.category = 'script';
     if (normalizedPath.includes('smart-commit')) result.scriptType = 'commit-helper';
@@ -208,13 +173,11 @@ function extractFileDetails(filePath, fileInfo, stagedOnly) {
     else if (normalizedPath.includes('postman')) result.scriptType = 'postman';
   }
 
-  // Detect other categories
   if (normalizedPath.includes('logging/')) result.category = 'logging';
   if (normalizedPath.endsWith('.md') || normalizedPath.includes('/doc/')) result.category = 'docs';
   if (normalizedPath.endsWith('.json') || normalizedPath.endsWith('.yml')) result.category = 'config';
   if (normalizedPath.includes('/test') || normalizedPath.includes('.test.') || normalizedPath.includes('.spec.')) result.category = 'test';
 
-  // Analyze diff to find what changed
   if (!fileInfo.isDeleted) {
     const diff = getFileDiff(filePath, stagedOnly);
     const diffInfo = analyzeDiffContent(diff);
@@ -224,7 +187,6 @@ function extractFileDetails(filePath, fileInfo, stagedOnly) {
     result.addedClasses = diffInfo.addedClasses;
   }
 
-  // Generate human-readable description
   result.description = generateFileDescription(result);
 
   return result;
@@ -237,7 +199,7 @@ function analyzeDiffContent(diff) {
     addedFunctions: [],
     addedClasses: [],
     addedExports: [],
-    changes: [], // Meaningful change descriptions
+    changes: [],
   };
 
   if (!diff) return result;
@@ -256,16 +218,13 @@ function analyzeDiffContent(diff) {
 
   const addedContent = addedLines.join('\n');
 
-  // Skip compiled JS patterns (these are auto-generated)
   const skipPatterns = ['__awaiter', '__generator', '__assign', '__rest', '__decorate', '__param', '__metadata'];
 
-  // Find new TypeScript/JavaScript functions
-  // Pattern: async functionName(, function name(, const name = (, name(params):
   const funcPatterns = [
-    /(?:async\s+)?function\s+(\w+)\s*\(/g,                    // function name(
-    /(?:async\s+)?(\w+)\s*=\s*(?:async\s+)?\([^)]*\)\s*=>/g,  // const name = () =>
-    /(?:async\s+)?(\w+)\s*\([^)]*\)\s*(?::\s*\w+)?\s*\{/g,    // name(): Type {  (method)
-    /(?:public|private|protected)?\s*(?:async\s+)?(\w+)\s*\([^)]*\)/g, // class methods
+    /(?:async\s+)?function\s+(\w+)\s*\(/g,
+    /(?:async\s+)?(\w+)\s*=\s*(?:async\s+)?\([^)]*\)\s*=>/g,
+    /(?:async\s+)?(\w+)\s*\([^)]*\)\s*(?::\s*\w+)?\s*\{/g,
+    /(?:public|private|protected)?\s*(?:async\s+)?(\w+)\s*\([^)]*\)/g,
   ];
 
   const foundFunctions = new Set();
@@ -273,19 +232,18 @@ function analyzeDiffContent(diff) {
     let match;
     while ((match = pattern.exec(addedContent)) !== null) {
       const name = match[1];
-      // Skip common keywords and compiled patterns
+
       if (name &&
           !['if', 'for', 'while', 'switch', 'catch', 'function', 'return', 'new', 'throw', 'await'].includes(name) &&
           !skipPatterns.some(p => name.includes(p)) &&
-          !name.startsWith('_') && // Skip private/internal
-          name.length > 2) { // Skip very short names
+          !name.startsWith('_') &&
+          name.length > 2) {
         foundFunctions.add(name);
       }
     }
   }
-  result.addedFunctions = [...foundFunctions].slice(0, 5); // Limit to 5
+  result.addedFunctions = [...foundFunctions].slice(0, 5);
 
-  // Find new classes
   const classMatches = addedContent.match(/class\s+(\w+)/g);
   if (classMatches) {
     result.addedClasses = classMatches
@@ -293,7 +251,6 @@ function analyzeDiffContent(diff) {
       .filter(name => !skipPatterns.some(p => name.includes(p)));
   }
 
-  // Find new exports
   const exportMatches = addedContent.match(/export\s+(?:class|function|const|interface|type)\s+(\w+)/g);
   if (exportMatches) {
     result.addedExports = exportMatches
@@ -302,7 +259,6 @@ function analyzeDiffContent(diff) {
       .filter(name => !skipPatterns.some(p => name.includes(p)));
   }
 
-  // Detect meaningful changes from diff content
   if (addedContent.includes('OAuth') || addedContent.includes('oauth')) result.changes.push('OAuth integration');
   if (addedContent.includes('passport')) result.changes.push('authentication');
   if (addedContent.includes('socket') || addedContent.includes('Socket')) result.changes.push('real-time');
@@ -319,7 +275,6 @@ function generateFileDescription(detail) {
   const action = detail.isNew ? 'Add' : detail.isDeleted ? 'Remove' : 'Update';
   const pastAction = detail.isNew ? 'Added' : detail.isDeleted ? 'Removed' : 'Updated';
 
-  // Builder - with meaningful descriptions
   if (detail.builderName) {
     const builderName = `${detail.builderName}Builder`;
     if (detail.isNew) {
@@ -337,7 +292,6 @@ function generateFileDescription(detail) {
     return `${action} ${builderName} implementation`;
   }
 
-  // Module files - more specific descriptions
   if (detail.module && detail.fileType) {
     const moduleName = capitalize(detail.module);
     const typeName = capitalize(detail.fileType);
@@ -346,7 +300,6 @@ function generateFileDescription(detail) {
       return `Add ${moduleName}${typeName}`;
     }
 
-    // Try to give meaningful description based on functions
     if (detail.addedFunctions.length > 0) {
       const meaningfulFuncs = detail.addedFunctions.filter(f =>
         f.length > 3 &&
@@ -360,7 +313,6 @@ function generateFileDescription(detail) {
     return `${action} ${moduleName}${typeName}`;
   }
 
-  // Scripts - with specific script names
   if (detail.category === 'script') {
     const scriptDescriptions = {
       'commit-helper': 'smart commit message generator',
@@ -370,7 +322,6 @@ function generateFileDescription(detail) {
       'postman': 'Postman collection',
     };
 
-    // Check for specific script files
     if (detail.fileName.includes('gui') || detail.path.includes('/gui/')) {
       return `${action} module generator GUI`;
     }
@@ -386,17 +337,15 @@ function generateFileDescription(detail) {
     return `${action} ${desc}`;
   }
 
-  // Docs - with readable doc names
   if (detail.category === 'docs') {
     const docName = detail.fileName
       .replace('.md', '')
-      .replace(/-bn$/, '') // Remove bangla suffix
-      .replace(/-/g, ' ')  // Replace dashes with spaces
+      .replace(/-bn$/, '')
+      .replace(/-/g, ' ')
       .replace(/complete guide/i, 'guide');
     return `${action} ${docName} docs`;
   }
 
-  // Config - specific config descriptions
   if (detail.category === 'config') {
     if (detail.fileName === 'package.json') return `${action} dependencies`;
     if (detail.fileName === 'package-lock.json') return `${action} package lock`;
@@ -406,7 +355,6 @@ function generateFileDescription(detail) {
     return `${action} ${detail.fileName}`;
   }
 
-  // Logging
   if (detail.category === 'logging') {
     if (detail.fileName.includes('opentelemetry')) return `${action} OpenTelemetry setup`;
     if (detail.fileName.includes('autoLabel')) return `${action} auto-labeling system`;
@@ -414,19 +362,13 @@ function generateFileDescription(detail) {
     return `${action} logging configuration`;
   }
 
-  // Test files
   if (detail.category === 'test') {
     const testName = detail.fileName.replace(/\.(test|spec)\.(ts|js)$/, '');
     return `${action} tests for ${testName}`;
   }
 
-  // Default
   return `${action} ${detail.fileName}`;
 }
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// Analysis
-// ═══════════════════════════════════════════════════════════════════════════════
 
 function analyzeChanges(files, stagedOnly = false) {
   const analysis = {
@@ -443,7 +385,7 @@ function analyzeChanges(files, stagedOnly = false) {
   };
 
   for (const file of files) {
-    // Detect scope
+
     const normalizedPath = file.path.replace(/\\/g, '/');
     for (const [pattern, extractor] of Object.entries(CONFIG.scopes)) {
       if (normalizedPath.includes(pattern)) {
@@ -452,13 +394,11 @@ function analyzeChanges(files, stagedOnly = false) {
       }
     }
 
-    // Extract detailed info
     const details = extractFileDetails(file.path, file, stagedOnly);
     analysis.fileDetails.push(details);
     analysis.linesAdded += details.linesAdded;
     analysis.linesRemoved += details.linesRemoved;
 
-    // Detect commit type from diff
     if (!file.isDeleted) {
       const diff = getFileDiff(file.path, stagedOnly);
       for (const [type, patterns] of Object.entries(CONFIG.patterns)) {
@@ -474,77 +414,64 @@ function analyzeChanges(files, stagedOnly = false) {
   return analysis;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// Commit Message Generation - THE MAIN MAGIC
-// ═══════════════════════════════════════════════════════════════════════════════
-
 function generateCommitSuggestions(analysis) {
   const suggestions = [];
 
-  // Count by category for smarter type detection
   const categoryCounts = {};
   for (const d of analysis.fileDetails) {
     const cat = d.category || 'other';
     categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
   }
 
-  // Determine primary type based on what makes sense
   let primaryType = 'chore';
 
-  // Rule 1: If mostly new files -> feat
   const newFileRatio = analysis.newFiles / analysis.totalFiles;
   if (newFileRatio > 0.5) {
     primaryType = 'feat';
   }
 
-  // Rule 2: Check pattern matches for explicit types
   let highestScore = 0;
   for (const [type, score] of analysis.detectedTypes) {
     if (score > highestScore) {
       highestScore = score;
-      // Only override if pattern match is strong
+
       if (score >= 3 || newFileRatio < 0.3) {
         primaryType = type;
       }
     }
   }
 
-  // Rule 3: Category-based overrides (strongest rules)
   const docsCount = categoryCounts.docs || 0;
   const testCount = categoryCounts.test || 0;
   const configCount = categoryCounts.config || 0;
   const builderCount = categoryCounts.builder || 0;
   const scriptCount = categoryCounts.script || 0;
 
-  // All docs -> docs
   if (docsCount === analysis.totalFiles) {
     primaryType = 'docs';
   }
-  // All tests -> test
+
   else if (testCount === analysis.totalFiles) {
     primaryType = 'test';
   }
-  // All config -> chore
+
   else if (configCount === analysis.totalFiles) {
     primaryType = 'chore';
   }
-  // Mostly builders/scripts with new files -> feat
+
   else if ((builderCount + scriptCount) > analysis.totalFiles * 0.5 && analysis.newFiles > 0) {
     primaryType = 'feat';
   }
-  // Mixed changes with significant new files -> feat
+
   else if (analysis.newFiles > analysis.modifiedFiles && analysis.newFiles > 5) {
     primaryType = 'feat';
   }
 
-  // Generate the detailed message
   const { subject, bulletPoints } = generateDetailedMessage(analysis, primaryType);
 
-  // Format scope
   const scopes = [...analysis.scopes];
   const scopePart = scopes.length === 1 ? `(${scopes[0]})` : scopes.length <= 3 ? `(${scopes.join(',')})` : '';
 
-  // Create full message with bullet points
   const typeConfig = CONFIG.types[primaryType];
   const headerLine = `${primaryType}${scopePart}: ${subject}`;
   const fullMessageWithBullets = [headerLine, ...bulletPoints.map(b => `- ${b}`)].join('\n');
@@ -559,7 +486,6 @@ function generateCommitSuggestions(analysis) {
     confidence: 0.85,
   });
 
-  // Alternative types
   const altTypes = Object.keys(CONFIG.types).filter(t => t !== primaryType).slice(0, 2);
   for (const altType of altTypes) {
     const altConfig = CONFIG.types[altType];
@@ -582,7 +508,6 @@ function generateDetailedMessage(analysis, type) {
   const details = analysis.fileDetails;
   const bulletPoints = [];
 
-  // Group by category
   const groups = {
     builders: details.filter(f => f.category === 'builder'),
     modules: details.filter(f => f.category === 'module'),
@@ -594,7 +519,6 @@ function generateDetailedMessage(analysis, type) {
     other: details.filter(f => !f.category),
   };
 
-  // Generate subject line
   let subject = '';
   const activeGroups = Object.entries(groups).filter(([_, files]) => files.length > 0);
 
@@ -609,11 +533,9 @@ function generateDetailedMessage(analysis, type) {
     subject = `update ${topGroups.map(([name]) => name).join(' and ')}`;
   }
 
-  // Smart bullet point generation - group similar items
   const MAX_BULLETS = 10;
   const MAX_PER_GROUP = 3;
 
-  // Builders - group by builder name
   if (groups.builders.length > 0) {
     const builderMap = new Map();
     for (const file of groups.builders) {
@@ -623,7 +545,7 @@ function generateDetailedMessage(analysis, type) {
     }
 
     if (builderMap.size <= MAX_PER_GROUP) {
-      // Show individual builders
+
       for (const [name, files] of builderMap) {
         const newFiles = files.filter(f => f.isNew);
         const modFiles = files.filter(f => f.isModified);
@@ -639,7 +561,7 @@ function generateDetailedMessage(analysis, type) {
         }
       }
     } else {
-      // Summarize builders
+
       const newBuilders = [...builderMap.entries()].filter(([_, files]) => files.some(f => f.isNew)).map(([n]) => n);
       const updatedBuilders = [...builderMap.entries()].filter(([_, files]) => files.some(f => f.isModified) && !files.some(f => f.isNew)).map(([n]) => n);
 
@@ -652,7 +574,6 @@ function generateDetailedMessage(analysis, type) {
     }
   }
 
-  // Modules - group by module name
   if (groups.modules.length > 0) {
     const moduleMap = new Map();
     for (const file of groups.modules) {
@@ -671,7 +592,6 @@ function generateDetailedMessage(analysis, type) {
     }
   }
 
-  // Scripts - smart grouping
   if (groups.scripts.length > 0) {
     const scriptGroups = new Map();
     for (const file of groups.scripts) {
@@ -695,12 +615,10 @@ function generateDetailedMessage(analysis, type) {
     }
   }
 
-  // Logging
   if (groups.logging.length > 0) {
     bulletPoints.push(`Update logging system (${groups.logging.length} files)`);
   }
 
-  // Docs - smart grouping
   if (groups.docs.length > 0) {
     if (groups.docs.length <= 2) {
       for (const file of groups.docs) {
@@ -718,7 +636,6 @@ function generateDetailedMessage(analysis, type) {
     }
   }
 
-  // Config
   if (groups.config.length > 0) {
     if (groups.config.length === 1) {
       bulletPoints.push(groups.config[0].description);
@@ -728,7 +645,6 @@ function generateDetailedMessage(analysis, type) {
     }
   }
 
-  // Tests
   if (groups.test.length > 0) {
     if (groups.test.length <= 2) {
       for (const file of groups.test) {
@@ -742,7 +658,6 @@ function generateDetailedMessage(analysis, type) {
     }
   }
 
-  // Other - only if we have space
   if (groups.other.length > 0 && bulletPoints.length < MAX_BULLETS - 1) {
     const remaining = MAX_BULLETS - bulletPoints.length - 1;
     for (let i = 0; i < Math.min(groups.other.length, remaining); i++) {
@@ -753,7 +668,6 @@ function generateDetailedMessage(analysis, type) {
     }
   }
 
-  // Final limit check
   if (bulletPoints.length > MAX_BULLETS) {
     const summary = bulletPoints.slice(0, MAX_BULLETS - 1);
     const remaining = analysis.totalFiles - summary.length;
@@ -803,10 +717,6 @@ function generateGroupSubject(groupName, files, type) {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// CLI Interface
-// ═══════════════════════════════════════════════════════════════════════════════
-
 function printHeader() {
   console.log('\n╔════════════════════════════════════════════════════════════════╗');
   console.log('║          🧠 Smart Commit Message Generator v3.0                 ║');
@@ -826,7 +736,6 @@ function printAnalysis(analysis) {
     console.log(`   Scopes:         ${[...analysis.scopes].join(', ')}`);
   }
 
-  // Show category breakdown
   const categories = new Map();
   for (const d of analysis.fileDetails) {
     const cat = d.category || 'other';
@@ -884,7 +793,6 @@ Options:
 
   printHeader();
 
-  // Get files
   let files = getChangedFiles(stagedOnly);
   if (!stagedOnly) {
     files = files.concat(getUntrackedFiles().map(path => ({
@@ -897,15 +805,12 @@ Options:
     process.exit(1);
   }
 
-  // Analyze
   const analysis = analyzeChanges(files, stagedOnly);
   printAnalysis(analysis);
 
-  // Generate suggestions
   const suggestions = generateCommitSuggestions(analysis);
   printSuggestions(suggestions);
 
-  // Recent commits
   const recent = runGit('log --oneline -5').split('\n').filter(Boolean);
   if (recent.length > 0) {
     console.log('\n📜 Recent Commits:');
@@ -915,7 +820,6 @@ Options:
 
   console.log('\n');
 
-  // Commit mode
   if (autoCommit) {
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
     const choice = await new Promise(r => rl.question('Select (1-3), or q to quit: ', a => { rl.close(); r(a); }));
@@ -940,7 +844,7 @@ Options:
       console.log('');
 
       try {
-        // Use heredoc for multiline commit
+
         const escapedMsg = msg.replace(/'/g, "'\\''");
         execSync(`git commit -m $'${escapedMsg}'`, { stdio: 'inherit' });
         console.log('\n🎉 Commit created successfully!\n');

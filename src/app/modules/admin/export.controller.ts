@@ -3,9 +3,6 @@ import { StatusCodes } from 'http-status-codes';
 import catchAsync from '../../../shared/catchAsync';
 import { ExportService } from './export.service';
 
-/**
- * Export users to CSV
- */
 const exportUsers = catchAsync(async (req: Request, res: Response) => {
   const { role } = req.query;
   const csv = await ExportService.exportUsers(role as string);
@@ -15,9 +12,6 @@ const exportUsers = catchAsync(async (req: Request, res: Response) => {
   res.status(StatusCodes.OK).send(csv);
 });
 
-/**
- * Export applications to CSV
- */
 const exportApplications = catchAsync(async (req: Request, res: Response) => {
   const { status } = req.query;
   const csv = await ExportService.exportApplications(status as string);
@@ -27,9 +21,6 @@ const exportApplications = catchAsync(async (req: Request, res: Response) => {
   res.status(StatusCodes.OK).send(csv);
 });
 
-/**
- * Export sessions to CSV
- */
 const exportSessions = catchAsync(async (req: Request, res: Response) => {
   const { status, startDate, endDate } = req.query;
   const csv = await ExportService.exportSessions(
@@ -43,9 +34,6 @@ const exportSessions = catchAsync(async (req: Request, res: Response) => {
   res.status(StatusCodes.OK).send(csv);
 });
 
-/**
- * Export billings to CSV
- */
 const exportBillings = catchAsync(async (req: Request, res: Response) => {
   const { status, year, month } = req.query;
   const csv = await ExportService.exportBillings(
@@ -59,9 +47,6 @@ const exportBillings = catchAsync(async (req: Request, res: Response) => {
   res.status(StatusCodes.OK).send(csv);
 });
 
-/**
- * Export earnings to CSV
- */
 const exportEarnings = catchAsync(async (req: Request, res: Response) => {
   const { status, year, month } = req.query;
   const csv = await ExportService.exportEarnings(
@@ -75,9 +60,6 @@ const exportEarnings = catchAsync(async (req: Request, res: Response) => {
   res.status(StatusCodes.OK).send(csv);
 });
 
-/**
- * Export subscriptions to CSV
- */
 const exportSubscriptions = catchAsync(async (req: Request, res: Response) => {
   const { status } = req.query;
   const csv = await ExportService.exportSubscriptions(status as string);
@@ -87,9 +69,6 @@ const exportSubscriptions = catchAsync(async (req: Request, res: Response) => {
   res.status(StatusCodes.OK).send(csv);
 });
 
-/**
- * Export trial requests to CSV
- */
 const exportTrialRequests = catchAsync(async (req: Request, res: Response) => {
   const { status } = req.query;
   const csv = await ExportService.exportTrialRequests(status as string);

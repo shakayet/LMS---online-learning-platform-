@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.InterviewSlotValidation = void 0;
 const zod_1 = require("zod");
-// Create interview slot validation (Admin)
+
 const createInterviewSlotZodSchema = zod_1.z.object({
     body: zod_1.z.object({
         startTime: zod_1.z
@@ -27,7 +27,7 @@ const createInterviewSlotZodSchema = zod_1.z.object({
         path: ['endTime'],
     }),
 });
-// Book interview slot validation (Applicant)
+
 const bookInterviewSlotZodSchema = zod_1.z.object({
     body: zod_1.z.object({
         applicationId: zod_1.z
@@ -37,11 +37,11 @@ const bookInterviewSlotZodSchema = zod_1.z.object({
             .regex(/^[0-9a-fA-F]{24}$/, 'Invalid application ID format'),
     }),
 });
-// Cancel interview slot validation
+
 const cancelInterviewSlotZodSchema = zod_1.z.object({
     body: zod_1.z.object({}).optional(),
 });
-// Reschedule interview slot validation (Applicant)
+
 const rescheduleInterviewSlotZodSchema = zod_1.z.object({
     body: zod_1.z.object({
         newSlotId: zod_1.z
@@ -51,7 +51,7 @@ const rescheduleInterviewSlotZodSchema = zod_1.z.object({
             .regex(/^[0-9a-fA-F]{24}$/, 'Invalid new slot ID format'),
     }),
 });
-// Update interview slot validation (Admin)
+
 const updateInterviewSlotZodSchema = zod_1.z.object({
     body: zod_1.z.object({
         startTime: zod_1.z

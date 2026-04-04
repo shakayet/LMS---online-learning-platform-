@@ -7,7 +7,6 @@ import config from '../../config';
 import { trace, context } from '@opentelemetry/api';
 import { getTimelineTotal } from './opentelemetry';
 
-// 🗓️ Format date
 const formatDate = (): string => {
   const now = new Date();
   const options: Intl.DateTimeFormatOptions = {
@@ -21,7 +20,6 @@ const formatDate = (): string => {
   return `${datePart} , ${now.getFullYear()}`;
 };
 
-// 🧾 Status text
 const statusText = (code: number): string => {
   switch (code) {
     case 200:
@@ -47,7 +45,6 @@ const statusText = (code: number): string => {
   }
 };
 
-// 🌐 Client IP
 const getClientIp = (req: Request): string => {
   const xff = req.headers['x-forwarded-for'];
   if (typeof xff === 'string' && xff.length) return xff.split(',')[0].trim();
@@ -58,7 +55,6 @@ const getClientIp = (req: Request): string => {
   return ip || 'unknown';
 };
 
-// 🔒 Mask sensitive
 const SENSITIVE_KEYS = new Set([
   'password',
   'token',
@@ -83,7 +79,6 @@ const maskSensitive = (value: any): any => {
   return value;
 };
 
-// 🧰 Normalize body
 const normalizeBody = (req: Request): any => {
   const body: any = (req as any).body;
   if (!body) return {};
@@ -92,7 +87,6 @@ const normalizeBody = (req: Request): any => {
   return body;
 };
 
-// 🔠 Indent helper
 const indentBlock = (text: string, spaces = 5): string => {
   const pad = ' '.repeat(spaces);
   return text
@@ -101,7 +95,6 @@ const indentBlock = (text: string, spaces = 5): string => {
     .join('\n');
 };
 
-// 📏 File size converter
 const humanFileSize = (size: number): string => {
   if (size < 1024) return size + ' B';
   const i = Math.floor(Math.log(size) / Math.log(1024));
@@ -109,7 +102,6 @@ const humanFileSize = (size: number): string => {
   return (size / Math.pow(1024, i)).toFixed(2) + ' ' + sizes[i];
 };
 
-// 📝 Extract files
 const extractFilesInfo = (req: Request) => {
   const formatFile = (file: any) => ({
     originalname: file.originalname,
@@ -120,9 +112,9 @@ const extractFilesInfo = (req: Request) => {
 
   if (req.file) return formatFile(req.file);
   if (req.files) {
-    // Handle both array format (from .any()) and object format (from .fields())
+
     if (Array.isArray(req.files)) {
-      // Group files by fieldname when using .any()
+
       const grouped: Record<string, any> = {};
       for (const file of (req.files as any[])) {
         const fieldName = (file as any).fieldname;
@@ -131,15 +123,14 @@ const extractFilesInfo = (req: Request) => {
         }
         grouped[fieldName].push(formatFile(file));
       }
-      
-      // Convert single-item arrays to single objects for cleaner output
+
       const out: Record<string, any> = {};
       for (const [fieldName, files] of Object.entries(grouped)) {
         out[fieldName] = (files as any[]).length === 1 ? (files as any[])[0] : files;
       }
       return out;
     } else {
-      // Handle object format (from .fields())
+
       const out: Record<string, any> = {};
       for (const [key, value] of Object.entries(req.files as Record<string, any>)) {
         if (Array.isArray(value)) out[key] = value.map(formatFile);
@@ -151,7 +142,6 @@ const extractFilesInfo = (req: Request) => {
   return undefined;
 };
 
-// 🧭 Detect Stripe webhook requests
 const WEBHOOK_PATH = '/api/v1/payments/webhook';
 const isStripeWebhook = (req: Request): boolean => {
   const pathMatch = req.originalUrl?.includes(WEBHOOK_PATH);
@@ -161,7 +151,6 @@ const isStripeWebhook = (req: Request): boolean => {
   return Boolean(pathMatch || sigPresent || uaStripe);
 };
 
-// 🧾 Build minimal webhook context for global logs (no secrets)
 const getWebhookLogContext = (req: Request) => {
   const contentType = String(req.headers['content-type'] || '');
   const ua = String(req.headers['user-agent'] || '');
@@ -184,7 +173,6 @@ const getWebhookLogContext = (req: Request) => {
   };
 };
 
-// 🧪 Safely parse Stripe event from raw body without mutating req.body
 const parseStripeEventSafe = (req: Request): any | undefined => {
   const body: any = (req as any).body;
   try {
@@ -220,12 +208,10 @@ const getPaymentIntentLogDetails = (evt: any) => {
   };
 };
 
-// 🎛️ Try to derive an Express handler/controller label
 const deriveHandlerLabel = (req: Request, res: Response): string | undefined => {
   const fromLocals = (res.locals as any)?.handlerName;
   if (fromLocals && typeof fromLocals === 'string') return fromLocals;
 
-  // Attempt to infer from Express route stack
   const route: any = (req as any).route;
   if (route?.stack && Array.isArray(route.stack)) {
     const names = route.stack
@@ -234,12 +220,10 @@ const deriveHandlerLabel = (req: Request, res: Response): string | undefined => 
     if (names.length) return names[names.length - 1];
   }
 
-  // Fallback to route path if available
   if (route?.path) return `${req.method} ${route.path}`;
   return undefined;
 };
 
-// 🧾 Main Logger
 export const requestLogger = (
   req: Request,
   res: Response,
@@ -261,7 +245,7 @@ export const requestLogger = (
     } catch {}
     const status = res.statusCode;
     const statusMsg = statusText(status);
-    // Silence console logs for observability endpoints to avoid terminal spam
+
     const isObservabilityRoute = Boolean(req.originalUrl?.includes('/api/v1/observability'));
 
     const details = {
@@ -272,7 +256,6 @@ export const requestLogger = (
     };
     const maskedDetails = maskSensitive(details);
 
-    // 🎨 Method color
     const methodColor = (() => {
       switch (req.method) {
         case 'GET':
@@ -293,7 +276,6 @@ export const requestLogger = (
     const routeColor = colors.cyan.bold(req.originalUrl);
     const ipColor = colors.gray.bold(` ${getClientIp(req)} `);
 
-    // 🎨 Status color
     const statusColor = (() => {
       if (status >= 500) return colors.bgRed.white.bold;
       if (status >= 400) return colors.bgRed.white.bold;
@@ -301,7 +283,6 @@ export const requestLogger = (
       return colors.bgGreen.black.bold;
     })();
 
-    // 🎨 Message text color only background
     const messageBg = (() => {
       if (status >= 500) return colors.bgRed.white;
       if (status >= 400) return colors.bgRed.white;
@@ -313,7 +294,6 @@ export const requestLogger = (
     const responseMessage = responsePayload.message || '';
     const responseErrors = responsePayload.errorMessages;
 
-    // 🧑‍💻 Auth context (if available)
     const authCtx = (() => {
       const u: any = (req as any).user;
       if (!u) return undefined;
@@ -324,17 +304,15 @@ export const requestLogger = (
       };
     })();
 
-    // 🛰️ Client context
     const ua = String(req.headers['user-agent'] || '');
     const referer = String(req.headers['referer'] || req.headers['referrer'] || '');
     const contentType = String(req.headers['content-type'] || '');
     const handlerLabel = deriveHandlerLabel(req, res);
-    // Read dynamic labels from AsyncLocalStorage (if any)
+
     const ctxLabels = getLabels();
     let controllerLabel: string | undefined = (res.locals as any)?.controllerLabel || ctxLabels.controllerLabel || (res.locals as any)?.handlerName;
     const serviceLabel: string | undefined = (res.locals as any)?.serviceLabel || ctxLabels.serviceLabel || (res.locals as any)?.serviceName;
 
-    // If controller label is missing, derive from base path + handler
     if (!controllerLabel) {
       const baseCtrl = controllerNameFromBasePath(req.baseUrl);
       if (baseCtrl && handlerLabel) {
@@ -348,7 +326,7 @@ export const requestLogger = (
     lines.push(colors.gray.bold(`[${formatDate()}]  🧩 Req-ID: ${requestId}`));
     lines.push(`📥 Request: ${methodColor} ${routeColor} from IP:${ipColor}`);
     lines.push(colors.gray(`     🛰️ Client: ua="${ua}" referer="${referer || 'n/a'}" ct="${contentType || 'n/a'}"`));
-    // Enriched device/OS/browser info (if available)
+
     const info: any = (res.locals as any)?.clientInfo;
     if (info) {
       const osLabel = info.osFriendly || info.os;
@@ -371,12 +349,10 @@ export const requestLogger = (
       lines.push(colors.gray(`     👤 Auth: id="${authCtx.id || 'n/a'}" email="${authCtx.email || 'n/a'}" role="${authCtx.role || 'n/a'}"`));
     }
 
-    // 🔔 Stripe webhook request context (global)
     if (isStripeWebhook(req)) {
       lines.push(colors.yellow('     🔔 Stripe webhook request context:'));
       lines.push(colors.gray(indentBlock(JSON.stringify(getWebhookLogContext(req), null, 2))));
 
-      // ✅ Signature verification status from controller
       const sigVerified = (res.locals as any)?.webhookSignatureVerified;
       const sigError = (res.locals as any)?.webhookSignatureError;
       if (sigVerified === true) {
@@ -385,7 +361,6 @@ export const requestLogger = (
         lines.push(colors.red(`     ❌ Webhook signature verification failed: ${sigError || 'unknown error'}`));
       }
 
-      // 🔐 Masked webhook secret preview
       const secretPreview = (res.locals as any)?.webhookSecretPreview || (process.env.STRIPE_WEBHOOK_SECRET ? String(process.env.STRIPE_WEBHOOK_SECRET).substring(0, 10) + '...' : undefined);
       if (secretPreview) {
         lines.push(colors.blue(`     🔐 Webhook secret configured: ${secretPreview}`));
@@ -422,7 +397,6 @@ export const requestLogger = (
     const respSize = typeof respSizeHeader === 'string' ? respSizeHeader : Array.isArray(respSizeHeader) ? respSizeHeader[0] : (respSizeHeader as any);
     lines.push(`${respLabel} ${statusColor(` ${status} ${statusMsg} `)} ${colors.gray(respSize ? `(size: ${respSize} bytes)` : '')}`);
 
-    // 💬 Message with bg only on message text
     if (responseMessage) {
       lines.push(`💬 Message: ${messageBg(` ${responseMessage} `)}`);
     }
@@ -438,7 +412,6 @@ export const requestLogger = (
       );
     }
 
-    // 📊 Metrics block (DB, Cache, External) with detailed DB categories
     try {
       const m = getMetrics();
       if (m) {
@@ -449,7 +422,6 @@ export const requestLogger = (
         const dbAvg = avg(m.db.durations);
         const dbSlow = max(m.db.durations);
 
-        // Build detailed DB metrics output
         lines.push(' ----------------------------------------------------');
         lines.push(colors.bold(' 🧮 DB Metrics'));
         lines.push(colors.gray(`    • Hits            : ${dbHits}${dbHits > 0 ? ' ✅' : ''}`));
@@ -536,7 +508,7 @@ export const requestLogger = (
           lines.push(colors.gray(' - None'));
         } else {
           byCat.slow.forEach((q: any) => {
-            // For slow queries, pipeline and suggestion will be clearly visible via renderQueryLine
+
             lines.push(renderQueryLine(q));
           });
         }
@@ -550,7 +522,6 @@ export const requestLogger = (
         const extAvg = avg(m.external.durations);
         const extSlow = max(m.external.durations);
 
-        // Derive total request cost
         let cost: 'LOW' | 'MEDIUM' | 'HIGH' = 'LOW';
         if (dbHits >= 8 || dbAvg >= 120 || dbSlow >= 350 || extAvg >= 400 || extSlow >= 500) cost = 'HIGH';
         else if (dbHits >= 4 || extCount >= 1) cost = 'MEDIUM';
@@ -571,7 +542,6 @@ export const requestLogger = (
       }
     } catch {}
 
-    // ⏱️ Duration with thresholds and category label
     const durColor = processedMs >= 1000 ? colors.bgRed.white.bold : processedMs >= 300 ? colors.bgYellow.black.bold : colors.bgGreen.black.bold;
     const categoryLabel = processedMs >= 1000 ? 'Slow: >= 1000ms' : processedMs >= 300 ? 'Moderate: 300–999ms' : 'Fast: < 300ms';
     lines.push(`${durColor(` ⏱️ Processed in ${processedMs}ms `)} ${colors.gray(`[ ${categoryLabel} ]`)}`);
@@ -582,10 +552,7 @@ export const requestLogger = (
       else logger.info(formatted);
     }
 
-    // Observability log buffer removed
   });
 
   next();
 };
-
-// (removed) Misplaced Stripe signature log block — now handled inside formatted logger output

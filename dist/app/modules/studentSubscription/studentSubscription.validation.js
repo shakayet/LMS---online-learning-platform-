@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StudentSubscriptionValidation = void 0;
 const zod_1 = require("zod");
-// Subscribe to plan validation (Student)
+
 const subscribeToPlanZodSchema = zod_1.z.object({
     body: zod_1.z.object({
         tier: zod_1.z.enum(['FLEXIBLE', 'REGULAR', 'LONG_TERM'], {
@@ -10,7 +10,7 @@ const subscribeToPlanZodSchema = zod_1.z.object({
         }),
     }),
 });
-// Cancel subscription validation (Student)
+
 const cancelSubscriptionZodSchema = zod_1.z.object({
     body: zod_1.z.object({
         cancellationReason: zod_1.z
@@ -21,7 +21,7 @@ const cancelSubscriptionZodSchema = zod_1.z.object({
             .min(10, 'Cancellation reason must be at least 10 characters'),
     }),
 });
-// Confirm payment validation (Student)
+
 const confirmPaymentZodSchema = zod_1.z.object({
     body: zod_1.z.object({
         subscriptionId: zod_1.z.string({

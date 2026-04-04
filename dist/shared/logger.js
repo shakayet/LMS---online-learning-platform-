@@ -7,10 +7,10 @@ exports.logger = exports.errorLogger = exports.notifyCritical = void 0;
 const path_1 = __importDefault(require("path"));
 const winston_daily_rotate_file_1 = __importDefault(require("winston-daily-rotate-file"));
 const config_1 = __importDefault(require("../config"));
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+
 const { createLogger, format, transports } = require('winston');
 const { combine, timestamp, label, printf } = format;
-// Format timestamp in BD timezone as "YYYY-MM-DD HH:MM:SS AM/PM"
+
 const bdTime = (date = new Date()) => {
     const parts = new Intl.DateTimeFormat('en-US', {
         timeZone: 'Asia/Dhaka',
@@ -33,7 +33,7 @@ const bdTime = (date = new Date()) => {
     return `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss} ${dayPeriod}`;
 };
 const myFormat = printf(({ level, message, label, timestamp }) => {
-    // Always render timestamps in BD timezone
+
     const ts = bdTime(new Date(timestamp));
     return `[${ts}] [${label}] ${level}: ${message}`;
 });
@@ -67,17 +67,17 @@ const errorLogger = createLogger({
     transports: errorTransports,
 });
 exports.errorLogger = errorLogger;
-// Optional desktop notification for critical failures in development
+
 const notifyCritical = (title, message) => {
     if (config_1.default.node_env !== 'development')
         return;
     try {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
+
         const notifier = require('node-notifier');
         notifier.notify({ title, message });
     }
     catch (_a) {
-        // no-op if notifier not available
+
     }
 };
 exports.notifyCritical = notifyCritical;

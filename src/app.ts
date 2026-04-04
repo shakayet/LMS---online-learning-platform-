@@ -1,6 +1,6 @@
 import cors from 'cors';
 import YAML from 'yamljs';
-// Ensure DB metrics plugin loads BEFORE any models compile
+
 import './app/logging/mongooseMetrics';
 import './app/logging/autoLabelBootstrap';
 import './app/logging/opentelemetry';
@@ -21,17 +21,14 @@ import { otelExpressMiddleware } from './app/logging/otelExpress';
 import path from 'path';
 import { logger, errorLogger } from './shared/logger';
 import { allowedOrigins, maybeLogCors } from './app/logging/corsLogger';
-// autoLabelBootstrap moved above router import to ensure controllers are wrapped before route binding
 
 const app = express();
 
-// Morgan logging
 app.use(Morgan.successHandler);
 app.use(Morgan.errorHandler);
 
-// Client Hints: request OS/device info from browsers without frontend changes
 app.use((req, res, next) => {
-  // Ask for high-entropy client hints (Chrome/Edge)
+
   res.setHeader(
     'Accept-CH',
     [
@@ -45,7 +42,6 @@ app.use((req, res, next) => {
     ].join(', ')
   );
 
-  // Vary to keep caches/proxies from mixing responses across devices
   const varyHeaders = [
     'User-Agent',
     'Sec-CH-UA',
@@ -59,7 +55,6 @@ app.use((req, res, next) => {
   const existingVary = res.getHeader('Vary');
   res.setHeader('Vary', existingVary ? String(existingVary) + ', ' + varyHeaders : varyHeaders);
 
-  // Encourage first-request delivery (Chrome only)
   res.setHeader(
     'Critical-CH',
     [
@@ -73,15 +68,12 @@ app.use((req, res, next) => {
   next();
 });
 
-// OpenTelemetry middleware for timeline spans
 app.use(otelExpressMiddleware);
-
-// CORS setup moved to logging/corsLogger.ts (allowedOrigins, maybeLogCors)
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps, Postman)
+
       if (!origin) {
         maybeLogCors(origin, true);
         return callback(null, true);
@@ -95,11 +87,10 @@ app.use(
       }
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    credentials: true, // allow cookies/auth headers
+    credentials: true,
   })
 );
 
-// Explicitly handle preflight OPTIONS requests
 app.options(
   '*',
   cors({
@@ -109,46 +100,36 @@ app.options(
   })
 );
 
-// Body parser
-// Special handling for webhook routes - they need raw body for signature verification
 app.use('/api/v1/payments/webhook', express.raw({ type: 'application/json' }));
 
-// For all other routes, use JSON parsing
 app.use((req, res, next) => {
   if (req.path.includes('/webhook')) {
-    return next(); // Skip JSON parsing for webhook routes
+    return next();
   }
   express.json()(req, res, next);
 });
 
 app.use(express.urlencoded({ extended: true }));
 
-// Cookie parser (for reading refresh tokens from cookies)
 app.use(cookieParser());
 
-// Request/Response logging
-// Initialize request-scoped context BEFORE logging
 app.use(requestContextInit);
-// Detect device/OS/browser from headers (Client Hints + UA fallback)
+
 app.use(clientInfo);
 app.use(requestLogger);
 
-// Static files
 app.use(express.static('uploads'));
 app.use('/uploads', express.static('uploads'));
 app.use(express.static('public'));
 app.use('/doc', express.static('doc'));
 
-// Swagger
 const swaggerDocument = YAML.load(
   path.join(__dirname, '../public/swagger.yaml')
 );
 app.use('/api/v1/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-// API routes
 app.use('/api/v1', router);
 
-// Live response
 app.get('/', (req: Request, res: Response) => {
   res.send(`
     <!DOCTYPE html>
@@ -254,10 +235,8 @@ app.get('/', (req: Request, res: Response) => {
   `);
 });
 
-// Global error handler
 app.use(globalErrorHandler);
 
-// 404 handler
 app.use((req, res) => {
   res.status(StatusCodes.NOT_FOUND).json({
     success: false,

@@ -8,7 +8,7 @@ var TRIAL_REQUEST_STATUS;
     TRIAL_REQUEST_STATUS["EXPIRED"] = "EXPIRED";
     TRIAL_REQUEST_STATUS["CANCELLED"] = "CANCELLED";
 })(TRIAL_REQUEST_STATUS || (exports.TRIAL_REQUEST_STATUS = TRIAL_REQUEST_STATUS = {}));
-// Request type to distinguish between trial and session requests in unified view
+
 var REQUEST_TYPE;
 (function (REQUEST_TYPE) {
     REQUEST_TYPE["TRIAL"] = "TRIAL";

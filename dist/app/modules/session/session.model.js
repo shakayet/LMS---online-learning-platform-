@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Session = void 0;
 const mongoose_1 = require("mongoose");
 const session_interface_1 = require("./session.interface");
-// Attendance tracking sub-schema
+
 const attendanceSchema = new mongoose_1.Schema({
     odId: {
         type: mongoose_1.Schema.Types.ObjectId,
@@ -31,7 +31,7 @@ const attendanceSchema = new mongoose_1.Schema({
         default: 0,
     },
 }, { _id: false });
-// Reschedule request sub-schema
+
 const rescheduleRequestSchema = new mongoose_1.Schema({
     requestedBy: {
         type: mongoose_1.Schema.Types.ObjectId,
@@ -98,23 +98,23 @@ const sessionSchema = new mongoose_1.Schema({
     duration: {
         type: Number,
         required: [true, 'Duration is required'],
-        default: 60, // Fixed 60 minutes
+        default: 60,
     },
     bufferMinutes: {
         type: Number,
-        default: 10, // 10 minutes extra buffer
+        default: 10,
     },
     pricePerHour: {
         type: Number,
-        required: [true, 'Price per hour is required'], // EUR
+        required: [true, 'Price per hour is required'],
     },
     totalPrice: {
         type: Number,
-        required: [true, 'Total price is required'], // EUR
+        required: [true, 'Total price is required'],
     },
     bufferPrice: {
         type: Number,
-        default: 0, // Price for buffer time
+        default: 0,
     },
     googleMeetLink: {
         type: String,
@@ -156,7 +156,7 @@ const sessionSchema = new mongoose_1.Schema({
         type: Boolean,
         default: false,
     },
-    // Reschedule fields
+
     rescheduleRequest: rescheduleRequestSchema,
     previousStartTime: {
         type: Date,
@@ -164,7 +164,7 @@ const sessionSchema = new mongoose_1.Schema({
     previousEndTime: {
         type: Date,
     },
-    // Cancellation fields
+
     cancellationReason: {
         type: String,
         trim: true,
@@ -173,7 +173,7 @@ const sessionSchema = new mongoose_1.Schema({
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'User',
     },
-    // Timestamp fields
+
     startedAt: {
         type: Date,
     },
@@ -186,7 +186,7 @@ const sessionSchema = new mongoose_1.Schema({
     expiredAt: {
         type: Date,
     },
-    // Attendance tracking fields
+
     callId: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'Call',
@@ -197,7 +197,7 @@ const sessionSchema = new mongoose_1.Schema({
         type: String,
         enum: ['tutor', 'student'],
     },
-    // Student completion tracking
+
     studentCompletionStatus: {
         type: String,
         enum: Object.values(session_interface_1.COMPLETION_STATUS),
@@ -210,7 +210,7 @@ const sessionSchema = new mongoose_1.Schema({
         type: Boolean,
         default: false,
     },
-    // Teacher completion tracking
+
     teacherCompletionStatus: {
         type: String,
         enum: Object.values(session_interface_1.COMPLETION_STATUS),
@@ -227,10 +227,10 @@ const sessionSchema = new mongoose_1.Schema({
         type: Boolean,
         default: false,
     },
-    // Billing tracking (for monthly invoicing)
+
     isPaidUpfront: {
         type: Boolean,
-        default: false, // True if covered by subscription upfront payment
+        default: false,
     },
     billingId: {
         type: mongoose_1.Schema.Types.ObjectId,
@@ -240,39 +240,37 @@ const sessionSchema = new mongoose_1.Schema({
         type: Date,
     },
 }, { timestamps: true });
-// Indexes for performance
+
 sessionSchema.index({ studentId: 1, createdAt: -1 });
 sessionSchema.index({ tutorId: 1, createdAt: -1 });
 sessionSchema.index({ status: 1 });
 sessionSchema.index({ startTime: 1, endTime: 1 });
 sessionSchema.index({ chatId: 1 });
 sessionSchema.index({ trialRequestId: 1 });
-// Compound index for upcoming sessions
+
 sessionSchema.index({ status: 1, startTime: 1 });
-// Index for status transitions (cron jobs)
+
 sessionSchema.index({ status: 1, endTime: 1 });
-// Index for call-based lookups
+
 sessionSchema.index({ callId: 1 });
-// Indexes for completion status queries (billing/earnings)
+
 sessionSchema.index({ studentCompletionStatus: 1, studentCompletedAt: 1 });
 sessionSchema.index({ teacherCompletionStatus: 1, teacherCompletedAt: 1 });
-// Index for billing queries (sessions not yet billed)
+
 sessionSchema.index({ isPaidUpfront: 1, billingId: 1, studentCompletionStatus: 1 });
-// Validate endTime is after startTime
+
 sessionSchema.pre('save', function (next) {
     if (this.endTime <= this.startTime) {
         next(new Error('End time must be after start time'));
     }
     next();
 });
-// Calculate total price if not provided
-// Fixed price per session (not based on duration)
-// 1 session = 1 session price, regardless of duration
+
 sessionSchema.pre('save', function (next) {
     if (!this.totalPrice && this.pricePerHour && this.duration) {
         this.totalPrice = this.pricePerHour;
     }
-    // Calculate buffer price
+
     if (!this.bufferPrice && this.pricePerHour && this.bufferMinutes) {
         this.bufferPrice = (this.pricePerHour * this.bufferMinutes) / 60;
     }

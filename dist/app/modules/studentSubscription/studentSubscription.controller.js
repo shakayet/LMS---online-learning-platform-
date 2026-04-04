@@ -17,9 +17,7 @@ const http_status_codes_1 = require("http-status-codes");
 const catchAsync_1 = __importDefault(require("../../../shared/catchAsync"));
 const sendResponse_1 = __importDefault(require("../../../shared/sendResponse"));
 const studentSubscription_service_1 = require("./studentSubscription.service");
-/**
- * Subscribe to a plan (Student)
- */
+
 const subscribeToPlan = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const studentId = req.user.id;
     const { tier } = req.body;
@@ -31,9 +29,7 @@ const subscribeToPlan = (0, catchAsync_1.default)((req, res) => __awaiter(void 0
         data: result,
     });
 }));
-/**
- * Get student's active subscription
- */
+
 const getMySubscription = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const studentId = req.user.id;
     const result = yield studentSubscription_service_1.StudentSubscriptionService.getMySubscription(studentId);
@@ -44,9 +40,7 @@ const getMySubscription = (0, catchAsync_1.default)((req, res) => __awaiter(void
         data: result,
     });
 }));
-/**
- * Get all subscriptions (Admin)
- */
+
 const getAllSubscriptions = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield studentSubscription_service_1.StudentSubscriptionService.getAllSubscriptions(req.query);
     (0, sendResponse_1.default)(res, {
@@ -57,9 +51,7 @@ const getAllSubscriptions = (0, catchAsync_1.default)((req, res) => __awaiter(vo
         pagination: result.meta,
     });
 }));
-/**
- * Get single subscription
- */
+
 const getSingleSubscription = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const result = yield studentSubscription_service_1.StudentSubscriptionService.getSingleSubscription(id);
@@ -70,9 +62,7 @@ const getSingleSubscription = (0, catchAsync_1.default)((req, res) => __awaiter(
         data: result,
     });
 }));
-/**
- * Cancel subscription (Student)
- */
+
 const cancelSubscription = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const studentId = req.user.id;
@@ -85,9 +75,7 @@ const cancelSubscription = (0, catchAsync_1.default)((req, res) => __awaiter(voi
         data: result,
     });
 }));
-/**
- * Expire old subscriptions (Cron job endpoint)
- */
+
 const expireOldSubscriptions = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const count = yield studentSubscription_service_1.StudentSubscriptionService.expireOldSubscriptions();
     (0, sendResponse_1.default)(res, {
@@ -97,10 +85,7 @@ const expireOldSubscriptions = (0, catchAsync_1.default)((req, res) => __awaiter
         data: { expiredCount: count },
     });
 }));
-/**
- * Get plan usage details (Student)
- * Includes: plan details, usage stats, spending, upcoming sessions
- */
+
 const getMyPlanUsage = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const studentId = req.user.id;
     const result = yield studentSubscription_service_1.StudentSubscriptionService.getMyPlanUsage(studentId);
@@ -111,10 +96,7 @@ const getMyPlanUsage = (0, catchAsync_1.default)((req, res) => __awaiter(void 0,
         data: result,
     });
 }));
-/**
- * Create Payment Intent for Subscription
- * Called when student selects a plan to initiate payment
- */
+
 const createPaymentIntent = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const studentId = req.user.id;
     const { tier } = req.body;
@@ -126,10 +108,7 @@ const createPaymentIntent = (0, catchAsync_1.default)((req, res) => __awaiter(vo
         data: result,
     });
 }));
-/**
- * Confirm Subscription Payment
- * Called after successful Stripe payment to activate subscription
- */
+
 const confirmPayment = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const studentId = req.user.id;
     const { subscriptionId, paymentIntentId } = req.body;
@@ -141,10 +120,7 @@ const confirmPayment = (0, catchAsync_1.default)((req, res) => __awaiter(void 0,
         data: result,
     });
 }));
-/**
- * Get Payment History (Student)
- * Returns paginated payment history
- */
+
 const getPaymentHistory = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const studentId = req.user.id;
     const page = parseInt(req.query.page) || 1;

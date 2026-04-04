@@ -17,16 +17,12 @@ import { BILLING_STATUS } from '../monthlyBilling/monthlyBilling.interface';
 import { stripe } from '../../../config/stripe';
 import { PricingConfigService } from '../pricingConfig/pricingConfig.service';
 
-// Fallback pricing configuration (EUR) - used if DB config not available
 const FALLBACK_TIER_PRICING = {
   [SUBSCRIPTION_TIER.FLEXIBLE]: { pricePerHour: 30, minimumHours: 0, commitmentMonths: 0 },
   [SUBSCRIPTION_TIER.REGULAR]: { pricePerHour: 28, minimumHours: 4, commitmentMonths: 1 },
   [SUBSCRIPTION_TIER.LONG_TERM]: { pricePerHour: 25, minimumHours: 4, commitmentMonths: 3 },
 };
 
-/**
- * Get pricing for a tier (from DB or fallback)
- */
 const getTierPricing = async (tier: SUBSCRIPTION_TIER) => {
   try {
     const pricingPlan = await PricingConfigService.getPricingByTier(tier);
@@ -38,25 +34,21 @@ const getTierPricing = async (tier: SUBSCRIPTION_TIER) => {
       };
     }
   } catch {
-    // DB not available, use fallback
+
   }
   return FALLBACK_TIER_PRICING[tier];
 };
 
-/**
- * Subscribe to a plan (Student)
- */
 const subscribeToPlan = async (
   studentId: string,
   tier: SUBSCRIPTION_TIER
 ): Promise<IStudentSubscription> => {
-  // Verify student
+
   const student = await User.findById(studentId);
   if (!student || student.role !== USER_ROLES.STUDENT) {
     throw new ApiError(StatusCodes.FORBIDDEN, 'Only students can subscribe to plans');
   }
 
-  // Check if student already has active subscription
   const activeSubscription = await StudentSubscription.findOne({
     studentId: new Types.ObjectId(studentId),
     status: SUBSCRIPTION_STATUS.ACTIVE,
@@ -69,7 +61,6 @@ const subscribeToPlan = async (
     );
   }
 
-  // Create subscription
   const subscription = await StudentSubscription.create({
     studentId: new Types.ObjectId(studentId),
     tier,
@@ -77,28 +68,13 @@ const subscribeToPlan = async (
     status: SUBSCRIPTION_STATUS.ACTIVE,
   });
 
-  // Update user's subscription tier
   await User.findByIdAndUpdate(studentId, {
     'studentProfile.subscriptionTier': tier,
   });
 
-  // TODO: Create Stripe customer and subscription
-  // if (!student.stripeCustomerId) {
-  //   const customer = await stripe.customers.create({
-  //     email: student.email,
-  //     name: student.name,
-  //     metadata: { userId: studentId }
-  //   });
-  //   subscription.stripeCustomerId = customer.id;
-  //   await subscription.save();
-  // }
-
   return subscription;
 };
 
-/**
- * Get student's active subscription
- */
 const getMySubscription = async (studentId: string): Promise<IStudentSubscription | null> => {
   const subscription = await StudentSubscription.findOne({
     studentId: new Types.ObjectId(studentId),
@@ -112,9 +88,6 @@ const getMySubscription = async (studentId: string): Promise<IStudentSubscriptio
   return subscription;
 };
 
-/**
- * Get all subscriptions (Admin)
- */
 const getAllSubscriptions = async (query: Record<string, unknown>) => {
   const subscriptionQuery = new QueryBuilder(
     StudentSubscription.find().populate('studentId', 'name email profilePicture'),
@@ -134,9 +107,6 @@ const getAllSubscriptions = async (query: Record<string, unknown>) => {
   };
 };
 
-/**
- * Get single subscription
- */
 const getSingleSubscription = async (id: string): Promise<IStudentSubscription | null> => {
   const subscription = await StudentSubscription.findById(id).populate(
     'studentId',
@@ -150,9 +120,6 @@ const getSingleSubscription = async (id: string): Promise<IStudentSubscription |
   return subscription;
 };
 
-/**
- * Cancel subscription (Student)
- */
 const cancelSubscription = async (
   subscriptionId: string,
   studentId: string,
@@ -164,7 +131,6 @@ const cancelSubscription = async (
     throw new ApiError(StatusCodes.NOT_FOUND, 'Subscription not found');
   }
 
-  // Verify ownership
   if (subscription.studentId.toString() !== studentId) {
     throw new ApiError(
       StatusCodes.FORBIDDEN,
@@ -172,7 +138,6 @@ const cancelSubscription = async (
     );
   }
 
-  // Can only cancel ACTIVE subscriptions
   if (subscription.status !== SUBSCRIPTION_STATUS.ACTIVE) {
     throw new ApiError(
       StatusCodes.BAD_REQUEST,
@@ -180,28 +145,18 @@ const cancelSubscription = async (
     );
   }
 
-  // Update subscription
   subscription.status = SUBSCRIPTION_STATUS.CANCELLED;
   subscription.cancellationReason = cancellationReason;
   subscription.cancelledAt = new Date();
   await subscription.save();
 
-  // Update user's subscription tier to null
   await User.findByIdAndUpdate(studentId, {
     'studentProfile.subscriptionTier': null,
   });
 
-  // TODO: Cancel Stripe subscription
-  // if (subscription.stripeSubscriptionId) {
-  //   await stripe.subscriptions.cancel(subscription.stripeSubscriptionId);
-  // }
-
   return subscription;
 };
 
-/**
- * Increment hours taken (Called when session completes)
- */
 const incrementHoursTaken = async (
   studentId: string,
   hours: number
@@ -217,10 +172,6 @@ const incrementHoursTaken = async (
   }
 };
 
-/**
- * Auto-expire subscriptions (Cron job)
- * Marks subscriptions as EXPIRED after endDate passes
- */
 const expireOldSubscriptions = async (): Promise<number> => {
   const result = await StudentSubscription.updateMany(
     {
@@ -232,7 +183,6 @@ const expireOldSubscriptions = async (): Promise<number> => {
     }
   );
 
-  // Update users' subscription tier to null
   const expiredSubscriptions = await StudentSubscription.find({
     status: SUBSCRIPTION_STATUS.EXPIRED,
     endDate: { $lt: new Date() },
@@ -247,12 +197,8 @@ const expireOldSubscriptions = async (): Promise<number> => {
   return result.modifiedCount;
 };
 
-/**
- * Get plan usage details (Student)
- * Returns comprehensive usage data for student's subscription
- */
 type PlanUsageResponse = {
-  // Plan details
+
   plan: {
     name: SUBSCRIPTION_TIER | null;
     pricePerHour: number;
@@ -262,20 +208,20 @@ type PlanUsageResponse = {
     startDate: Date | null;
     endDate: Date | null;
   };
-  // Usage stats
+
   usage: {
     hoursUsed: number;
     sessionsCompleted: number;
-    hoursRemaining: number | null; // null for FLEXIBLE plan (no minimum)
-    sessionsRemaining: number | null; // For plans with minimum hours
+    hoursRemaining: number | null;
+    sessionsRemaining: number | null;
   };
-  // Spending
+
   spending: {
     currentMonthSpending: number;
     totalSpending: number;
-    bufferCharges: number; // Extra time charges
+    bufferCharges: number;
   };
-  // Upcoming
+
   upcoming: {
     scheduledSessions: number;
     upcomingHours: number;
@@ -283,26 +229,23 @@ type PlanUsageResponse = {
 };
 
 const getMyPlanUsage = async (studentId: string): Promise<PlanUsageResponse> => {
-  // Get active subscription
+
   const subscription = await StudentSubscription.findOne({
     studentId: new Types.ObjectId(studentId),
     status: SUBSCRIPTION_STATUS.ACTIVE,
   });
 
-  // Get current month dates
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
 
-  // Get completed sessions for current month (excluding trial sessions - they're free!)
   const currentMonthSessions = await Session.find({
     studentId: new Types.ObjectId(studentId),
     status: SESSION_STATUS.COMPLETED,
     completedAt: { $gte: startOfMonth, $lte: endOfMonth },
-    isTrial: false, // Exclude trial sessions from billing
+    isTrial: false,
   });
 
-  // Calculate current month spending
   let currentMonthSpending = 0;
   let bufferCharges = 0;
   for (const session of currentMonthSessions) {
@@ -310,13 +253,12 @@ const getMyPlanUsage = async (studentId: string): Promise<PlanUsageResponse> => 
     bufferCharges += session.bufferPrice || 0;
   }
 
-  // Get all completed sessions for total stats (excluding trial sessions - they're free!)
   const allCompletedSessions = await Session.aggregate([
     {
       $match: {
         studentId: new Types.ObjectId(studentId),
         status: SESSION_STATUS.COMPLETED,
-        isTrial: false, // Exclude trial sessions from billing
+        isTrial: false,
       },
     },
     {
@@ -337,7 +279,6 @@ const getMyPlanUsage = async (studentId: string): Promise<PlanUsageResponse> => 
     totalBufferCharges: 0,
   };
 
-  // Get upcoming scheduled sessions
   const upcomingSessions = await Session.aggregate([
     {
       $match: {
@@ -357,13 +298,12 @@ const getMyPlanUsage = async (studentId: string): Promise<PlanUsageResponse> => 
 
   const upcomingStats = upcomingSessions[0] || { count: 0, totalHours: 0 };
 
-  // Build response based on subscription status
   if (!subscription) {
-    // No active subscription
+
     return {
       plan: {
         name: null,
-        pricePerHour: 30, // Default FLEXIBLE rate
+        pricePerHour: 30,
         commitmentMonths: 0,
         minimumHours: 0,
         status: null,
@@ -388,13 +328,12 @@ const getMyPlanUsage = async (studentId: string): Promise<PlanUsageResponse> => 
     };
   }
 
-  // Calculate remaining hours (only for REGULAR and LONG_TERM)
   let hoursRemaining: number | null = null;
   let sessionsRemaining: number | null = null;
 
   if (subscription.tier !== SUBSCRIPTION_TIER.FLEXIBLE) {
     hoursRemaining = Math.max(0, subscription.minimumHours - subscription.totalHoursTaken);
-    // Assuming 1 hour per session
+
     sessionsRemaining = Math.ceil(hoursRemaining);
   }
 
@@ -426,10 +365,6 @@ const getMyPlanUsage = async (studentId: string): Promise<PlanUsageResponse> => 
   };
 };
 
-/**
- * Create Payment Intent for Subscription
- * Called when student selects a plan and proceeds to payment
- */
 type PaymentIntentResponse = {
   clientSecret: string;
   subscriptionId: string;
@@ -441,13 +376,12 @@ const createSubscriptionPaymentIntent = async (
   studentId: string,
   tier: SUBSCRIPTION_TIER
 ): Promise<PaymentIntentResponse> => {
-  // 1. Verify student exists
+
   const student = await User.findById(studentId);
   if (!student || student.role !== USER_ROLES.STUDENT) {
     throw new ApiError(StatusCodes.FORBIDDEN, 'Only students can subscribe to plans');
   }
 
-  // 2. Check for existing active subscription
   const existingSubscription = await StudentSubscription.findOne({
     studentId: new Types.ObjectId(studentId),
     status: SUBSCRIPTION_STATUS.ACTIVE,
@@ -460,27 +394,23 @@ const createSubscriptionPaymentIntent = async (
     );
   }
 
-  // 3. Calculate payment amount and subscription details (from DB config)
   const pricing = await getTierPricing(tier);
-  // For FLEXIBLE tier (minimumHours = 0), no upfront payment - pay per session
-  // For other tiers, charge for minimum hours upfront
-  const amount = pricing.pricePerHour * pricing.minimumHours; // EUR (will be 0 for FLEXIBLE)
+
+  const amount = pricing.pricePerHour * pricing.minimumHours;
   const amountInCents = Math.round(amount * 100);
 
-  // Calculate end date based on tier (from DB config)
   const startDate = new Date();
   const endDate = new Date(startDate);
   const commitmentMonths = pricing.commitmentMonths;
 
   if (commitmentMonths === 0) {
-    // Flexible: No end date (set to 100 years from now)
+
     endDate.setFullYear(endDate.getFullYear() + 100);
   } else {
-    // Regular/Long-term: Set end date based on commitment months
+
     endDate.setMonth(endDate.getMonth() + commitmentMonths);
   }
 
-  // 4. Create or get Stripe customer
   let stripeCustomerId = student.studentProfile?.stripeCustomerId;
 
   if (!stripeCustomerId) {
@@ -491,18 +421,16 @@ const createSubscriptionPaymentIntent = async (
     });
     stripeCustomerId = customer.id;
 
-    // Save customer ID to user
     await User.findByIdAndUpdate(studentId, {
       'studentProfile.stripeCustomerId': stripeCustomerId,
     });
   }
 
-  // 5. For FLEXIBLE tier, use SetupIntent to save payment method (required for monthly billing)
   if (tier === SUBSCRIPTION_TIER.FLEXIBLE) {
-    // Create SetupIntent to save payment method for future charges
+
     const setupIntent = await stripe.setupIntents.create({
       customer: stripeCustomerId,
-      usage: 'off_session', // For charging later without customer present
+      usage: 'off_session',
       metadata: {
         studentId,
         tier,
@@ -513,7 +441,6 @@ const createSubscriptionPaymentIntent = async (
       },
     });
 
-    // Create pending subscription (will be activated after SetupIntent succeeds)
     const subscription = await StudentSubscription.create({
       studentId: new Types.ObjectId(studentId),
       tier,
@@ -524,19 +451,17 @@ const createSubscriptionPaymentIntent = async (
       endDate,
       status: SUBSCRIPTION_STATUS.PENDING,
       stripeCustomerId,
-      stripePaymentIntentId: setupIntent.id, // Store SetupIntent ID
+      stripePaymentIntentId: setupIntent.id,
     });
 
-    // Return SetupIntent clientSecret for FLEXIBLE tier
     return {
       clientSecret: setupIntent.client_secret!,
       subscriptionId: subscription._id.toString(),
-      amount: 0, // No upfront charge
+      amount: 0,
       currency: 'eur',
     };
   }
 
-  // 6. For paid tiers, create pending subscription record
   const subscription = await StudentSubscription.create({
     studentId: new Types.ObjectId(studentId),
     tier,
@@ -549,12 +474,11 @@ const createSubscriptionPaymentIntent = async (
     stripeCustomerId,
   });
 
-  // 7. Create PaymentIntent for paid tiers
   const paymentIntent = await stripe.paymentIntents.create({
     amount: amountInCents,
     currency: 'eur',
     customer: stripeCustomerId,
-    setup_future_usage: 'off_session', // Attach payment method to customer for future charges
+    setup_future_usage: 'off_session',
     metadata: {
       subscriptionId: subscription._id.toString(),
       studentId,
@@ -566,7 +490,6 @@ const createSubscriptionPaymentIntent = async (
     },
   });
 
-  // 7. Save payment intent ID to subscription
   subscription.stripePaymentIntentId = paymentIntent.id;
   await subscription.save();
 
@@ -578,32 +501,25 @@ const createSubscriptionPaymentIntent = async (
   };
 };
 
-/**
- * Confirm Subscription Payment
- * Called after successful payment to activate subscription
- * Handles both PaymentIntent (REGULAR/LONG_TERM) and SetupIntent (FLEXIBLE)
- */
 const confirmSubscriptionPayment = async (
   subscriptionId: string,
   paymentIntentId: string,
   studentId: string
 ): Promise<IStudentSubscription> => {
-  // 1. Find subscription
+
   const subscription = await StudentSubscription.findById(subscriptionId);
   if (!subscription) {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Subscription not found');
   }
 
-  // 2. Verify ownership
   if (subscription.studentId.toString() !== studentId) {
     throw new ApiError(StatusCodes.FORBIDDEN, 'Unauthorized access to subscription');
   }
 
-  // 3. Check if this is a SetupIntent (FLEXIBLE tier) or PaymentIntent (others)
   const isSetupIntent = paymentIntentId.startsWith('seti_');
 
   if (isSetupIntent) {
-    // Handle SetupIntent for FLEXIBLE tier
+
     const setupIntent = await stripe.setupIntents.retrieve(paymentIntentId);
     if (setupIntent.status !== 'succeeded') {
       throw new ApiError(
@@ -612,7 +528,6 @@ const confirmSubscriptionPayment = async (
       );
     }
 
-    // Set the saved payment method as default for this customer
     if (setupIntent.payment_method) {
       await stripe.customers.update(subscription.stripeCustomerId!, {
         invoice_settings: {
@@ -621,7 +536,7 @@ const confirmSubscriptionPayment = async (
       });
     }
   } else {
-    // Handle PaymentIntent for REGULAR/LONG_TERM tiers
+
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
     if (paymentIntent.status !== 'succeeded') {
       throw new ApiError(
@@ -630,12 +545,10 @@ const confirmSubscriptionPayment = async (
       );
     }
 
-    // Verify payment intent matches subscription
     if (paymentIntent.metadata.subscriptionId !== subscriptionId) {
       throw new ApiError(StatusCodes.BAD_REQUEST, 'Payment intent does not match subscription');
     }
 
-    // Set the payment method as default for this customer (for future charges)
     if (paymentIntent.payment_method) {
       await stripe.customers.update(subscription.stripeCustomerId!, {
         invoice_settings: {
@@ -645,12 +558,10 @@ const confirmSubscriptionPayment = async (
     }
   }
 
-  // 4. Activate subscription
   subscription.status = SUBSCRIPTION_STATUS.ACTIVE;
   subscription.paidAt = new Date();
   await subscription.save();
 
-  // 5. Update user's subscription tier
   await User.findByIdAndUpdate(studentId, {
     'studentProfile.subscriptionTier': subscription.tier,
     'studentProfile.currentPlan': subscription.tier,
@@ -659,10 +570,6 @@ const confirmSubscriptionPayment = async (
   return subscription;
 };
 
-/**
- * Get Payment History (Student)
- * Returns paginated payment history from completed sessions and subscriptions
- */
 type PaymentHistoryItem = {
   id: string;
   period: string;
@@ -694,7 +601,6 @@ const getPaymentHistory = async (
 ): Promise<PaymentHistoryResponse> => {
   const skip = (page - 1) * limit;
 
-  // Get student
   const student = await User.findById(studentId);
   if (!student) {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Student not found');
@@ -703,12 +609,10 @@ const getPaymentHistory = async (
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const formattedPayments: PaymentHistoryItem[] = [];
 
-  // Get monthly billings for this student (this is the source of truth for invoices)
   const monthlyBillings = await MonthlyBilling.find({
     studentId: new Types.ObjectId(studentId),
   }).sort({ billingYear: -1, billingMonth: -1 });
 
-  // Add monthly billing records
   monthlyBillings.forEach((billing) => {
     formattedPayments.push({
       id: billing._id.toString(),
@@ -724,10 +628,8 @@ const getPaymentHistory = async (
     });
   });
 
-  // Sort by date (newest first)
   formattedPayments.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  // Paginate
   const total = formattedPayments.length;
   const paginatedData = formattedPayments.slice(skip, skip + limit);
 
@@ -742,15 +644,11 @@ const getPaymentHistory = async (
   };
 };
 
-/**
- * Handle Stripe Webhook for Payment Success
- * Auto-activates subscription when payment succeeds
- */
 const handlePaymentSuccess = async (paymentIntent: {
   id: string;
   metadata: { subscriptionId?: string; studentId?: string; type?: string };
 }): Promise<void> => {
-  // Only process subscription payments
+
   if (paymentIntent.metadata.type !== 'subscription_payment') {
     return;
   }
@@ -768,17 +666,14 @@ const handlePaymentSuccess = async (paymentIntent: {
       return;
     }
 
-    // Skip if already active
     if (subscription.status === SUBSCRIPTION_STATUS.ACTIVE) {
       return;
     }
 
-    // Activate subscription
     subscription.status = SUBSCRIPTION_STATUS.ACTIVE;
     subscription.paidAt = new Date();
     await subscription.save();
 
-    // Update user
     await User.findByIdAndUpdate(studentId, {
       'studentProfile.subscriptionTier': subscription.tier,
       'studentProfile.currentPlan': subscription.tier,

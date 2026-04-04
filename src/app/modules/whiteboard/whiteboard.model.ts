@@ -58,7 +58,6 @@ const whiteboardRoomSchema = new Schema<IWhiteboardRoom, WhiteboardRoomModel>(
   { timestamps: true }
 );
 
-// Indexes
 whiteboardRoomSchema.index({ createdBy: 1 });
 whiteboardRoomSchema.index({ callId: 1 });
 whiteboardRoomSchema.index({ isActive: 1 });

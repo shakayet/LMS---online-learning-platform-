@@ -33,7 +33,6 @@ const getUserProfile = catchAsync(async (req: Request, res: Response) => {
 const updateProfile = catchAsync(async (req: Request, res: Response) => {
   const user = req.user;
 
-  // All files + text data are in req.body
   const payload = { ...req.body };
 
   const result = await UserService.updateProfileToDB(
@@ -111,8 +110,6 @@ const getUserDetailsById = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// ============ ADMIN: STUDENT MANAGEMENT ============
-
 const getAllStudents = catchAsync(async (req: Request, res: Response) => {
   const result = await UserService.getAllStudents(req.query);
 
@@ -149,9 +146,6 @@ const unblockStudent = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Admin: Update student profile (without password)
- */
 const adminUpdateStudentProfile = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const result = await UserService.adminUpdateStudentProfile(id, req.body);
@@ -163,8 +157,6 @@ const adminUpdateStudentProfile = catchAsync(async (req: Request, res: Response)
     data: result,
   });
 });
-
-// ============ ADMIN: TUTOR MANAGEMENT ============
 
 const getAllTutors = catchAsync(async (req: Request, res: Response) => {
   const result = await UserService.getAllTutors(req.query);
@@ -215,9 +207,6 @@ const updateTutorSubjects = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Admin: Update tutor profile (without password)
- */
 const adminUpdateTutorProfile = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const result = await UserService.adminUpdateTutorProfile(id, req.body);
@@ -229,8 +218,6 @@ const adminUpdateTutorProfile = catchAsync(async (req: Request, res: Response) =
     data: result,
   });
 });
-
-// ============ TUTOR: STATISTICS ============
 
 const getTutorStatistics = catchAsync(async (req: Request, res: Response) => {
   const user = req.user as JwtPayload;
@@ -253,17 +240,17 @@ export const UserController = {
   unblockUser,
   getUserById,
   getUserDetailsById,
-  // Admin: Student Management
+
   getAllStudents,
   blockStudent,
   unblockStudent,
   adminUpdateStudentProfile,
-  // Admin: Tutor Management
+
   getAllTutors,
   blockTutor,
   unblockTutor,
   updateTutorSubjects,
   adminUpdateTutorProfile,
-  // Tutor: Statistics
+
   getTutorStatistics,
 };

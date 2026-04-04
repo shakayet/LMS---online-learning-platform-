@@ -11,7 +11,7 @@ const tutorApplicationSchema = new mongoose_1.Schema({
             required: true,
         },
     ],
-    // Personal Information
+
     name: {
         type: String,
         required: [true, 'Name is required'],
@@ -33,7 +33,7 @@ const tutorApplicationSchema = new mongoose_1.Schema({
         type: Date,
         required: [true, 'Birth date is required'],
     },
-    // Address (structured fields)
+
     street: {
         type: String,
         required: [true, 'Street is required'],
@@ -54,7 +54,7 @@ const tutorApplicationSchema = new mongoose_1.Schema({
         required: [true, 'City is required'],
         trim: true,
     },
-    // Documents (all mandatory)
+
     cv: {
         type: String,
         required: [true, 'CV is required'],
@@ -67,7 +67,7 @@ const tutorApplicationSchema = new mongoose_1.Schema({
         type: String,
         required: [true, 'Official ID document is required'],
     },
-    // Status Tracking (simple - no phases)
+
     status: {
         type: String,
         enum: Object.values(tutorApplication_interface_1.APPLICATION_STATUS),
@@ -81,7 +81,7 @@ const tutorApplicationSchema = new mongoose_1.Schema({
         type: String,
         trim: true,
     },
-    // Interview cancellation (by admin)
+
     interviewCancelledReason: {
         type: String,
         trim: true,
@@ -89,12 +89,12 @@ const tutorApplicationSchema = new mongoose_1.Schema({
     interviewCancelledAt: {
         type: Date,
     },
-    // Admin Notes
+
     adminNotes: {
         type: String,
         trim: true,
     },
-    // Timestamps
+
     submittedAt: {
         type: Date,
         default: Date.now,
@@ -115,7 +115,7 @@ const tutorApplicationSchema = new mongoose_1.Schema({
         type: Date,
     },
 }, { timestamps: true });
-// Indexes for performance
+
 tutorApplicationSchema.index({ email: 1 });
 tutorApplicationSchema.index({ status: 1 });
 tutorApplicationSchema.index({ submittedAt: -1 });

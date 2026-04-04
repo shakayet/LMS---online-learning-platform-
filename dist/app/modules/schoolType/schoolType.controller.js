@@ -26,7 +26,7 @@ const createSchoolType = (0, catchAsync_1.default)((req, res) => __awaiter(void 
         data: result,
     });
 }));
-// Get all school types
+
 const getAllSchoolTypes = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield schoolType_service_1.SchoolTypeService.getAllSchoolTypes(req.query);
     (0, sendResponse_1.default)(res, {
@@ -37,7 +37,7 @@ const getAllSchoolTypes = (0, catchAsync_1.default)((req, res) => __awaiter(void
         pagination: result.pagination,
     });
 }));
-// Get single school type
+
 const getSingleSchoolType = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { schoolTypeId } = req.params;
     const result = yield schoolType_service_1.SchoolTypeService.getSingleSchoolType(schoolTypeId);
@@ -48,7 +48,7 @@ const getSingleSchoolType = (0, catchAsync_1.default)((req, res) => __awaiter(vo
         data: result,
     });
 }));
-// Update school type
+
 const updateSchoolType = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { schoolTypeId } = req.params;
     const result = yield schoolType_service_1.SchoolTypeService.updateSchoolType(schoolTypeId, req.body);
@@ -59,7 +59,7 @@ const updateSchoolType = (0, catchAsync_1.default)((req, res) => __awaiter(void 
         data: result,
     });
 }));
-// Delete school type
+
 const deleteSchoolType = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { schoolTypeId } = req.params;
     const result = yield schoolType_service_1.SchoolTypeService.deleteSchoolType(schoolTypeId);
@@ -70,7 +70,7 @@ const deleteSchoolType = (0, catchAsync_1.default)((req, res) => __awaiter(void 
         data: result,
     });
 }));
-// Get active school types
+
 const getActiveSchoolTypes = (0, catchAsync_1.default)((_req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield schoolType_service_1.SchoolTypeService.getActiveSchoolTypes();
     (0, sendResponse_1.default)(res, {

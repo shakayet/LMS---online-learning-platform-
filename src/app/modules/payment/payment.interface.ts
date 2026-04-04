@@ -1,90 +1,6 @@
-// import { Model, Types } from 'mongoose';
-
-// // Business Type Enum
-// export enum BUSINESS_TYPE {
-//   INDIVIDUAL = 'individual',
-//   COMPANY = 'company',
-// }
-
-// // Webhook Event Types
-// export enum WEBHOOK_EVENT_TYPE {
-//   PAYMENT_INTENT_SUCCEEDED = 'payment_intent.succeeded',
-//   PAYMENT_INTENT_PAYMENT_FAILED = 'payment_intent.payment_failed',
-//   TRANSFER_CREATED = 'transfer.created',
-//   TRANSFER_UPDATED = 'transfer.updated',
-//   ACCOUNT_UPDATED = 'account.updated',
-//   PAYOUT_CREATED = 'payout.created',
-//   PAYOUT_FAILED = 'payout.failed',
-// }
-
-// // Type aliases for better readability
-// export type BusinessTypeType = BUSINESS_TYPE;
-// export type WebhookEventType = WEBHOOK_EVENT_TYPE;
-
-// // Stripe Account Interface
-// export type IStripeAccount = {
-//   userId: Types.ObjectId;
-//   accountType: AccountTypeType;
-// };
-
-// // Stripe Account Info Interface
-// export type IStripeAccountInfo = {
-//   _id?: Types.ObjectId;
-//   userId: Types.ObjectId;
-//   stripeAccountId: string;
-//   onboardingCompleted: boolean;
-//   chargesEnabled: boolean;
-//   payoutsEnabled: boolean;
-//   country?: string;
-//   currency: string;
-//   businessType: BusinessTypeType;
-//   createdAt?: Date;
-//   updatedAt?: Date;
-// };
-
-// // Stripe Webhook Event Interface
-// export type IStripeWebhookEvent = {
-//   id: string;
-//   type: string;
-//   data: {
-//     object: any;
-//   };
-// };
-
-
-
-// // Stripe Account Update Interface
-// export type IStripeAccountUpdate = {
-//   onboardingCompleted?: boolean;
-//   chargesEnabled?: boolean;
-//   payoutsEnabled?: boolean;
-//   country?: string;
-//   currency?: string;
-//   businessType?: BusinessTypeType;
-// };
-
-// // Payment Model Interface (following project patterns)
-// export type PaymentModel = {
-//   isExistPaymentById(id: string): Promise<IPayment | null>;
-//   isExistPaymentByStripeId(stripeId: string): Promise<IPayment | null>;
-//   getPaymentsByUser(userId: Types.ObjectId): Promise<IPayment[]>;
-//   getPaymentsByTask(taskId: Types.ObjectId): Promise<IPayment[]>;
-//   getPaymentsByBid(bidId: Types.ObjectId): Promise<IPayment[]>;
-//   updatePaymentStatus(paymentId: Types.ObjectId, status: PaymentStatusType): Promise<IPayment | null>;
-// } & Model<IPayment>;
-
-// // Stripe Account Model Interface
-// export type StripeAccountModel = {
-//   isExistAccountByUserId(userId: Types.ObjectId): Promise<IStripeAccountInfo | null>;
-//   isExistAccountByStripeId(stripeId: string): Promise<IStripeAccountInfo | null>;
-//   updateAccountStatus(userId: Types.ObjectId, updates: IStripeAccountUpdate): Promise<IStripeAccountInfo | null>;
-// } & Model<IStripeAccountInfo>;
-
-
 
 import { Model, Types } from 'mongoose';
 
-// Payment Status Enum
 export enum PAYMENT_STATUS {
   PENDING = 'pending',
   HELD = 'held',
@@ -94,26 +10,22 @@ export enum PAYMENT_STATUS {
   CANCELLED = 'cancelled',
 }
 
-// Business Type Enum
 export enum BUSINESS_TYPE {
   INDIVIDUAL = 'individual',
   COMPANY = 'company',
 }
 
-// Release Type Enum
 export enum RELEASE_TYPE {
   COMPLETE = 'complete',
   PARTIAL = 'partial',
   REFUND = 'refund',
 }
 
-// Account Type Enum
 export enum ACCOUNT_TYPE {
   CLIENT = 'client',
   FREELANCER = 'freelancer',
 }
 
-// Currency Enum (common currencies)
 export enum CURRENCY {
   USD = 'usd',
   EUR = 'eur',
@@ -122,7 +34,6 @@ export enum CURRENCY {
   AUD = 'aud',
 }
 
-// Webhook Event Types
 export enum WEBHOOK_EVENT_TYPE {
   PAYMENT_INTENT_SUCCEEDED = 'payment_intent.succeeded',
   PAYMENT_INTENT_PAYMENT_FAILED = 'payment_intent.payment_failed',
@@ -133,7 +44,6 @@ export enum WEBHOOK_EVENT_TYPE {
   PAYOUT_FAILED = 'payout.failed',
 }
 
-// Type aliases for better readability
 export type PaymentStatusType = PAYMENT_STATUS;
 export type BusinessTypeType = BUSINESS_TYPE;
 export type ReleaseTypeType = RELEASE_TYPE;
@@ -141,7 +51,6 @@ export type AccountTypeType = ACCOUNT_TYPE;
 export type CurrencyType = CURRENCY;
 export type WebhookEventType = WEBHOOK_EVENT_TYPE;
 
-// Core Payment Interface
 export type IPayment = {
   _id?: Types.ObjectId;
   taskId: Types.ObjectId;
@@ -161,13 +70,11 @@ export type IPayment = {
   updatedAt?: Date;
 };
 
-// Stripe Account Interface
 export type IStripeAccount = {
   userId: Types.ObjectId;
   accountType: AccountTypeType;
 };
 
-// Escrow Payment Interface
 export type IEscrowPayment = {
   taskId: Types.ObjectId;
   amount: number;
@@ -179,7 +86,6 @@ export type IEscrowPayment = {
   metadata?: Record<string, any>;
 };
 
-// Payment Release Interface
 export type IPaymentRelease = {
   paymentId: Types.ObjectId;
   releaseType: ReleaseTypeType;
@@ -187,7 +93,6 @@ export type IPaymentRelease = {
   clientId?: Types.ObjectId;
 };
 
-// Create Payment Record Interface
 export type ICreatePaymentRecord = {
   taskId: Types.ObjectId;
   posterId: Types.ObjectId;
@@ -200,7 +105,6 @@ export type ICreatePaymentRecord = {
   currency: string;
 };
 
-// Stripe Account Info Interface
 export type IStripeAccountInfo = {
   _id?: Types.ObjectId;
   userId: Types.ObjectId;
@@ -215,7 +119,6 @@ export type IStripeAccountInfo = {
   updatedAt?: Date;
 };
 
-// Stripe Webhook Event Interface
 export type IStripeWebhookEvent = {
   id: string;
   type: string;
@@ -224,7 +127,6 @@ export type IStripeWebhookEvent = {
   };
 };
 
-// Payment Filters Interface
 export type IPaymentFilters = {
   status?: PaymentStatusType;
   posterId?: Types.ObjectId;
@@ -239,7 +141,6 @@ export type IPaymentFilters = {
   amountMax?: number;
 };
 
-// Payment Statistics Interface
 export type IPaymentStats = {
   totalPayments: number;
   totalAmount: number;
@@ -257,7 +158,6 @@ export type IPaymentStats = {
   }>;
 };
 
-// Payment Update Interface
 export type IPaymentUpdate = {
   status?: PaymentStatusType;
   stripeTransferId?: string;
@@ -265,7 +165,6 @@ export type IPaymentUpdate = {
   metadata?: Record<string, any>;
 };
 
-// Payment Query Interface
 export type IPaymentQuery = {
   taskId?: Types.ObjectId;
   posterId?: Types.ObjectId;
@@ -275,7 +174,6 @@ export type IPaymentQuery = {
   dateRange?: 'recent' | 'weekly' | 'monthly' | 'yearly';
 };
 
-// Stripe Account Update Interface
 export type IStripeAccountUpdate = {
   onboardingCompleted?: boolean;
   chargesEnabled?: boolean;
@@ -285,7 +183,6 @@ export type IStripeAccountUpdate = {
   businessType?: BusinessTypeType;
 };
 
-// Payment Model Interface (following project patterns)
 export type PaymentModel = {
   isExistPaymentById(id: string): Promise<IPayment | null>;
   isExistPaymentByStripeId(stripeId: string): Promise<IPayment | null>;
@@ -298,7 +195,6 @@ export type PaymentModel = {
   ): Promise<IPayment | null>;
 } & Model<IPayment>;
 
-// Stripe Account Model Interface
 export type StripeAccountModel = {
   isExistAccountByUserId(
     userId: Types.ObjectId

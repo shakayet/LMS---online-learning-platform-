@@ -17,29 +17,27 @@ const monthlyBilling_model_1 = require("../monthlyBilling/monthlyBilling.model")
 const tutorEarnings_model_1 = require("../tutorEarnings/tutorEarnings.model");
 const studentSubscription_model_1 = require("../studentSubscription/studentSubscription.model");
 const trialRequest_model_1 = require("../trialRequest/trialRequest.model");
-/**
- * Convert JSON data to CSV format
- */
+
 const jsonToCSV = (data, headers) => {
     if (!data || data.length === 0) {
         return '';
     }
-    // Get headers from first object if not provided
+
     const csvHeaders = headers || Object.keys(data[0]);
-    // Create header row
+
     const headerRow = csvHeaders.join(',');
-    // Create data rows
+
     const dataRows = data.map(row => {
         return csvHeaders
             .map(header => {
             const value = row[header];
-            // Handle null/undefined
+
             if (value === null || value === undefined)
                 return '';
-            // Handle objects/arrays (convert to JSON string)
+
             if (typeof value === 'object')
                 return `"${JSON.stringify(value).replace(/"/g, '""')}"`;
-            // Handle strings with commas or quotes
+
             if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
                 return `"${value.replace(/"/g, '""')}"`;
             }
@@ -49,9 +47,7 @@ const jsonToCSV = (data, headers) => {
     });
     return [headerRow, ...dataRows].join('\n');
 };
-/**
- * Export all users to CSV
- */
+
 const exportUsers = (role) => __awaiter(void 0, void 0, void 0, function* () {
     const query = role ? { role } : {};
     const users = yield user_model_1.User.find(query).select('name email role phone createdAt');
@@ -67,9 +63,7 @@ const exportUsers = (role) => __awaiter(void 0, void 0, void 0, function* () {
     });
     return jsonToCSV(data);
 });
-/**
- * Export tutor applications to CSV
- */
+
 const exportApplications = (status) => __awaiter(void 0, void 0, void 0, function* () {
     const query = status ? { status } : {};
     const applications = yield tutorApplication_model_1.TutorApplication.find(query).select('name email status subjects city submittedAt approvedAt rejectedAt');
@@ -87,9 +81,7 @@ const exportApplications = (status) => __awaiter(void 0, void 0, void 0, functio
     });
     return jsonToCSV(data);
 });
-/**
- * Export sessions to CSV
- */
+
 const exportSessions = (status, startDate, endDate) => __awaiter(void 0, void 0, void 0, function* () {
     const query = {};
     if (status)
@@ -124,9 +116,7 @@ const exportSessions = (status, startDate, endDate) => __awaiter(void 0, void 0,
     });
     return jsonToCSV(data);
 });
-/**
- * Export monthly billings to CSV
- */
+
 const exportBillings = (status, year, month) => __awaiter(void 0, void 0, void 0, function* () {
     const query = {};
     if (status)
@@ -156,9 +146,7 @@ const exportBillings = (status, year, month) => __awaiter(void 0, void 0, void 0
     });
     return jsonToCSV(data);
 });
-/**
- * Export tutor earnings to CSV
- */
+
 const exportEarnings = (status, year, month) => __awaiter(void 0, void 0, void 0, function* () {
     const query = {};
     if (status)
@@ -188,9 +176,7 @@ const exportEarnings = (status, year, month) => __awaiter(void 0, void 0, void 0
     });
     return jsonToCSV(data);
 });
-/**
- * Export subscriptions to CSV
- */
+
 const exportSubscriptions = (status) => __awaiter(void 0, void 0, void 0, function* () {
     const query = status ? { status } : {};
     const subscriptions = yield studentSubscription_model_1.StudentSubscription.find(query)
@@ -211,9 +197,7 @@ const exportSubscriptions = (status) => __awaiter(void 0, void 0, void 0, functi
     });
     return jsonToCSV(data);
 });
-/**
- * Export trial requests to CSV
- */
+
 const exportTrialRequests = (status) => __awaiter(void 0, void 0, void 0, function* () {
     const query = status ? { status } : {};
     const requests = yield trialRequest_model_1.TrialRequest.find(query)

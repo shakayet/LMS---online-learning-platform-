@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SessionValidation = void 0;
 const zod_1 = require("zod");
-// Propose session validation (Tutor sends in chat)
+
 const proposeSessionZodSchema = zod_1.z.object({
     body: zod_1.z.object({
         chatId: zod_1.z
@@ -39,7 +39,7 @@ const proposeSessionZodSchema = zod_1.z.object({
         path: ['endTime'],
     }),
 });
-// Accept session proposal validation (Student accepts)
+
 const acceptSessionProposalZodSchema = zod_1.z.object({
     params: zod_1.z.object({
         messageId: zod_1.z
@@ -49,7 +49,7 @@ const acceptSessionProposalZodSchema = zod_1.z.object({
             .regex(/^[0-9a-fA-F]{24}$/, 'Invalid message ID format'),
     }),
 });
-// Counter-propose session validation (Student suggests alternative time)
+
 const counterProposeSessionZodSchema = zod_1.z.object({
     params: zod_1.z.object({
         messageId: zod_1.z
@@ -86,7 +86,7 @@ const counterProposeSessionZodSchema = zod_1.z.object({
         path: ['newEndTime'],
     }),
 });
-// Reject session proposal validation (Student rejects)
+
 const rejectSessionProposalZodSchema = zod_1.z.object({
     params: zod_1.z.object({
         messageId: zod_1.z
@@ -104,7 +104,7 @@ const rejectSessionProposalZodSchema = zod_1.z.object({
             .default('Declined by user'),
     }),
 });
-// Cancel session validation
+
 const cancelSessionZodSchema = zod_1.z.object({
     body: zod_1.z.object({
         cancellationReason: zod_1.z
@@ -115,7 +115,7 @@ const cancelSessionZodSchema = zod_1.z.object({
             .min(10, 'Cancellation reason must be at least 10 characters'),
     }),
 });
-// Mark session as completed validation (Manual completion)
+
 const completeSessionZodSchema = zod_1.z.object({
     params: zod_1.z.object({
         id: zod_1.z
@@ -125,7 +125,7 @@ const completeSessionZodSchema = zod_1.z.object({
             .regex(/^[0-9a-fA-F]{24}$/, 'Invalid session ID format'),
     }),
 });
-// Reschedule session validation
+
 const rescheduleSessionZodSchema = zod_1.z.object({
     params: zod_1.z.object({
         id: zod_1.z

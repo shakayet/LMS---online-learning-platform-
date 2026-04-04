@@ -10,9 +10,6 @@ import {
 } from './whiteboard.helper';
 import ApiError from '../../../errors/ApiError';
 
-/**
- * নতুন Whiteboard Room তৈরি করে
- */
 const createRoom = async (
   userId: string | null | undefined,
   name: string,
@@ -21,13 +18,11 @@ const createRoom = async (
   if (!userId) {
     throw new ApiError(StatusCodes.UNAUTHORIZED, 'User not authenticated');
   }
-  // Create room in Agora
+
   const { uuid } = await createAgoraWhiteboardRoom(name);
 
-  // Get token for creator
   const token = await generateWhiteboardRoomToken(uuid, 'admin');
 
-  // Save to database
   const room = await WhiteboardRoom.create({
     uuid,
     name,
@@ -40,9 +35,6 @@ const createRoom = async (
   return { room: room.toObject() as IWhiteboardRoom, token };
 };
 
-/**
- * Room Token নেয়
- */
 const getRoomToken = async (
   roomId: string,
   userId: string | null | undefined,
@@ -61,7 +53,6 @@ const getRoomToken = async (
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Whiteboard room is closed');
   }
 
-  // Add user to participants if not already
   const isParticipant = room.participants.some(
     p => p.toString() === userId
   );
@@ -76,9 +67,6 @@ const getRoomToken = async (
   return { token, room: room.toObject() as IWhiteboardRoom };
 };
 
-/**
- * Room Token নেয় by UUID (for Call integration)
- */
 const getRoomTokenByUuid = async (
   uuid: string,
   userId: string,
@@ -94,7 +82,6 @@ const getRoomTokenByUuid = async (
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Whiteboard room is closed');
   }
 
-  // Add user to participants if not already
   const isParticipant = room.participants.some(
     p => p.toString() === userId
   );
@@ -109,9 +96,6 @@ const getRoomTokenByUuid = async (
   return { token, room: room.toObject() as IWhiteboardRoom };
 };
 
-/**
- * User এর rooms দেখায়
- */
 const getUserRooms = async (
   userId: string | null | undefined,
   page: number = 1,
@@ -144,9 +128,6 @@ const getUserRooms = async (
   };
 };
 
-/**
- * Room delete/close করে
- */
 const deleteRoom = async (roomId: string, userId: string | null | undefined): Promise<void> => {
   if (!userId) {
     throw new ApiError(StatusCodes.UNAUTHORIZED, 'User not authenticated');
@@ -164,17 +145,12 @@ const deleteRoom = async (roomId: string, userId: string | null | undefined): Pr
     );
   }
 
-  // Close in Agora
   await closeWhiteboardRoom(room.uuid);
 
-  // Update in database
   room.isActive = false;
   await room.save();
 };
 
-/**
- * Snapshot নেয়
- */
 const takeSnapshot = async (
   roomId: string,
   userId: string | null | undefined,
@@ -202,7 +178,6 @@ const takeSnapshot = async (
 
   const snapshotUrl = await takeWhiteboardSnapshot(room.uuid, scenePath);
 
-  // Save snapshot to room
   room.snapshots.push({
     url: snapshotUrl,
     takenAt: new Date(),
@@ -214,9 +189,6 @@ const takeSnapshot = async (
   return { snapshotUrl };
 };
 
-/**
- * Room snapshots দেখায়
- */
 const getRoomSnapshots = async (
   roomId: string,
   userId: string | null | undefined
@@ -246,9 +218,6 @@ const getRoomSnapshots = async (
   return room.snapshots;
 };
 
-/**
- * Call এর জন্য whiteboard তৈরি বা আনা
- */
 const getOrCreateRoomForCall = async (
   callId: string,
   userId: string | null | undefined
@@ -256,13 +225,12 @@ const getOrCreateRoomForCall = async (
   if (!userId) {
     throw new ApiError(StatusCodes.UNAUTHORIZED, 'User not authenticated');
   }
-  // Check if room already exists for this call
+
   let room = await WhiteboardRoom.findOne({ callId });
 
   if (room) {
     const token = await generateWhiteboardRoomToken(room.uuid, 'writer');
 
-    // Add user to participants if not already
     const isParticipant = room.participants.some(
       p => p.toString() === userId
     );
@@ -275,7 +243,6 @@ const getOrCreateRoomForCall = async (
     return { room: room.toObject() as IWhiteboardRoom, token, isNew: false };
   }
 
-  // Create new room
   const { room: newRoom, token } = await createRoom(
     userId,
     `Call Whiteboard - ${callId}`,

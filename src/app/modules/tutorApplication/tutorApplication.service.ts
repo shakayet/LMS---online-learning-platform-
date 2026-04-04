@@ -29,18 +29,13 @@ type TApplicationPayload = {
   officialId: string;
 };
 
-/**
- * Submit application (PUBLIC - creates user + application)
- * First-time registration for tutors
- */
 const submitApplication = async (payload: TApplicationPayload) => {
-  // 1. Check if email already exists
+
   const existingUser = await User.findOne({ email: payload.email });
   if (existingUser) {
     throw new ApiError(StatusCodes.CONFLICT, 'Email already registered');
   }
 
-  // Check if application with this email already exists
   const existingApplication = await TutorApplication.findOne({
     email: payload.email,
   });
@@ -51,8 +46,6 @@ const submitApplication = async (payload: TApplicationPayload) => {
     );
   }
 
-  // 2. Create new User with APPLICANT role
-  // Note: Password will be hashed by User model's pre-save hook
   const newUser = await User.create({
     name: payload.name,
     email: payload.email,
@@ -67,14 +60,12 @@ const submitApplication = async (payload: TApplicationPayload) => {
     },
   });
 
-  // 3. Generate JWT token for auto-login
   const accessToken = jwtHelper.createToken(
     { id: newUser._id, role: newUser.role, email: newUser.email },
     config.jwt.jwt_secret as Secret,
     config.jwt.jwt_expire_in as string
   );
 
-  // 4. Create TutorApplication
   const application = await TutorApplication.create({
     name: payload.name,
     email: payload.email,
@@ -92,7 +83,6 @@ const submitApplication = async (payload: TApplicationPayload) => {
     submittedAt: new Date(),
   });
 
-  // Log activity - Application submitted
   ActivityLogService.logActivity({
     userId: newUser._id,
     actionType: 'APPLICATION_SUBMITTED',
@@ -115,7 +105,6 @@ const submitApplication = async (payload: TApplicationPayload) => {
   };
 };
 
-// Get my application (for logged in applicant)
 const getMyApplication = async (
   userEmail: string,
   currentUserRole: string
@@ -128,8 +117,6 @@ const getMyApplication = async (
     throw new ApiError(StatusCodes.NOT_FOUND, 'No application found');
   }
 
-  // If application is APPROVED but user still has APPLICANT role token,
-  // generate new token with updated TUTOR role
   let newAccessToken = null;
   if (
     application.status === APPLICATION_STATUS.APPROVED &&
@@ -148,10 +135,6 @@ const getMyApplication = async (
   return { application, newAccessToken };
 };
 
-/**
- * Get all applications (admin)
- * With filtering, searching, pagination
- */
 const getAllApplications = async (query: Record<string, unknown>) => {
   const applicationQuery = new QueryBuilder(TutorApplication.find(), query)
     .search(['name', 'email', 'phoneNumber', 'city'])
@@ -160,13 +143,11 @@ const getAllApplications = async (query: Record<string, unknown>) => {
     .paginate()
     .fields();
 
-  // Add populate for subjects
   applicationQuery.modelQuery = applicationQuery.modelQuery.populate({
     path: 'subjects',
     select: 'name -_id',
   });
 
-  // Execute query
   const result = await applicationQuery.modelQuery;
   const meta = await applicationQuery.getPaginationInfo();
 
@@ -176,7 +157,6 @@ const getAllApplications = async (query: Record<string, unknown>) => {
   };
 };
 
-// Get single application by ID (admin)
 const getSingleApplication = async (
   id: string
 ): Promise<ITutorApplication | null> => {
@@ -192,10 +172,6 @@ const getSingleApplication = async (
   return application;
 };
 
-/**
- * Select application for interview (admin only)
- * After initial review, admin selects candidate for interview
- */
 const selectForInterview = async (
   id: string,
   adminNotes?: string
@@ -227,7 +203,6 @@ const selectForInterview = async (
     );
   }
 
-  // Only SUBMITTED, REVISION or RESUBMITTED status can be selected for interview
   if (
     application.status !== APPLICATION_STATUS.SUBMITTED &&
     application.status !== APPLICATION_STATUS.REVISION &&
@@ -239,7 +214,6 @@ const selectForInterview = async (
     );
   }
 
-  // Update application status
   application.status = APPLICATION_STATUS.SELECTED_FOR_INTERVIEW;
   application.selectedForInterviewAt = new Date();
   if (adminNotes) {
@@ -247,16 +221,9 @@ const selectForInterview = async (
   }
   await application.save();
 
-  // TODO: Send email notification to applicant about interview selection
-
   return application;
 };
 
-/**
- * Approve application (admin only)
- * Changes status to APPROVED and user role to TUTOR
- * Can only approve after interview (SELECTED_FOR_INTERVIEW status)
- */
 const approveApplication = async (
   id: string,
   adminNotes?: string
@@ -281,7 +248,6 @@ const approveApplication = async (
     );
   }
 
-  // Must be SELECTED_FOR_INTERVIEW to approve (after interview)
   if (application.status !== APPLICATION_STATUS.SELECTED_FOR_INTERVIEW) {
     throw new ApiError(
       StatusCodes.BAD_REQUEST,
@@ -289,7 +255,6 @@ const approveApplication = async (
     );
   }
 
-  // Update application status
   application.status = APPLICATION_STATUS.APPROVED;
   application.approvedAt = new Date();
   if (adminNotes) {
@@ -297,10 +262,8 @@ const approveApplication = async (
   }
   await application.save();
 
-  // Build full address from application fields
   const fullAddress = `${application.street} ${application.houseNumber}, ${application.zip} ${application.city}`;
 
-  // Update user role to TUTOR and copy data from application
   const updatedUser = await User.findOneAndUpdate(
     { email: application.email },
     {
@@ -316,7 +279,6 @@ const approveApplication = async (
     { new: true }
   );
 
-  // Log activity - Tutor verified
   if (updatedUser) {
     ActivityLogService.logActivity({
       userId: updatedUser._id,
@@ -329,7 +291,6 @@ const approveApplication = async (
     });
   }
 
-  // Generate new access token with updated TUTOR role
   let newAccessToken = null;
   if (updatedUser) {
     newAccessToken = jwtHelper.createToken(
@@ -342,9 +303,6 @@ const approveApplication = async (
   return { application, newAccessToken };
 };
 
-/**
- * Reject application (admin only)
- */
 const rejectApplication = async (
   id: string,
   rejectionReason: string
@@ -362,13 +320,11 @@ const rejectApplication = async (
     );
   }
 
-  // Update application
   application.status = APPLICATION_STATUS.REJECTED;
   application.rejectionReason = rejectionReason;
   application.rejectedAt = new Date();
   await application.save();
 
-  // Log activity - Application rejected
   const user = await User.findOne({ email: application.email });
   if (user) {
     ActivityLogService.logActivity({
@@ -385,10 +341,6 @@ const rejectApplication = async (
   return application;
 };
 
-/**
- * Send application for revision (admin only)
- * Admin requests the applicant to fix/update something
- */
 const sendForRevision = async (
   id: string,
   revisionNote: string
@@ -413,20 +365,14 @@ const sendForRevision = async (
     );
   }
 
-  // Update application
   application.status = APPLICATION_STATUS.REVISION;
   application.revisionNote = revisionNote;
   application.revisionRequestedAt = new Date();
   await application.save();
 
-  // TODO: Send email notification to applicant about revision request
-
   return application;
 };
 
-/**
- * Delete application (admin only)
- */
 const deleteApplication = async (
   id: string
 ): Promise<ITutorApplication | null> => {
@@ -446,10 +392,6 @@ type TUpdateApplicationPayload = {
   officialId?: string;
 };
 
-/**
- * Update my application (applicant only - when in REVISION status)
- * Allows applicant to update documents and resubmit
- */
 const updateMyApplication = async (
   userEmail: string,
   payload: TUpdateApplicationPayload
@@ -460,7 +402,6 @@ const updateMyApplication = async (
     throw new ApiError(StatusCodes.NOT_FOUND, 'Application not found');
   }
 
-  // Only allow updates when in REVISION status
   if (application.status !== APPLICATION_STATUS.REVISION) {
     throw new ApiError(
       StatusCodes.BAD_REQUEST,
@@ -468,7 +409,6 @@ const updateMyApplication = async (
     );
   }
 
-  // Update documents if provided
   if (payload.cv) {
     application.cv = payload.cv;
   }
@@ -479,11 +419,9 @@ const updateMyApplication = async (
     application.officialId = payload.officialId;
   }
 
-  // Change status to RESUBMITTED (not back to SUBMITTED)
   application.status = APPLICATION_STATUS.RESUBMITTED;
   application.resubmittedAt = new Date();
 
-  // Also update user's tutorProfile with new documents
   await User.findOneAndUpdate(
     { email: userEmail },
     {
@@ -494,7 +432,6 @@ const updateMyApplication = async (
 
   await application.save();
 
-  // Log activity
   const user = await User.findOne({ email: userEmail });
   if (user) {
     ActivityLogService.logActivity({

@@ -8,7 +8,7 @@ const tutorSessionFeedbackSchema = new mongoose_1.Schema({
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'Session',
         required: [true, 'Session ID is required'],
-        unique: true, // One feedback per session
+        unique: true,
     },
     tutorId: {
         type: mongoose_1.Schema.Types.ObjectId,
@@ -61,7 +61,7 @@ const tutorSessionFeedbackSchema = new mongoose_1.Schema({
         enum: Object.values(tutorSessionFeedback_interface_1.FEEDBACK_STATUS),
         default: tutorSessionFeedback_interface_1.FEEDBACK_STATUS.PENDING,
     },
-    // Payment forfeit tracking
+
     paymentForfeited: {
         type: Boolean,
         default: false,
@@ -73,14 +73,14 @@ const tutorSessionFeedbackSchema = new mongoose_1.Schema({
         type: Date,
     },
 }, { timestamps: true });
-// Indexes for performance
+
 tutorSessionFeedbackSchema.index({ tutorId: 1, status: 1 });
 tutorSessionFeedbackSchema.index({ studentId: 1, createdAt: -1 });
 tutorSessionFeedbackSchema.index({ sessionId: 1 }, { unique: true });
-tutorSessionFeedbackSchema.index({ status: 1, dueDate: 1 }); // For finding pending feedbacks due soon
-tutorSessionFeedbackSchema.index({ tutorId: 1, dueDate: 1 }); // For tutor's pending feedbacks
-tutorSessionFeedbackSchema.index({ paymentForfeited: 1, forfeitedAt: 1 }); // For forfeit queries
-// Pre-save validation for feedback type
+tutorSessionFeedbackSchema.index({ status: 1, dueDate: 1 });
+tutorSessionFeedbackSchema.index({ tutorId: 1, dueDate: 1 });
+tutorSessionFeedbackSchema.index({ paymentForfeited: 1, forfeitedAt: 1 });
+
 tutorSessionFeedbackSchema.pre('save', function (next) {
     if (this.feedbackType === tutorSessionFeedback_interface_1.FEEDBACK_TYPE.TEXT && !this.feedbackText) {
         next(new Error('Feedback text is required for TEXT feedback type'));
@@ -92,7 +92,7 @@ tutorSessionFeedbackSchema.pre('save', function (next) {
         next();
     }
 });
-// Check if late when submitting
+
 tutorSessionFeedbackSchema.pre('save', function (next) {
     if (this.status === tutorSessionFeedback_interface_1.FEEDBACK_STATUS.SUBMITTED && this.submittedAt && this.dueDate) {
         this.isLate = this.submittedAt > this.dueDate;

@@ -1,8 +1,8 @@
 import mongoose, { Schema } from 'mongoose';
-import { 
-  IPayment, 
-  IStripeAccountInfo, 
-  PaymentModel, 
+import {
+  IPayment,
+  IStripeAccountInfo,
+  PaymentModel,
   StripeAccountModel,
   PaymentStatusType,
   PAYMENT_STATUS,
@@ -79,7 +79,6 @@ const PaymentSchema = new Schema<IPayment>(
   }
 );
 
-// Indexes for better query performance
 PaymentSchema.index({ taskId: 1 });
 PaymentSchema.index({ posterId: 1 });
 PaymentSchema.index({ freelancerId: 1 });
@@ -130,11 +129,9 @@ const StripeAccountSchema = new Schema<IStripeAccountInfo>(
   }
 );
 
-// Indexes
 StripeAccountSchema.index({ userId: 1 });
 StripeAccountSchema.index({ stripeAccountId: 1 });
 
-// Payment Model Methods (following project patterns)
 PaymentSchema.statics.isExistPaymentById = async function (id: string) {
   return await this.findById(id);
 };
@@ -165,7 +162,6 @@ PaymentSchema.statics.updatePaymentStatus = async function (paymentId: mongoose.
   );
 };
 
-// Stripe Account Model Methods
 StripeAccountSchema.statics.isExistAccountByUserId = async function (userId: mongoose.Types.ObjectId) {
   return await this.findOne({ userId });
 };
@@ -182,10 +178,8 @@ StripeAccountSchema.statics.updateAccountStatus = async function (userId: mongoo
   );
 };
 
-// Export Models with proper typing
 export const Payment = mongoose.model<IPayment, PaymentModel>('Payment', PaymentSchema);
 export const StripeAccount = mongoose.model<IStripeAccountInfo, StripeAccountModel>('StripeAccount', StripeAccountSchema);
 
-// Export models with consistent naming
 export { Payment as PaymentModel };
 export { StripeAccount as StripeAccountModel };

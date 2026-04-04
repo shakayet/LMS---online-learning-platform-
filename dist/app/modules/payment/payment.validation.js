@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PaymentValidation = exports.webhookZodSchema = exports.checkOnboardingStatusZodSchema = exports.getOnboardingLinkZodSchema = exports.getUserPaymentStatsZodSchema = exports.getPaymentStatsZodSchema = exports.getPaymentsZodSchema = exports.getUserPaymentsZodSchema = exports.getPaymentByIdZodSchema = exports.refundPaymentZodSchema = exports.releasePaymentZodSchema = exports.createEscrowPaymentZodSchema = exports.createStripeAccountZodSchema = void 0;
 const zod_1 = require("zod");
-// Create Stripe account validation
+
 exports.createStripeAccountZodSchema = zod_1.z.object({
     body: zod_1.z.object({
         userId: zod_1.z.number({
@@ -14,7 +14,7 @@ exports.createStripeAccountZodSchema = zod_1.z.object({
         }),
     }),
 });
-// Create escrow payment validation
+
 exports.createEscrowPaymentZodSchema = zod_1.z.object({
     body: zod_1.z.object({
         bidId: zod_1.z.number({
@@ -31,7 +31,7 @@ exports.createEscrowPaymentZodSchema = zod_1.z.object({
         }).positive('Freelancer ID must be positive'),
     }),
 });
-// Release payment validation
+
 exports.releasePaymentZodSchema = zod_1.z.object({
     params: zod_1.z.object({
         paymentId: zod_1.z.string({
@@ -43,7 +43,7 @@ exports.releasePaymentZodSchema = zod_1.z.object({
         amount: zod_1.z.number().positive('Amount must be greater than 0').optional(),
     }),
 });
-// Refund payment validation
+
 exports.refundPaymentZodSchema = zod_1.z.object({
     params: zod_1.z.object({
         paymentId: zod_1.z.string({
@@ -54,7 +54,7 @@ exports.refundPaymentZodSchema = zod_1.z.object({
         reason: zod_1.z.string().max(500, 'Reason cannot exceed 500 characters').optional(),
     }),
 });
-// Get payment by ID validation
+
 exports.getPaymentByIdZodSchema = zod_1.z.object({
     params: zod_1.z.object({
         paymentId: zod_1.z.string({
@@ -62,7 +62,7 @@ exports.getPaymentByIdZodSchema = zod_1.z.object({
         }).regex(/^\d+$/, 'Payment ID must be a valid number'),
     }),
 });
-// Get user payments validation
+
 exports.getUserPaymentsZodSchema = zod_1.z.object({
     params: zod_1.z.object({
         userId: zod_1.z.string({
@@ -79,7 +79,7 @@ exports.getUserPaymentsZodSchema = zod_1.z.object({
         status: zod_1.z.enum(['pending', 'held', 'released', 'refunded']).optional(),
     }),
 });
-// Get payments with filters validation
+
 exports.getPaymentsZodSchema = zod_1.z.object({
     query: zod_1.z.object({
         page: zod_1.z.string().regex(/^\d+$/, 'Page must be a valid number').optional(),
@@ -92,7 +92,7 @@ exports.getPaymentsZodSchema = zod_1.z.object({
         dateTo: zod_1.z.string().datetime('Invalid date format for dateTo').optional(),
     }),
 });
-// Get payment stats validation
+
 exports.getPaymentStatsZodSchema = zod_1.z.object({
     query: zod_1.z.object({
         clientId: zod_1.z.string().regex(/^\d+$/, 'Client ID must be a valid number').optional(),
@@ -101,7 +101,7 @@ exports.getPaymentStatsZodSchema = zod_1.z.object({
         dateTo: zod_1.z.string().datetime('Invalid date format for dateTo').optional(),
     }),
 });
-// Get user payment stats validation
+
 exports.getUserPaymentStatsZodSchema = zod_1.z.object({
     params: zod_1.z.object({
         userId: zod_1.z.string({
@@ -117,7 +117,7 @@ exports.getUserPaymentStatsZodSchema = zod_1.z.object({
         dateTo: zod_1.z.string().datetime('Invalid date format for dateTo').optional(),
     }),
 });
-// Get onboarding link validation
+
 exports.getOnboardingLinkZodSchema = zod_1.z.object({
     params: zod_1.z.object({
         userId: zod_1.z.string({
@@ -125,7 +125,7 @@ exports.getOnboardingLinkZodSchema = zod_1.z.object({
         }).regex(/^\d+$/, 'User ID must be a valid number'),
     }),
 });
-// Check onboarding status validation
+
 exports.checkOnboardingStatusZodSchema = zod_1.z.object({
     params: zod_1.z.object({
         userId: zod_1.z.string({
@@ -133,7 +133,7 @@ exports.checkOnboardingStatusZodSchema = zod_1.z.object({
         }).regex(/^\d+$/, 'User ID must be a valid number'),
     }),
 });
-// Webhook validation (minimal since Stripe handles most validation)
+
 exports.webhookZodSchema = zod_1.z.object({
     headers: zod_1.z.object({
         'stripe-signature': zod_1.z.string({
@@ -141,7 +141,7 @@ exports.webhookZodSchema = zod_1.z.object({
         }),
     }),
 });
-// Export all validation schemas
+
 exports.PaymentValidation = {
     createStripeAccount: exports.createStripeAccountZodSchema,
     createEscrowPayment: exports.createEscrowPaymentZodSchema,

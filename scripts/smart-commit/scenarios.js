@@ -1,15 +1,5 @@
 #!/usr/bin/env node
 
-/**
- * 🎬 Smart Commit - Live Scenario Simulator
- * =========================================
- * বিভিন্ন ধরনের changes করলে কেমন output আসবে দেখাও
- */
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// IMPORTS & CONFIG (main script থেকে copy)
-// ═══════════════════════════════════════════════════════════════════════════════
-
 const CONFIG = {
   types: {
     feat: { priority: 1, emoji: '✨', description: 'New feature' },
@@ -31,10 +21,6 @@ const CONFIG = {
   },
 };
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// SIMULATION FUNCTIONS
-// ═══════════════════════════════════════════════════════════════════════════════
-
 function simulateAnalysis(scenario) {
   const analysis = {
     files: scenario.files.map(f => ({
@@ -55,12 +41,10 @@ function simulateAnalysis(scenario) {
     linesRemoved: scenario.linesRemoved || 20,
   };
 
-  // Detect scopes
   for (const file of analysis.files) {
     const scope = detectScope(file.path);
     if (scope) analysis.scopes.add(scope);
 
-    // Categorize
     const ext = file.path.match(/\.[^.]+$/)?.[0] || '';
     if (ext === '.md') {
       analysis.categories.set('docs', (analysis.categories.get('docs') || 0) + 1);
@@ -71,7 +55,6 @@ function simulateAnalysis(scenario) {
     }
   }
 
-  // Detect types from diff content
   if (scenario.diffContent) {
     for (const [type, patterns] of Object.entries(CONFIG.patterns)) {
       for (const pattern of patterns) {
@@ -82,7 +65,6 @@ function simulateAnalysis(scenario) {
     }
   }
 
-  // Default type based on file status
   if (analysis.newFiles > 0) {
     analysis.detectedTypes.set('feat', (analysis.detectedTypes.get('feat') || 0) + analysis.newFiles);
   }
@@ -119,7 +101,7 @@ function groupFilesByPurpose(files) {
 }
 
 function generateCommitMessage(analysis) {
-  // Determine primary type
+
   let primaryType = 'chore';
   let highestScore = 0;
 
@@ -130,7 +112,6 @@ function generateCommitMessage(analysis) {
     }
   }
 
-  // Special cases
   if (analysis.newFiles > 0 && analysis.modifiedFiles === 0 && analysis.deletedFiles === 0) {
     primaryType = 'feat';
   }
@@ -141,7 +122,6 @@ function generateCommitMessage(analysis) {
     primaryType = 'chore';
   }
 
-  // Determine scope
   const scopes = Array.from(analysis.scopes);
   let scope = '';
   if (scopes.length === 1) {
@@ -150,10 +130,8 @@ function generateCommitMessage(analysis) {
     scope = scopes.join(',');
   }
 
-  // Generate subject
   const subject = generateSubject(analysis, primaryType);
 
-  // Build message
   const scopePart = scope ? `(${scope})` : '';
   const fullMessage = `${primaryType}${scopePart}: ${subject}`;
 
@@ -176,7 +154,6 @@ function generateSubject(analysis, type) {
   const action = actions[type] || 'update';
   const fileGroups = groupFilesByPurpose(analysis.files);
 
-  // Priority 1: Builder changes
   if (fileGroups.builders.length > 0) {
     const builderNames = [...new Set(fileGroups.builders.map(f => {
       const match = f.path.match(/(\w+)Builder/i);
@@ -187,7 +164,6 @@ function generateSubject(analysis, type) {
     if (builderNames.length > 1) return `${action} multiple builders (${builderNames.slice(0, 3).join(', ')})`;
   }
 
-  // Priority 2: Module changes
   if (fileGroups.modules.length > 0) {
     const moduleNames = [...new Set(fileGroups.modules.map(f => {
       const match = f.path.match(/modules\/(\w+)\//);
@@ -198,23 +174,18 @@ function generateSubject(analysis, type) {
     if (moduleNames.length > 1 && moduleNames.length <= 3) return `${action} ${moduleNames.join(', ')} modules`;
   }
 
-  // Priority 3: Logging
   if (fileGroups.logging.length > 0) return `${action} logging and observability`;
 
-  // Priority 4: Only tests
   if (fileGroups.tests.length === analysis.totalFiles) return `${action} tests`;
 
-  // Priority 5: Scripts
   if (fileGroups.scripts.length > 0) {
     const scriptType = fileGroups.scripts[0].path.includes('commit') ? 'commit helper' :
                        fileGroups.scripts[0].path.includes('generate') ? 'generator' : 'utility';
     return `${action} ${scriptType} script`;
   }
 
-  // Priority 6: Only docs
   if (fileGroups.docs.length === analysis.totalFiles) return `${action} documentation`;
 
-  // Priority 7: Single file
   if (analysis.totalFiles === 1) {
     const fileName = analysis.files[0].path.split('/').pop();
     return `${action} ${fileName}`;
@@ -222,10 +193,6 @@ function generateSubject(analysis, type) {
 
   return `${action} codebase`;
 }
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// SCENARIOS
-// ═══════════════════════════════════════════════════════════════════════════════
 
 const scenarios = [
   {
@@ -414,10 +381,6 @@ const scenarios = [
   },
 ];
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// DISPLAY FUNCTIONS
-// ═══════════════════════════════════════════════════════════════════════════════
-
 function displayScenario(scenario) {
   const analysis = simulateAnalysis(scenario);
   const result = generateCommitMessage(analysis);
@@ -429,7 +392,6 @@ function displayScenario(scenario) {
 │ 📝 ${scenario.description.padEnd(67)} │
 ├${'─'.repeat(72)}┤`);
 
-  // Show files
   console.log(`│ 📂 Changed Files:${' '.repeat(54)}│`);
   scenario.files.forEach(f => {
     const icon = f.status === 'A' ? '🆕' : f.status === 'D' ? '🗑️' : '📝';
@@ -437,7 +399,6 @@ function displayScenario(scenario) {
     console.log(`│    ${icon} [${status}] ${f.path.padEnd(53)}│`);
   });
 
-  // Show diff keywords (if any significant ones)
   if (scenario.diffContent) {
     const keywords = [];
     if (/fix/i.test(scenario.diffContent)) keywords.push('fix');
@@ -454,7 +415,6 @@ function displayScenario(scenario) {
     }
   }
 
-  // Show result
   console.log(`├${'─'.repeat(72)}┤`);
   console.log(`│ 📊 Analysis:${' '.repeat(59)}│`);
   console.log(`│    Scopes: ${Array.from(analysis.scopes).join(', ').padEnd(59)}│`);
@@ -465,10 +425,6 @@ function displayScenario(scenario) {
   console.log(`└${'─'.repeat(72)}┘`);
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// MAIN
-// ═══════════════════════════════════════════════════════════════════════════════
-
 console.log(`
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                                                                              ║
@@ -478,13 +434,11 @@ console.log(`
 ╚══════════════════════════════════════════════════════════════════════════════╝
 `);
 
-// Display all scenarios
 scenarios.forEach((scenario, index) => {
   displayScenario(scenario);
   console.log('');
 });
 
-// Summary table
 console.log(`
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                           📋 QUICK REFERENCE TABLE                           ║

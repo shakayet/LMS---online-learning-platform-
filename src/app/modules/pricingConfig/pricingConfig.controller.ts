@@ -4,9 +4,6 @@ import catchAsync from '../../../shared/catchAsync';
 import sendResponse from '../../../shared/sendResponse';
 import { PricingConfigService } from './pricingConfig.service';
 
-/**
- * Get active pricing plans (Public - for homepage)
- */
 const getActivePricingPlans = catchAsync(async (req: Request, res: Response) => {
   const result = await PricingConfigService.getActivePricingPlans();
 
@@ -18,9 +15,6 @@ const getActivePricingPlans = catchAsync(async (req: Request, res: Response) => 
   });
 });
 
-/**
- * Get full pricing config (Admin)
- */
 const getPricingConfig = catchAsync(async (req: Request, res: Response) => {
   const result = await PricingConfigService.getPricingConfig();
 
@@ -32,9 +26,6 @@ const getPricingConfig = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Update pricing config (Admin)
- */
 const updatePricingConfig = catchAsync(async (req: Request, res: Response) => {
   const adminId = req.user!.id as string;
   const { plans } = req.body;
@@ -48,9 +39,6 @@ const updatePricingConfig = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Update single plan (Admin)
- */
 const updateSinglePlan = catchAsync(async (req: Request, res: Response) => {
   const adminId = req.user!.id as string;
   const { tier } = req.params;
@@ -69,9 +57,6 @@ const updateSinglePlan = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Reset to default pricing (Admin)
- */
 const resetToDefaultPricing = catchAsync(async (req: Request, res: Response) => {
   const adminId = req.user!.id as string;
   const result = await PricingConfigService.resetToDefaultPricing(adminId);

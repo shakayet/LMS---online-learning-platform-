@@ -4,10 +4,10 @@ import httpStatus from 'http-status';
 import ApiError from '../../errors/ApiError';
 
 interface IGrowthOptions {
-  sumField?: string; // Field to sum for revenue calculations
-  filter?: Record<string, any>; // Additional filters
-  groupBy?: string; // Field to group by (optional)
-  period?: 'day' | 'week' | 'month' | 'quarter' | 'year'; // Growth period
+  sumField?: string;
+  filter?: Record<string, any>;
+  groupBy?: string;
+  period?: 'day' | 'week' | 'month' | 'quarter' | 'year';
 }
 
 interface IStatistic {
@@ -27,7 +27,6 @@ class AggregationBuilder<T> {
     this.model = model;
   }
 
-  // ====== PIPELINE BUILDERS ======
   match(conditions: Record<string, any>) {
     this.pipeline.push({ $match: conditions });
     return this;
@@ -72,7 +71,6 @@ class AggregationBuilder<T> {
     return res;
   }
 
-  // ====== PERIOD CALCULATOR ======
   private getPeriodDates(
     period: 'day' | 'week' | 'month' | 'quarter' | 'year'
   ) {
@@ -93,7 +91,7 @@ class AggregationBuilder<T> {
         break;
 
       case 'week':
-        const day = now.getDay(); // Sunday = 0
+        const day = now.getDay();
         startThis = new Date(now);
         startThis.setDate(now.getDate() - day);
         startThis.setHours(0, 0, 0, 0);
@@ -139,7 +137,6 @@ class AggregationBuilder<T> {
     return { startThis, startLast, endLast };
   }
 
-  // ====== GENERIC GROWTH CALCULATION ======
   async calculateGrowth(options: IGrowthOptions = {}): Promise<IStatistic> {
     try {
       const { sumField, filter = {}, groupBy, period = 'month' } = options;
@@ -178,7 +175,6 @@ class AggregationBuilder<T> {
       const lastPeriodCount = lastPeriodResult[0]?.total || 0;
       const total = totalResult[0]?.total || 0;
 
-      // Growth calculation
       let growth = 0;
       let growthType: 'increase' | 'decrease' | 'no_change' = 'no_change';
 
@@ -211,7 +207,6 @@ class AggregationBuilder<T> {
     }
   }
 
-  // ====== REVENUE BREAKDOWN ======
   async getRevenueBreakdown(options: {
     sumField: string;
     groupByField: string;
@@ -246,7 +241,6 @@ class AggregationBuilder<T> {
     return await this.execute();
   }
 
-  // ====== TIME TRENDS ======
   async getTimeTrends(options: {
     sumField?: string;
     timeUnit: 'day' | 'week' | 'month' | 'year';
@@ -257,9 +251,8 @@ class AggregationBuilder<T> {
 
     const now = new Date();
     const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth(); // 0-indexed
+    const currentMonth = now.getMonth();
 
-    // Only consider documents from the current year
     const yearFilter = {
       ...filter,
       createdAt: {
@@ -413,7 +406,6 @@ class AggregationBuilder<T> {
     }
   }
 
-  // ====== TOP PERFORMERS ======
   async getTopPerformers(options: {
     sumField: string;
     groupByField: string;
@@ -476,7 +468,6 @@ class AggregationBuilder<T> {
   }
 }
 
-// ====== HELPER FUNCTION ======
 const calculateGrowthDynamic = async (
   Model: any,
   options: {
@@ -499,7 +490,7 @@ const calculateGrowthDynamic = async (
 };
 
 export default AggregationBuilder;
-// Compact summary for aggregation pipeline
+
 function summarizePipeline(pipeline: PipelineStage[]): string {
   const parts: string[] = [];
   for (const stage of pipeline) {

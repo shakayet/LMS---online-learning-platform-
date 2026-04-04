@@ -27,7 +27,6 @@ import {
 } from './stripe.adapter';
 import StripeConnectService from './stripeConnect.service';
 
-// Helper to present sender/receiver aliases for readability
 const mapPaymentToView = (payment: any): IPaymentView => {
   const base =
     typeof payment?.toObject === 'function' ? payment.toObject() : payment;
@@ -38,21 +37,10 @@ const mapPaymentToView = (payment: any): IPaymentView => {
   };
 };
 
-// Moved to stripeConnected.service.ts
-
-// Moved to stripeConnected.service.ts
-
-// Moved to stripeConnected.service.ts
-
-// TODO: Legacy Bid/Task escrow code - commented out as Bid/Task models don't exist in LMS
-// Create escrow payment when bid is accepted
-// Escrow helpers (internal)
 const getBidAndTask = async (_bidId: any): Promise<{ bid: any; task: any }> => {
-  // Legacy code - Bid/Task system not used in LMS
+
   throw new ApiError(httpStatus.NOT_IMPLEMENTED, 'Bid/Task system not implemented in LMS');
 };
-
-// Moved to stripeConnected.service.ts
 
 const ensureNoExistingPaymentForBid = async (bidId: any) => {
   const existingPayment = await PaymentModel.getPaymentsByBid(bidId);
@@ -110,7 +98,7 @@ export const createEscrowPayment = async (
   data: IEscrowPayment
 ): Promise<{ payment: IPayment; client_secret: string }> => {
   try {
-    // Validate required fields early
+
     if (!data.bidId) {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
@@ -154,8 +142,6 @@ export const createEscrowPayment = async (
   }
 };
 
-// Release payment when task is completed and approved
-// Release helpers (internal)
 const getPaymentOrThrow = async (paymentId: any) => {
   const payment = await PaymentModel.isExistPaymentById(paymentId.toString());
   if (!payment) {
@@ -174,7 +160,7 @@ const ensureHeldStatus = (payment: any) => {
 };
 
 const ensureClientAuthorized = async (_taskId: any, _clientId: any) => {
-  // Legacy code - Task system not used in LMS
+
   throw new ApiError(httpStatus.NOT_IMPLEMENTED, 'Task system not implemented in LMS');
 };
 
@@ -206,8 +192,6 @@ const getChargeIdForIntent = async (
   return { chargeId, canTransferWithoutSource: !chargeId };
 };
 
-// Moved to stripeConnected.service.ts
-
 const createTransferToFreelancer = async (
   amount: number,
   currency: string,
@@ -229,7 +213,7 @@ const markPaymentReleasedAndBidCompleted = async (
   _bidId: any
 ) => {
   await PaymentModel.updatePaymentStatus(paymentId, PAYMENT_STATUS.RELEASED);
-  // Legacy: BidModel.findByIdAndUpdate(bidId, { status: 'completed' }) - not used in LMS
+
 };
 export const releaseEscrowPayment = async (
   data: IPaymentRelease
@@ -284,8 +268,6 @@ export const releaseEscrowPayment = async (
   }
 };
 
-// Refund escrow payment
-// Refund helpers (internal)
 const ensureRefundable = (payment: any) => {
   if (payment.status === PAYMENT_STATUS.REFUNDED) {
     throw new ApiError(
@@ -336,8 +318,6 @@ export const refundEscrowPayment = async (
 
     await markPaymentRefunded(paymentId, reason);
 
-    // Legacy: BidModel update - not used in LMS
-
     return {
       success: true,
       message: 'Payment refunded successfully',
@@ -353,7 +333,6 @@ export const refundEscrowPayment = async (
   }
 };
 
-// Get payment by ID
 export const getPaymentById = async (
   paymentId: string
 ): Promise<IPaymentView | null> => {
@@ -371,7 +350,6 @@ export const getPaymentById = async (
   }
 };
 
-// Get payments with filters and pagination
 export const getPayments = async (
   filters: IPaymentFilters,
   page: number = 1,
@@ -383,7 +361,7 @@ export const getPayments = async (
   currentPage: number;
 }> => {
   try {
-    // Validate and normalize pagination
+
     const pageNum = Number(page) || 1;
     const limitNum = Number(limit) || 10;
 
@@ -398,7 +376,6 @@ export const getPayments = async (
       );
     }
 
-    // Build query object compatible with PaymentModel fields
     const queryObj: Record<string, unknown> = {};
 
     if (filters.status) queryObj.status = filters.status;
@@ -413,17 +390,15 @@ export const getPayments = async (
       queryObj.createdAt = createdAt;
     }
 
-    // Use QueryBuilder for filter/sort/pagination
     const qb = new QueryBuilder<IPayment>(PaymentModel.find(), {
       ...queryObj,
       page: pageNum,
       limit: limitNum,
     })
       .filter()
-      .sort() // default '-createdAt'
+      .sort()
       .paginate();
 
-    // Deep populate bid -> task and tasker
     qb.modelQuery = qb.modelQuery.populate({
       path: 'bidId',
       populate: [
@@ -451,7 +426,6 @@ export const getPayments = async (
   }
 };
 
-// Payment stats overview (growth metrics similar to Task stats)
 export const getPaymentStatsOverview = async () => {
   const builder = new AggregationBuilder(PaymentModel);
 
@@ -480,7 +454,6 @@ export const getPaymentStatsOverview = async () => {
   };
 };
 
-// Handle Stripe webhook events
 export const handleWebhookEvent = async (event: any): Promise<void> => {
   switch (event.type) {
     case 'payment_intent.succeeded':
@@ -500,12 +473,11 @@ export const handleWebhookEvent = async (event: any): Promise<void> => {
   }
 };
 
-// Handle payment succeeded webhook
 const handlePaymentSucceeded = async (paymentIntent: any): Promise<void> => {
   const bidId = paymentIntent.metadata?.bid_id;
 
   try {
-    // After capture, confirm local status HELD (funds on platform balance)
+
     await PaymentModel.updateMany(
       {
         bidId: bidId,
@@ -515,7 +487,7 @@ const handlePaymentSucceeded = async (paymentIntent: any): Promise<void> => {
         status: PAYMENT_STATUS.HELD,
       }
     );
-    // Do not re-trigger bid acceptance here; amount_capturable_updated handles capture + acceptance
+
     console.log(
       `Payment ${paymentIntent.id} succeeded; status set to HELD. No duplicate acceptance triggered.`
     );
@@ -527,11 +499,9 @@ const handlePaymentSucceeded = async (paymentIntent: any): Promise<void> => {
   }
 };
 
-// Handle payment failed webhook
 const handlePaymentFailed = async (paymentIntent: any): Promise<void> => {
   const bidId = paymentIntent.metadata.bid_id;
 
-  // Update payment status to REFUNDED
   await PaymentModel.updateMany(
     {
       bidId: bidId,
@@ -542,14 +512,9 @@ const handlePaymentFailed = async (paymentIntent: any): Promise<void> => {
     }
   );
 
-  // Legacy: Bid/Task system not used in LMS
-  // Original code reset bid status and reverted task assignment
   console.log(`Payment failure handled for bidId: ${bidId}`);
 };
 
-// Moved to stripeConnected.service.ts
-
-// Handle amount capturable updated webhook (manual capture flow)
 const handleAmountCapturableUpdated = async (
   paymentIntent: any
 ): Promise<void> => {
@@ -564,16 +529,12 @@ const handleAmountCapturableUpdated = async (
       return;
     }
 
-    // console.log(`Payment ${paymentIntent.id} is now capturable, capturing to hold funds on platform...`);
-
     try {
-      // Capture the payment on the platform account (no transfer_data configured)
+
       const capturedPayment = await stripe.paymentIntents.capture(
         paymentIntent.id
       );
-      // console.log(`Payment ${paymentIntent.id} captured successfully (amount_capturable_updated handler)`);
 
-      // Mark local payment as HELD (captured and held in platform balance)
       await PaymentModel.updateMany(
         {
           bidId: bidId,
@@ -607,7 +568,6 @@ const handleAmountCapturableUpdated = async (
       }
     }
 
-    // Legacy: Bid acceptance - not used in LMS
     console.log(`Capture completed for bidId: ${bidId}`);
   } catch (error) {
     console.error(
@@ -617,7 +577,6 @@ const handleAmountCapturableUpdated = async (
   }
 };
 
-// Get user payments (for user-specific routes)
 export const getUserPayments = async (
   userId: string,
   page: number = 1,
@@ -652,7 +611,6 @@ export const getUserPayments = async (
   }
 };
 
-// Get user payment statistics (direct aggregation)
 export const getUserPaymentStats = async (
   userId: string
 ): Promise<IPaymentStats> => {
@@ -744,23 +702,18 @@ export const getUserPaymentStats = async (
   }
 };
 
-// Moved to stripeConnected.service.ts
-
-// Get payment history for poster, tasker, super admin with QueryBuilder
 const getPaymentHistory = async (
   userId: string,
   query: Record<string, unknown>
 ) => {
   try {
-    // 🔹 Use string directly for Mongoose to cast automatically
+
     const objectId = userId;
 
-    // Base query (poster or freelancer) + populate freelancer name
     const baseQuery = Payment.find({
       $or: [{ posterId: objectId }, { freelancerId: objectId }],
-    }).populate('freelancerId', 'name'); // populate only name field
+    }).populate('freelancerId', 'name');
 
-    // Query builder with populate
     const queryBuilder = new QueryBuilder<IPayment>(baseQuery, query)
       .search(['status', 'currency'])
       .filter()
@@ -769,11 +722,9 @@ const getPaymentHistory = async (
       .paginate()
       .fields();
 
-    // Execute query with pagination
     const { data: payments, pagination } =
       await queryBuilder.getFilteredResults();
 
-    // Format data
     const formattedPayments = payments.map(payment => ({
       paymentId: payment.stripePaymentIntentId,
       taskerName: payment.freelancerId
@@ -798,7 +749,6 @@ const getPaymentHistory = async (
   }
 };
 
-// Retrieve current Stripe PaymentIntent for a bid and return client_secret when applicable
 export const getCurrentIntentByBid = async (
   bidId: string
 ): Promise<{
@@ -820,7 +770,6 @@ export const getCurrentIntentByBid = async (
     throw new ApiError(httpStatus.NOT_FOUND, 'No payment found for this bid');
   }
 
-  // Prefer pending payment; otherwise take the most recent
   const payment =
     payments.find((p: any) => p.status === PAYMENT_STATUS.PENDING) ||
     payments[0];
@@ -836,7 +785,6 @@ export const getCurrentIntentByBid = async (
     payment.stripePaymentIntentId
   );
 
-  // Only return client_secret when the intent is awaiting confirmation or action
   const statusesWithSecret = new Set([
     'requires_payment_method',
     'requires_confirmation',

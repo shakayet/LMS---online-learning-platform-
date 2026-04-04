@@ -90,7 +90,7 @@ const updateReviewZodSchema = zod_1.z.object({
         isPublic: zod_1.z.boolean().optional(),
     }),
 });
-// Admin: Create review (without session)
+
 const adminCreateReviewZodSchema = zod_1.z.object({
     body: zod_1.z.object({
         tutorId: zod_1.z
@@ -148,7 +148,7 @@ const adminCreateReviewZodSchema = zod_1.z.object({
             .optional(),
     }),
 });
-// Admin: Update any review
+
 const adminUpdateReviewZodSchema = zod_1.z.object({
     body: zod_1.z.object({
         overallRating: zod_1.z

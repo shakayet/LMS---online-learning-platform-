@@ -5,7 +5,7 @@ import { ISchoolType } from './schoolType.interface';
 import { SchoolType } from './schoolType.model';
 
 const createSchoolType = async (payload: ISchoolType): Promise<ISchoolType> => {
-  // Check if school type with the same name already exists
+
   const existingSchoolType = await SchoolType.findOne({ name: payload.name });
   if (existingSchoolType) {
     throw new ApiError(
@@ -18,7 +18,6 @@ const createSchoolType = async (payload: ISchoolType): Promise<ISchoolType> => {
   return result;
 };
 
-// Get all school types with filtering, searching, pagination
 const getAllSchoolTypes = async (query: Record<string, unknown>) => {
   const schoolTypeQuery = new QueryBuilder(SchoolType.find(), query)
     .search(['name'])
@@ -36,7 +35,6 @@ const getAllSchoolTypes = async (query: Record<string, unknown>) => {
   };
 };
 
-// Get single school type by ID
 const getSingleSchoolType = async (id: string): Promise<ISchoolType | null> => {
   const result = await SchoolType.findById(id);
 
@@ -47,18 +45,16 @@ const getSingleSchoolType = async (id: string): Promise<ISchoolType | null> => {
   return result;
 };
 
-// Update school type
 const updateSchoolType = async (
   id: string,
   payload: Partial<ISchoolType>
 ): Promise<ISchoolType | null> => {
-  // Check if school type exists
+
   const schoolType = await SchoolType.findById(id);
   if (!schoolType) {
     throw new ApiError(StatusCodes.NOT_FOUND, 'School type not found');
   }
 
-  // If updating name, check for uniqueness
   if (payload.name && payload.name !== schoolType.name) {
     const existingSchoolType = await SchoolType.findOne({ name: payload.name });
     if (existingSchoolType) {
@@ -77,14 +73,12 @@ const updateSchoolType = async (
   return result;
 };
 
-// Delete school type (soft delete by setting isActive to false)
 const deleteSchoolType = async (id: string): Promise<ISchoolType | null> => {
   const schoolType = await SchoolType.findById(id);
   if (!schoolType) {
     throw new ApiError(StatusCodes.NOT_FOUND, 'School type not found');
   }
 
-  // Soft delete
   const result = await SchoolType.findByIdAndUpdate(
     id,
     { isActive: false },

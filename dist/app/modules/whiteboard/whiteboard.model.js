@@ -51,7 +51,7 @@ const whiteboardRoomSchema = new mongoose_1.Schema({
     exportedState: String,
     lastSavedAt: Date,
 }, { timestamps: true });
-// Indexes
+
 whiteboardRoomSchema.index({ createdBy: 1 });
 whiteboardRoomSchema.index({ callId: 1 });
 whiteboardRoomSchema.index({ isActive: 1 });

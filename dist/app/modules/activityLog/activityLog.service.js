@@ -11,7 +11,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ActivityLogService = void 0;
 const activityLog_model_1 = require("./activityLog.model");
-// Log a new activity
+
 const logActivity = (data) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         yield activityLog_model_1.ActivityLog.create({
@@ -26,16 +26,16 @@ const logActivity = (data) => __awaiter(void 0, void 0, void 0, function* () {
         });
     }
     catch (error) {
-        // Log error but don't throw - activity logging should not break main flow
+
         console.error('Failed to log activity:', error);
     }
 });
-// Get recent activities with pagination and filters
+
 const getRecentActivities = (query) => __awaiter(void 0, void 0, void 0, function* () {
     const page = query.page || 1;
-    const limit = Math.min(query.limit || 10, 100); // Max 100
+    const limit = Math.min(query.limit || 10, 100);
     const skip = (page - 1) * limit;
-    // Build filter
+
     const filter = {};
     if (query.actionType) {
         const actionTypes = query.actionType.split(',');
@@ -57,16 +57,16 @@ const getRecentActivities = (query) => __awaiter(void 0, void 0, void 0, functio
             filter.createdAt.$lte = new Date(query.endDate);
         }
     }
-    // Get total count
+
     const total = yield activityLog_model_1.ActivityLog.countDocuments(filter);
-    // Get activities with user population
+
     const activities = yield activityLog_model_1.ActivityLog.find(filter)
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .populate('userId', 'name email profilePicture')
         .lean();
-    // Transform response
+
     const data = activities.map(activity => {
         var _a;
         const user = activity.userId;
@@ -94,7 +94,7 @@ const getRecentActivities = (query) => __awaiter(void 0, void 0, void 0, functio
         },
     };
 });
-// Get activity statistics
+
 const getActivityStats = () => __awaiter(void 0, void 0, void 0, function* () {
     const today = new Date();
     today.setHours(0, 0, 0, 0);

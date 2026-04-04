@@ -48,9 +48,9 @@ const getChatFromDB = (user, search) => __awaiter(void 0, void 0, void 0, functi
         },
     })
         .select('participants status updatedAt trialRequestId sessionRequestId');
-    // Filter out chats where no participants match the search (empty participants)
+
     const filteredChats = chats === null || chats === void 0 ? void 0 : chats.filter((chat) => { var _a; return ((_a = chat === null || chat === void 0 ? void 0 : chat.participants) === null || _a === void 0 ? void 0 : _a.length) > 0; });
-    //Use Promise.all to handle the asynchronous operations inside the map
+
     const chatList = yield Promise.all(filteredChats === null || filteredChats === void 0 ? void 0 : filteredChats.map((chat) => __awaiter(void 0, void 0, void 0, function* () {
         var _a, _b, _c, _d, _e;
         const data = chat === null || chat === void 0 ? void 0 : chat.toObject();
@@ -59,7 +59,7 @@ const getChatFromDB = (user, search) => __awaiter(void 0, void 0, void 0, functi
         })
             .sort({ createdAt: -1 })
             .select('text offer createdAt sender');
-        // Compute unread count for current user with Redis cache fallback
+
         const cachedUnread = yield (0, unreadHelper_1.getUnreadCountCached)(String(chat === null || chat === void 0 ? void 0 : chat._id), String(user.id));
         let unreadCount;
         if (typeof cachedUnread === 'number') {
@@ -71,13 +71,13 @@ const getChatFromDB = (user, search) => __awaiter(void 0, void 0, void 0, functi
                 sender: { $ne: user.id },
                 readBy: { $ne: user.id },
             });
-            // Cache the count for faster subsequent retrievals
+
             try {
                 yield (0, unreadHelper_1.setUnreadCount)(String(chat === null || chat === void 0 ? void 0 : chat._id), String(user.id), unreadCount);
             }
             catch (_f) { }
         }
-        // Presence of the other participant (first populated one)
+
         const other = (_a = data === null || data === void 0 ? void 0 : data.participants) === null || _a === void 0 ? void 0 : _a[0];
         let presence = null;
         if (other === null || other === void 0 ? void 0 : other._id) {
@@ -93,8 +93,7 @@ const getChatFromDB = (user, search) => __awaiter(void 0, void 0, void 0, functi
             }
             presence = { isOnline: online, lastActive: last };
         }
-        // Extract subject from sessionRequest first (latest), then trialRequest as fallback
-        // Session request takes priority because it comes after trial in user flow
+
         const subject = ((_c = (_b = data === null || data === void 0 ? void 0 : data.sessionRequestId) === null || _b === void 0 ? void 0 : _b.subject) === null || _c === void 0 ? void 0 : _c.name) || ((_e = (_d = data === null || data === void 0 ? void 0 : data.trialRequestId) === null || _d === void 0 ? void 0 : _d.subject) === null || _e === void 0 ? void 0 : _e.name) || null;
         return Object.assign(Object.assign({}, data), { lastMessage: lastMessage || null, unreadCount,
             presence,

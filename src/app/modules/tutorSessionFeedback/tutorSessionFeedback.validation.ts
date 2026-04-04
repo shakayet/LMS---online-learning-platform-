@@ -76,7 +76,7 @@ const updateFeedbackZodSchema = z
   })
   .refine(
     data => {
-      // If feedbackType is being set to TEXT, feedbackText must be provided
+
       if (data.body.feedbackType === FEEDBACK_TYPE.TEXT && !data.body.feedbackText) {
         return false;
       }
@@ -89,7 +89,7 @@ const updateFeedbackZodSchema = z
   )
   .refine(
     data => {
-      // If feedbackType is being set to AUDIO, feedbackAudioUrl must be provided
+
       if (data.body.feedbackType === FEEDBACK_TYPE.AUDIO && !data.body.feedbackAudioUrl) {
         return false;
       }

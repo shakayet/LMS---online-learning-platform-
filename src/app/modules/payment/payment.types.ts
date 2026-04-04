@@ -1,6 +1,5 @@
 import { Types } from 'mongoose';
 
-// Payment Status Enum
 export enum PAYMENT_STATUS {
   PENDING = 'pending',
   HELD = 'held',
@@ -10,20 +9,12 @@ export enum PAYMENT_STATUS {
   CANCELLED = 'cancelled',
 }
 
-// Release Type Enum
 export enum RELEASE_TYPE {
   COMPLETE = 'complete',
   PARTIAL = 'partial',
   REFUND = 'refund',
 }
 
-// // Account Type Enum
-// export enum ACCOUNT_TYPE {
-//   CLIENT = 'client',
-//   FREELANCER = 'freelancer',
-// }
-
-// Currency Enum (common currencies)
 export enum CURRENCY {
   USD = 'usd',
   EUR = 'eur',
@@ -32,13 +23,11 @@ export enum CURRENCY {
   AUD = 'aud',
 }
 
-// Type aliases for better readability
 export type PaymentStatusType = PAYMENT_STATUS;
 export type ReleaseTypeType = RELEASE_TYPE;
-// export type AccountTypeType = ACCOUNT_TYPE;
+
 export type CurrencyType = CURRENCY;
 
-// Core Payment Interface
 export type IPayment = {
   _id?: Types.ObjectId;
   taskId: Types.ObjectId;
@@ -58,7 +47,6 @@ export type IPayment = {
   updatedAt?: Date;
 };
 
-// Escrow Payment Interface
 export type IEscrowPayment = {
   taskId: Types.ObjectId;
   amount: number;
@@ -70,7 +58,6 @@ export type IEscrowPayment = {
   metadata?: Record<string, any>;
 };
 
-// Payment Release Interface
 export type IPaymentRelease = {
   paymentId: Types.ObjectId;
   releaseType: ReleaseTypeType;
@@ -78,7 +65,6 @@ export type IPaymentRelease = {
   clientId?: Types.ObjectId;
 };
 
-// Create Payment Record Interface
 export type ICreatePaymentRecord = {
   taskId: Types.ObjectId;
   posterId: Types.ObjectId;
@@ -91,7 +77,6 @@ export type ICreatePaymentRecord = {
   currency: string;
 };
 
-// Payment Filters Interface
 export type IPaymentFilters = {
   status?: PaymentStatusType;
   posterId?: Types.ObjectId;
@@ -106,7 +91,6 @@ export type IPaymentFilters = {
   amountMax?: number;
 };
 
-// Payment Statistics Interface
 export type IPaymentStats = {
   totalPayments: number;
   totalAmount: number;
@@ -124,7 +108,6 @@ export type IPaymentStats = {
   }>;
 };
 
-// Payment Update Interface
 export type IPaymentUpdate = {
   status?: PaymentStatusType;
   stripeTransferId?: string;
@@ -132,7 +115,6 @@ export type IPaymentUpdate = {
   metadata?: Record<string, any>;
 };
 
-// Payment Query Interface
 export type IPaymentQuery = {
   taskId?: Types.ObjectId;
   posterId?: Types.ObjectId;

@@ -17,9 +17,7 @@ const http_status_codes_1 = require("http-status-codes");
 const catchAsync_1 = __importDefault(require("../../../shared/catchAsync"));
 const sendResponse_1 = __importDefault(require("../../../shared/sendResponse"));
 const paymentMethod_service_1 = require("./paymentMethod.service");
-/**
- * Get all saved payment methods
- */
+
 const getPaymentMethods = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const studentId = req.user.id;
     const result = yield paymentMethod_service_1.PaymentMethodService.getPaymentMethods(studentId);
@@ -30,9 +28,7 @@ const getPaymentMethods = (0, catchAsync_1.default)((req, res) => __awaiter(void
         data: result,
     });
 }));
-/**
- * Create SetupIntent for adding new payment method
- */
+
 const createSetupIntent = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const studentId = req.user.id;
     const result = yield paymentMethod_service_1.PaymentMethodService.createSetupIntent(studentId);
@@ -43,9 +39,7 @@ const createSetupIntent = (0, catchAsync_1.default)((req, res) => __awaiter(void
         data: result,
     });
 }));
-/**
- * Attach payment method after successful setup
- */
+
 const attachPaymentMethod = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const studentId = req.user.id;
     const { paymentMethodId, setAsDefault } = req.body;
@@ -57,9 +51,7 @@ const attachPaymentMethod = (0, catchAsync_1.default)((req, res) => __awaiter(vo
         data: result,
     });
 }));
-/**
- * Set a payment method as default
- */
+
 const setDefaultPaymentMethod = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const studentId = req.user.id;
     const { paymentMethodId } = req.params;
@@ -71,9 +63,7 @@ const setDefaultPaymentMethod = (0, catchAsync_1.default)((req, res) => __awaite
         data: result,
     });
 }));
-/**
- * Delete a payment method
- */
+
 const deletePaymentMethod = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const studentId = req.user.id;
     const { paymentMethodId } = req.params;

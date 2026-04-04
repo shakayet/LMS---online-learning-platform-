@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.controllerNameFromBasePath = exports.getMetrics = exports.recordExternalCall = exports.recordCacheMiss = exports.recordCacheHit = exports.recordDbQuery = exports.getLabels = exports.setServiceLabel = exports.setControllerLabel = exports.requestContextInit = void 0;
 const async_hooks_1 = require("async_hooks");
 const storage = new async_hooks_1.AsyncLocalStorage();
-// Initialize per-request context
+
 const requestContextInit = (req, _res, next) => {
     storage.run({
         labels: {},
@@ -31,7 +31,7 @@ const setServiceLabel = (label) => {
 exports.setServiceLabel = setServiceLabel;
 const getLabels = () => { var _a; return ((_a = storage.getStore()) === null || _a === void 0 ? void 0 : _a.labels) || {}; };
 exports.getLabels = getLabels;
-// ===== Metrics helpers =====
+
 const recordDbQuery = (durationMs, meta) => {
     const store = storage.getStore();
     if (!store)
@@ -78,8 +78,7 @@ const recordExternalCall = (durationMs) => {
 exports.recordExternalCall = recordExternalCall;
 const getMetrics = () => { var _a; return (_a = storage.getStore()) === null || _a === void 0 ? void 0 : _a.metrics; };
 exports.getMetrics = getMetrics;
-// Helper to convert a base path segment like "auth" -> "AuthController"
-// Known base path -> Controller name mapping (handles plural/singular)
+
 const BASE_TO_CONTROLLER = {
     auth: 'AuthController',
     user: 'UserController',
@@ -103,7 +102,7 @@ const controllerNameFromBasePath = (baseUrl) => {
     const direct = BASE_TO_CONTROLLER[last];
     if (direct)
         return direct;
-    // Fallback: PascalCase + Controller
+
     const pascal = last
         .split('-')
         .map(seg => seg.charAt(0).toUpperCase() + seg.slice(1))

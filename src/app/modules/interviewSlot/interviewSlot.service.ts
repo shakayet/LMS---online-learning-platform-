@@ -17,20 +17,16 @@ import {
 } from '../call/agora.helper';
 import config from '../../../config';
 
-/**
- * Create interview slot (Admin only)
- */
 const createInterviewSlot = async (
   adminId: string,
   payload: Partial<IInterviewSlot>
 ): Promise<IInterviewSlot> => {
-  // Verify admin exists
+
   const admin = await User.findById(adminId);
   if (!admin) {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Admin not found');
   }
 
-  // Create slot
   const slotData = {
     ...payload,
     adminId: new Types.ObjectId(adminId),
@@ -42,11 +38,6 @@ const createInterviewSlot = async (
   return slot;
 };
 
-/**
- * Get all interview slots with filtering
- * Admin: See all slots
- * Applicant: Must be SELECTED_FOR_INTERVIEW to see available slots
- */
 const getAllInterviewSlots = async (
   query: Record<string, unknown>,
   userId?: string,
@@ -54,21 +45,18 @@ const getAllInterviewSlots = async (
 ) => {
   let filter = {};
 
-  // If applicant, check if they are SELECTED_FOR_INTERVIEW
   if (userRole === 'APPLICANT') {
-    // Get user's email
+
     const user = await User.findById(userId);
     if (!user) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'User not found');
     }
 
-    // Check application status
     const application = await TutorApplication.findOne({ email: user.email });
     if (!application) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'No application found');
     }
 
-    // Only SELECTED_FOR_INTERVIEW can view slots
     if (application.status !== APPLICATION_STATUS.SELECTED_FOR_INTERVIEW) {
       throw new ApiError(
         StatusCodes.FORBIDDEN,
@@ -76,7 +64,6 @@ const getAllInterviewSlots = async (
       );
     }
 
-    // Only show available slots
     filter = { status: INTERVIEW_SLOT_STATUS.AVAILABLE };
   }
 
@@ -100,9 +87,6 @@ const getAllInterviewSlots = async (
   };
 };
 
-/**
- * Get single interview slot by ID
- */
 const getSingleInterviewSlot = async (id: string): Promise<IInterviewSlot | null> => {
   const slot = await InterviewSlot.findById(id)
     .populate('adminId', 'name email')
@@ -116,15 +100,12 @@ const getSingleInterviewSlot = async (id: string): Promise<IInterviewSlot | null
   return slot;
 };
 
-/**
- * Book interview slot (Applicant)
- */
 const bookInterviewSlot = async (
   slotId: string,
   applicantId: string,
   applicationId: string
 ): Promise<IInterviewSlot | null> => {
-  // Verify slot exists and is available
+
   const slot = await InterviewSlot.findById(slotId);
   if (!slot) {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Interview slot not found');
@@ -137,13 +118,11 @@ const bookInterviewSlot = async (
     );
   }
 
-  // Verify application exists and belongs to applicant
   const application = await TutorApplication.findById(applicationId);
   if (!application) {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Application not found');
   }
 
-  // Get user to check email match
   const user = await User.findById(applicantId);
   if (!user || application.email !== user.email) {
     throw new ApiError(
@@ -152,7 +131,6 @@ const bookInterviewSlot = async (
     );
   }
 
-  // Check if application is SELECTED_FOR_INTERVIEW status
   if (application.status !== APPLICATION_STATUS.SELECTED_FOR_INTERVIEW) {
     throw new ApiError(
       StatusCodes.BAD_REQUEST,
@@ -160,7 +138,6 @@ const bookInterviewSlot = async (
     );
   }
 
-  // Check if applicant already has a booked slot
   const existingBooking = await InterviewSlot.findOne({
     applicantId: new Types.ObjectId(applicantId),
     status: INTERVIEW_SLOT_STATUS.BOOKED,
@@ -173,42 +150,22 @@ const bookInterviewSlot = async (
     );
   }
 
-  // Update slot
   slot.status = INTERVIEW_SLOT_STATUS.BOOKED;
   slot.applicantId = new Types.ObjectId(applicantId);
   slot.applicationId = new Types.ObjectId(applicationId);
   slot.bookedAt = new Date();
 
-  // Generate Agora channel name for video call
   slot.agoraChannelName = generateChannelName();
 
   await slot.save();
 
-  // Clear any previous cancellation reason from the application
   await TutorApplication.findByIdAndUpdate(applicationId, {
     $unset: { interviewCancelledReason: 1, interviewCancelledAt: 1 },
   });
 
-  // TODO: Send email notification to applicant with meeting details
-  // await sendEmail({
-  //   to: application.email,
-  //   subject: 'Interview Scheduled - Tutor Application',
-  //   template: 'interview-scheduled',
-  //   data: {
-  //     name: application.name,
-  //     meetLink: slot.googleMeetLink,
-  //     startTime: slot.startTime,
-  //     endTime: slot.endTime
-  //   }
-  // });
-
   return slot;
 };
 
-/**
- * Cancel interview slot
- * Admin or Applicant can cancel (must be at least 1 hour before interview)
- */
 const cancelInterviewSlot = async (
   slotId: string,
   userId: string,
@@ -227,7 +184,6 @@ const cancelInterviewSlot = async (
     );
   }
 
-  // Verify user is either admin or applicant of this slot
   const user = await User.findById(userId);
   const isAdmin = user?.role === 'SUPER_ADMIN';
   const isSlotOwner = slot.applicantId?.toString() === userId;
@@ -239,7 +195,6 @@ const cancelInterviewSlot = async (
     );
   }
 
-  // Check if cancellation is at least 1 hour before interview (for applicants only)
   if (!isAdmin) {
     const oneHourFromNow = new Date(Date.now() + 60 * 60 * 1000);
     if (slot.startTime <= oneHourFromNow) {
@@ -250,25 +205,19 @@ const cancelInterviewSlot = async (
     }
   }
 
-  // Save applicationId before clearing
   const savedApplicationId = slot.applicationId;
 
-  // Update slot - make it available again for others to book
   slot.status = INTERVIEW_SLOT_STATUS.AVAILABLE;
   slot.applicantId = undefined;
   slot.applicationId = undefined;
   slot.bookedAt = undefined;
   await slot.save();
 
-  // Keep application status as SELECTED_FOR_INTERVIEW (so they can book again)
-  // The applicant should still be able to book a new interview slot
-  // If admin cancelled, save the cancellation reason to the application
   if (savedApplicationId) {
     const updateData: Record<string, unknown> = {
       status: APPLICATION_STATUS.SELECTED_FOR_INTERVIEW,
     };
 
-    // Only save cancellation reason if admin cancelled (with a reason)
     if (isAdmin && cancellationReason) {
       updateData.interviewCancelledReason = cancellationReason;
       updateData.interviewCancelledAt = new Date();
@@ -277,21 +226,9 @@ const cancelInterviewSlot = async (
     await TutorApplication.findByIdAndUpdate(savedApplicationId, updateData);
   }
 
-  // TODO: Send cancellation email
-  // await sendEmail({
-  //   to: application.email,
-  //   subject: 'Interview Cancelled',
-  //   template: 'interview-cancelled',
-  //   data: { reason: cancellationReason, startTime: slot.startTime }
-  // });
-
   return slot;
 };
 
-/**
- * Mark interview as completed (Admin only)
- * After completion, admin can approve/reject the application separately
- */
 const markAsCompleted = async (slotId: string): Promise<IInterviewSlot | null> => {
   const slot = await InterviewSlot.findById(slotId);
 
@@ -306,32 +243,24 @@ const markAsCompleted = async (slotId: string): Promise<IInterviewSlot | null> =
     );
   }
 
-  // Update slot
   slot.status = INTERVIEW_SLOT_STATUS.COMPLETED;
   slot.completedAt = new Date();
   await slot.save();
 
-  // Application status remains SUBMITTED - admin will approve/reject separately
-
   return slot;
 };
 
-/**
- * Reschedule interview slot (Applicant)
- * Cancel current booking and book a new slot in one action
- */
 const rescheduleInterviewSlot = async (
   currentSlotId: string,
   newSlotId: string,
   applicantId: string
 ): Promise<IInterviewSlot | null> => {
-  // Get current slot
+
   const currentSlot = await InterviewSlot.findById(currentSlotId);
   if (!currentSlot) {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Current interview slot not found');
   }
 
-  // Verify applicant owns this slot
   if (currentSlot.applicantId?.toString() !== applicantId) {
     throw new ApiError(
       StatusCodes.FORBIDDEN,
@@ -346,7 +275,6 @@ const rescheduleInterviewSlot = async (
     );
   }
 
-  // Check if reschedule is at least 1 hour before current interview
   const oneHourFromNow = new Date(Date.now() + 60 * 60 * 1000);
   if (currentSlot.startTime <= oneHourFromNow) {
     throw new ApiError(
@@ -355,7 +283,6 @@ const rescheduleInterviewSlot = async (
     );
   }
 
-  // Get new slot
   const newSlot = await InterviewSlot.findById(newSlotId);
   if (!newSlot) {
     throw new ApiError(StatusCodes.NOT_FOUND, 'New interview slot not found');
@@ -368,42 +295,24 @@ const rescheduleInterviewSlot = async (
     );
   }
 
-  // Save applicant and application IDs before clearing
   const savedApplicantId = currentSlot.applicantId;
   const savedApplicationId = currentSlot.applicationId;
 
-  // Cancel current slot (make it available again)
   currentSlot.status = INTERVIEW_SLOT_STATUS.AVAILABLE;
   currentSlot.applicantId = undefined;
   currentSlot.applicationId = undefined;
   currentSlot.bookedAt = undefined;
   await currentSlot.save();
 
-  // Book new slot
   newSlot.status = INTERVIEW_SLOT_STATUS.BOOKED;
   newSlot.applicantId = savedApplicantId;
   newSlot.applicationId = savedApplicationId;
   newSlot.bookedAt = new Date();
   await newSlot.save();
 
-  // TODO: Send reschedule email notification
-  // await sendEmail({
-  //   to: applicant.email,
-  //   subject: 'Interview Rescheduled',
-  //   template: 'interview-rescheduled',
-  //   data: {
-  //     oldTime: currentSlot.startTime,
-  //     newTime: newSlot.startTime,
-  //     meetLink: newSlot.googleMeetLink
-  //   }
-  // });
-
   return newSlot;
 };
 
-/**
- * Update interview slot (Admin only)
- */
 const updateInterviewSlot = async (
   id: string,
   payload: Partial<IInterviewSlot>
@@ -414,7 +323,6 @@ const updateInterviewSlot = async (
     throw new ApiError(StatusCodes.NOT_FOUND, 'Interview slot not found');
   }
 
-  // Don't allow updating booked/completed/cancelled slots
   if (slot.status !== INTERVIEW_SLOT_STATUS.AVAILABLE) {
     throw new ApiError(
       StatusCodes.BAD_REQUEST,
@@ -430,9 +338,6 @@ const updateInterviewSlot = async (
   return updated;
 };
 
-/**
- * Delete interview slot (Admin only)
- */
 const deleteInterviewSlot = async (id: string): Promise<IInterviewSlot | null> => {
   const slot = await InterviewSlot.findById(id);
 
@@ -440,7 +345,6 @@ const deleteInterviewSlot = async (id: string): Promise<IInterviewSlot | null> =
     throw new ApiError(StatusCodes.NOT_FOUND, 'Interview slot not found');
   }
 
-  // Don't allow deleting booked slots
   if (slot.status === INTERVIEW_SLOT_STATUS.BOOKED) {
     throw new ApiError(
       StatusCodes.BAD_REQUEST,
@@ -452,10 +356,6 @@ const deleteInterviewSlot = async (id: string): Promise<IInterviewSlot | null> =
   return result;
 };
 
-/**
- * Get my booked interview slot (Applicant only)
- * Returns BOOKED or COMPLETED interview slots
- */
 const getMyBookedInterview = async (
   applicantId: string
 ): Promise<IInterviewSlot | null> => {
@@ -465,15 +365,11 @@ const getMyBookedInterview = async (
   })
     .populate('adminId', 'name email')
     .populate('applicationId')
-    .sort({ createdAt: -1 }); // Get the most recent one
+    .sort({ createdAt: -1 });
 
   return slot;
 };
 
-/**
- * Get all scheduled meetings (BOOKED interview slots) - Admin only
- * Returns slots with full applicant and application details
- */
 const getScheduledMeetings = async (query: Record<string, unknown>) => {
   const slotQuery = new QueryBuilder(
     InterviewSlot.find({ status: INTERVIEW_SLOT_STATUS.BOOKED })
@@ -495,10 +391,9 @@ const getScheduledMeetings = async (query: Record<string, unknown>) => {
   const result = await slotQuery.modelQuery;
   const meta = await slotQuery.getPaginationInfo();
 
-  // Transform data to include application details
   const meetings = result.map((slot: any) => {
     const application = slot.applicationId;
-    // Extract subject names from populated subjects
+
     const subjectNames = application?.subjects?.map((subject: any) =>
       typeof subject === 'object' ? subject.name : subject
     ) || [];
@@ -523,10 +418,6 @@ const getScheduledMeetings = async (query: Record<string, unknown>) => {
   };
 };
 
-/**
- * Get meeting token for interview video call
- * Both Admin and Applicant can get token if they are part of the meeting
- */
 const getInterviewMeetingToken = async (
   slotId: string,
   userId: string
@@ -556,7 +447,6 @@ const getInterviewMeetingToken = async (
     );
   }
 
-  // Verify user is either admin or applicant of this slot
   const user = await User.findById(userId);
   if (!user) {
     throw new ApiError(StatusCodes.NOT_FOUND, 'User not found');
@@ -572,7 +462,6 @@ const getInterviewMeetingToken = async (
     );
   }
 
-  // Generate Agora token
   const uid = userIdToAgoraUid(userId);
   const token = generateRtcToken(slot.agoraChannelName, uid);
 
@@ -584,13 +473,8 @@ const getInterviewMeetingToken = async (
   };
 };
 
-/**
- * Cleanup expired available interview slots
- * Deletes all AVAILABLE slots where the day has passed (startTime < start of today)
- * Only deletes unbooked slots - booked/completed/cancelled slots are kept for records
- */
 const cleanupExpiredAvailableSlots = async (): Promise<number> => {
-  // Get start of today (midnight)
+
   const startOfToday = new Date();
   startOfToday.setHours(0, 0, 0, 0);
 

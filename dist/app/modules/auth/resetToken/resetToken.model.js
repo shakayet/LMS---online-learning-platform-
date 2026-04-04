@@ -25,13 +25,13 @@ const resetTokenSchema = new mongoose_1.Schema({
         required: true,
     },
 }, { timestamps: true });
-// token check
+
 resetTokenSchema.statics.isExistToken = function (token) {
     return __awaiter(this, void 0, void 0, function* () {
         return yield this.findOne({ token });
     });
 };
-// token validity check
+
 resetTokenSchema.statics.isExpireToken = function (token) {
     return __awaiter(this, void 0, void 0, function* () {
         const currentDate = new Date();

@@ -101,7 +101,7 @@ const PaymentSchema = new mongoose_1.Schema({
 }, {
     timestamps: true,
 });
-// Indexes for better query performance
+
 PaymentSchema.index({ taskId: 1 });
 PaymentSchema.index({ posterId: 1 });
 PaymentSchema.index({ freelancerId: 1 });
@@ -147,10 +147,10 @@ const StripeAccountSchema = new mongoose_1.Schema({
 }, {
     timestamps: true,
 });
-// Indexes
+
 StripeAccountSchema.index({ userId: 1 });
 StripeAccountSchema.index({ stripeAccountId: 1 });
-// Payment Model Methods (following project patterns)
+
 PaymentSchema.statics.isExistPaymentById = function (id) {
     return __awaiter(this, void 0, void 0, function* () {
         return yield this.findById(id);
@@ -183,7 +183,7 @@ PaymentSchema.statics.updatePaymentStatus = function (paymentId, status) {
         return yield this.findByIdAndUpdate(paymentId, { status, updatedAt: new Date() }, { new: true });
     });
 };
-// Stripe Account Model Methods
+
 StripeAccountSchema.statics.isExistAccountByUserId = function (userId) {
     return __awaiter(this, void 0, void 0, function* () {
         return yield this.findOne({ userId });
@@ -199,7 +199,7 @@ StripeAccountSchema.statics.updateAccountStatus = function (userId, updates) {
         return yield this.findOneAndUpdate({ userId }, Object.assign(Object.assign({}, updates), { updatedAt: new Date() }), { new: true });
     });
 };
-// Export Models with proper typing
+
 exports.Payment = mongoose_1.default.model('Payment', PaymentSchema);
 exports.PaymentModel = exports.Payment;
 exports.StripeAccount = mongoose_1.default.model('StripeAccount', StripeAccountSchema);

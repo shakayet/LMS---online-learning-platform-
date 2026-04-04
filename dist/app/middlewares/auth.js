@@ -20,40 +20,40 @@ const user_1 = require("../../enums/user");
 const auth = (...allowedRoles) => (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const authHeader = req.headers.authorization;
-        // 1️⃣ Allow GUEST access if route permits it and no token is provided
+
         if (!authHeader && allowedRoles.includes(user_1.USER_ROLES.GUEST)) {
             req.user = { role: user_1.USER_ROLES.GUEST, id: null, email: null };
             return next();
         }
-        // 2️⃣ No token provided and route doesn't allow guests
+
         if (!authHeader) {
             throw new ApiError_1.default(http_status_codes_1.StatusCodes.UNAUTHORIZED, 'Authorization token is required');
         }
-        // 3️⃣ Validate Bearer format
+
         if (!authHeader.startsWith('Bearer ')) {
             throw new ApiError_1.default(http_status_codes_1.StatusCodes.UNAUTHORIZED, 'Authorization header must start with "Bearer "');
         }
-        // 4️⃣ Extract token and ensure it's not empty
+
         const token = authHeader.split(' ')[1];
         if (!token || token.trim() === '') {
             throw new ApiError_1.default(http_status_codes_1.StatusCodes.UNAUTHORIZED, 'Valid token is required');
         }
-        // 5️⃣ Verify JWT token
+
         const verifiedUser = jwtHelper_1.jwtHelper.verifyToken(token, config_1.default.jwt.jwt_secret);
         if (!verifiedUser || !verifiedUser.role) {
             throw new ApiError_1.default(http_status_codes_1.StatusCodes.UNAUTHORIZED, 'Invalid token payload');
         }
-        // 6️⃣ Attach verified user to request
+
         req.user = verifiedUser;
-        // 7️⃣ Role-based access check
+
         if (allowedRoles.length && !allowedRoles.includes(verifiedUser.role)) {
             throw new ApiError_1.default(http_status_codes_1.StatusCodes.FORBIDDEN, "You don't have permission to access this API");
         }
-        // 8️⃣ Proceed
+
         next();
     }
     catch (error) {
-        // Handle JWT-specific errors
+
         if (error.name === 'JsonWebTokenError') {
             return next(new ApiError_1.default(http_status_codes_1.StatusCodes.UNAUTHORIZED, 'Invalid token'));
         }
@@ -63,7 +63,7 @@ const auth = (...allowedRoles) => (req, res, next) => __awaiter(void 0, void 0, 
         if (error.name === 'NotBeforeError') {
             return next(new ApiError_1.default(http_status_codes_1.StatusCodes.UNAUTHORIZED, 'Token not active'));
         }
-        // Pass other errors
+
         next(error);
     }
 });

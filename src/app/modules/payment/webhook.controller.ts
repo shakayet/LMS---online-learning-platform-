@@ -4,19 +4,8 @@ import httpStatus from 'http-status';
 import { stripe } from '../../../config/stripe';
 
 class WebhookController {
-  // Handle Stripe webhook events
+
   handleStripeWebhook = async (req: Request, res: Response) => {
-    // // Enhanced logging for debugging
-    // console.log('🔔 WEBHOOK RECEIVED:', {
-    //   timestamp: new Date().toISOString(),
-    //   headers: {
-    //     'stripe-signature': req.headers['stripe-signature'] ? 'Present' : 'Missing',
-    //     'content-type': req.headers['content-type'],
-    //     'user-agent': req.headers['user-agent'],
-    //   },
-    //   bodySize: req.body ? req.body.length : 0,
-    //   rawBody: req.body ? req.body.toString().substring(0, 200) + '...' : 'No body'
-    // });
 
     const sig = req.headers['stripe-signature'] as string;
     const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -34,10 +23,9 @@ class WebhookController {
     let event;
 
     try {
-      // Verify webhook signature
+
       event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
-      // console.log('✅ Webhook signature verified successfully');
-      // Expose to global logger
+
       (res.locals as any).webhookSignatureVerified = true;
     } catch (err: any) {
       console.error('❌ Webhook signature verification failed:', {
@@ -45,7 +33,7 @@ class WebhookController {
         signature: sig ? sig.substring(0, 20) + '...' : 'No signature',
         bodyLength: req.body ? req.body.length : 0,
       });
-      // Expose failure reason to global logger
+
       (res.locals as any).webhookSignatureVerified = false;
       (res.locals as any).webhookSignatureError =
         err?.message || 'unknown error';
@@ -54,15 +42,8 @@ class WebhookController {
       });
     }
 
-    // console.log('📨 Received webhook event:', {
-    //   type: event.type,
-    //   id: event.id,
-    //   created: new Date(event.created * 1000).toISOString(),
-    //   livemode: event.livemode,
-    // });
-
     try {
-      // Handle the event
+
       switch (event.type) {
         case 'payment_intent.succeeded':
           await this.handlePaymentSucceeded(event.data.object);
@@ -108,7 +89,6 @@ class WebhookController {
           console.log(`Unhandled event type: ${event.type}`);
       }
 
-      // Acknowledge receipt of the event
       res.json({ received: true });
     } catch (error: any) {
       console.error(`Error processing webhook event ${event.type}:`, error);
@@ -118,16 +98,8 @@ class WebhookController {
     }
   };
 
-  // Handle successful payment
   private async handlePaymentSucceeded(paymentIntent: any): Promise<void> {
     try {
-      // console.log('💰 Processing payment succeeded:', {
-      //   paymentIntentId: paymentIntent.id,
-      //   amount: paymentIntent.amount,
-      //   currency: paymentIntent.currency,
-      //   status: paymentIntent.status,
-      //   metadata: paymentIntent.metadata,
-      // });
 
       const bidId = paymentIntent.metadata?.bid_id;
       if (!bidId) {
@@ -140,7 +112,6 @@ class WebhookController {
 
       console.log('🎯 Processing payment for bid:', bidId);
 
-      // Use the service method to handle the event
       await PaymentService.handleWebhookEvent({
         type: 'payment_intent.succeeded',
         data: { object: paymentIntent },
@@ -156,7 +127,6 @@ class WebhookController {
     }
   }
 
-  // Handle failed payment
   private async handlePaymentFailed(paymentIntent: any): Promise<void> {
     try {
       console.log(`Payment failed: ${paymentIntent.id}`);
@@ -167,7 +137,6 @@ class WebhookController {
         return;
       }
 
-      // Use the service method to handle the event
       await PaymentService.handleWebhookEvent({
         type: 'payment_intent.payment_failed',
         data: { object: paymentIntent },
@@ -182,7 +151,6 @@ class WebhookController {
     }
   }
 
-  // Handle canceled payment
   private async handlePaymentCanceled(paymentIntent: any): Promise<void> {
     try {
       console.log(`Payment canceled: ${paymentIntent.id}`);
@@ -193,7 +161,6 @@ class WebhookController {
         return;
       }
 
-      // Treat canceled payments similar to failed payments
       await PaymentService.handleWebhookEvent({
         type: 'payment_intent.payment_failed',
         data: { object: paymentIntent },
@@ -208,18 +175,10 @@ class WebhookController {
     }
   }
 
-  // Handle amount capturable updated (manual capture flow)
   private async handleAmountCapturableUpdated(
     paymentIntent: any
   ): Promise<void> {
     try {
-      // console.log('💳 Amount capturable updated:', {
-      //   paymentIntentId: paymentIntent.id,
-      //   amount_capturable: paymentIntent.amount_capturable,
-      //   currency: paymentIntent.currency,
-      //   status: paymentIntent.status,
-      //   metadata: paymentIntent.metadata,
-      // });
 
       const bidId = paymentIntent.metadata?.bid_id;
       if (!bidId) {
@@ -230,30 +189,21 @@ class WebhookController {
         return;
       }
 
-      // console.log('🎯 Triggering capture for bid:', bidId);
-
-      // Delegate to service to perform capture + updates
       await PaymentService.handleWebhookEvent({
         type: 'payment_intent.amount_capturable_updated',
         data: { object: paymentIntent },
       });
 
-      // console.log(
-      //   '✅ Successfully processed amount_capturable_updated for bid:',
-      //   bidId
-      // );
     } catch (error) {
       console.error('❌ Error handling amount capturable updated:', error);
       throw error;
     }
   }
 
-  // Handle Stripe Connect account updates
   private async handleAccountUpdated(account: any): Promise<void> {
     try {
       console.log(`Account updated: ${account.id}`);
 
-      // Use the service method to handle the event
       await PaymentService.handleWebhookEvent({
         type: 'account.updated',
         data: { object: account },
@@ -268,14 +218,12 @@ class WebhookController {
     }
   }
 
-  // Handle transfer creation (money moved to freelancer)
   private async handleTransferCreated(transfer: any): Promise<void> {
     try {
       console.log(
         `Transfer created: ${transfer.id} to ${transfer.destination}`
       );
 
-      // Log transfer details for monitoring
       console.log({
         transfer_id: transfer.id,
         amount: transfer.amount,
@@ -289,20 +237,18 @@ class WebhookController {
     }
   }
 
-  // Handle transfer updates
   private async handleTransferUpdated(transfer: any): Promise<void> {
     try {
       console.log(
         `Transfer updated: ${transfer.id} - Status: ${transfer.status}`
       );
 
-      // Log transfer status changes
       if (transfer.status === 'failed') {
         console.error(
           `Transfer failed: ${transfer.id}`,
           transfer.failure_message
         );
-        // TODO: Implement failure handling - notify users, update payment status
+
       }
     } catch (error) {
       console.error('Error handling transfer updated:', error);
@@ -310,12 +256,10 @@ class WebhookController {
     }
   }
 
-  // Handle payout creation (money moved from Stripe to bank account)
   private async handlePayoutCreated(payout: any): Promise<void> {
     try {
       console.log(`Payout created: ${payout.id}`);
 
-      // Log payout details for monitoring
       console.log({
         payout_id: payout.id,
         amount: payout.amount,
@@ -329,18 +273,16 @@ class WebhookController {
     }
   }
 
-  // Handle payout updates
   private async handlePayoutUpdated(payout: any): Promise<void> {
     try {
       console.log(`Payout updated: ${payout.id} - Status: ${payout.status}`);
 
-      // Log payout status changes
       if (payout.status === 'failed') {
         console.error(`Payout failed: ${payout.id}`, payout.failure_message);
-        // TODO: Implement failure handling - notify freelancer
+
       } else if (payout.status === 'paid') {
         console.log(`Payout completed: ${payout.id}`);
-        // TODO: Implement success handling - notify freelancer
+
       }
     } catch (error) {
       console.error('Error handling payout updated:', error);
@@ -348,14 +290,12 @@ class WebhookController {
     }
   }
 
-  // Handle dispute creation (chargeback)
   private async handleDisputeCreated(dispute: any): Promise<void> {
     try {
       console.log(
         `Dispute created: ${dispute.id} for charge: ${dispute.charge}`
       );
 
-      // Log dispute details
       console.log({
         dispute_id: dispute.id,
         charge_id: dispute.charge,
@@ -364,12 +304,6 @@ class WebhookController {
         reason: dispute.reason,
         status: dispute.status,
       });
-
-      // TODO: Implement dispute handling
-      // - Notify admin/support team
-      // - Update payment status
-      // - Freeze related funds if necessary
-      // - Send notification to affected users
 
       console.warn(
         'DISPUTE ALERT: Manual review required for dispute',
@@ -381,7 +315,6 @@ class WebhookController {
     }
   }
 
-  // Health check endpoint for webhook
   webhookHealthCheck = (req: Request, res: Response) => {
     res.json({
       status: 'healthy',

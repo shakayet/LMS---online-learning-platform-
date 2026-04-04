@@ -4,9 +4,6 @@ import catchAsync from '../../../shared/catchAsync';
 import sendResponse from '../../../shared/sendResponse';
 import { SessionService } from './session.service';
 
-/**
- * Propose session (Tutor sends in chat)
- */
 const proposeSession = catchAsync(async (req: Request, res: Response) => {
   const tutorId = req.user!.id as string;
   const result = await SessionService.proposeSession(tutorId, req.body);
@@ -19,10 +16,6 @@ const proposeSession = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Accept session proposal (Student or Tutor accepts)
- * Student accepts tutor's proposal OR Tutor accepts student's counter-proposal
- */
 const acceptSessionProposal = catchAsync(async (req: Request, res: Response) => {
   const { messageId } = req.params;
   const userId = req.user!.id as string;
@@ -36,9 +29,6 @@ const acceptSessionProposal = catchAsync(async (req: Request, res: Response) => 
   });
 });
 
-/**
- * Counter-propose session (Student suggests alternative time)
- */
 const counterProposeSession = catchAsync(async (req: Request, res: Response) => {
   const { messageId } = req.params;
   const studentId = req.user!.id as string;
@@ -57,10 +47,6 @@ const counterProposeSession = catchAsync(async (req: Request, res: Response) => 
   });
 });
 
-/**
- * Reject session proposal (Student or Tutor rejects)
- * Student rejects tutor's proposal OR Tutor rejects student's counter-proposal
- */
 const rejectSessionProposal = catchAsync(async (req: Request, res: Response) => {
   const { messageId } = req.params;
   const userId = req.user!.id as string;
@@ -80,12 +66,6 @@ const rejectSessionProposal = catchAsync(async (req: Request, res: Response) => 
   });
 });
 
-/**
- * Get all sessions
- * Student: Own sessions
- * Tutor: Own sessions
- * Admin: All sessions
- */
 const getAllSessions = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user?.id as string | undefined;
   const userRole = req.user?.role;
@@ -100,9 +80,6 @@ const getAllSessions = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Get single session
- */
 const getSingleSession = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const result = await SessionService.getSingleSession(id);
@@ -115,9 +92,6 @@ const getSingleSession = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Cancel session (Student or Tutor)
- */
 const cancelSession = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const userId = req.user!.id as string;
@@ -133,9 +107,6 @@ const cancelSession = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Mark session as completed (Admin/Manual)
- */
 const markAsCompleted = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const result = await SessionService.markAsCompleted(id);
@@ -148,9 +119,6 @@ const markAsCompleted = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Auto-complete sessions (Cron job endpoint)
- */
 const autoCompleteSessions = catchAsync(async (req: Request, res: Response) => {
   const count = await SessionService.autoCompleteSessions();
 
@@ -162,9 +130,6 @@ const autoCompleteSessions = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Get upcoming sessions for logged-in user
- */
 const getUpcomingSessions = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user!.id as string;
   const userRole = req.user!.role as string;
@@ -179,9 +144,6 @@ const getUpcomingSessions = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Get completed sessions for logged-in user
- */
 const getCompletedSessions = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user!.id as string;
   const userRole = req.user!.role as string;
@@ -196,9 +158,6 @@ const getCompletedSessions = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Request session reschedule
- */
 const requestReschedule = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const userId = req.user!.id as string;
@@ -212,9 +171,6 @@ const requestReschedule = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Approve reschedule request
- */
 const approveReschedule = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const userId = req.user!.id as string;
@@ -228,9 +184,6 @@ const approveReschedule = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Reject reschedule request
- */
 const rejectReschedule = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const userId = req.user!.id as string;
@@ -244,9 +197,6 @@ const rejectReschedule = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Auto-transition session statuses (Cron job endpoint)
- */
 const autoTransitionStatuses = catchAsync(async (req: Request, res: Response) => {
   const result = await SessionService.autoTransitionSessionStatuses();
 

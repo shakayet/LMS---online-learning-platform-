@@ -47,7 +47,7 @@ const markChatRead = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, v
         data: result,
     });
 }));
-// Get all messages in a chat
+
 const getChatMessages = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const chatId = req.params.chatId;
     const result = yield message_service_1.MessageService.getMessageFromDB(req.user, chatId, req.query);

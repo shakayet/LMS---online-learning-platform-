@@ -2,10 +2,10 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.otelExpressMiddleware = void 0;
 const api_1 = require("@opentelemetry/api");
-// Express middleware to emit helpful spans for timeline rendering
+
 const otelExpressMiddleware = (req, res, next) => {
     const tracer = api_1.trace.getTracer('app');
-    // Quick marker at the start of middleware chain
+
     try {
         tracer.startActiveSpan('Middleware Start', span => {
             span.end();
@@ -14,7 +14,7 @@ const otelExpressMiddleware = (req, res, next) => {
     catch (_a) { }
     const originalJson = res.json.bind(res);
     let afterJsonAt;
-    // Wrap res.json to measure serialization
+
     res.json = (body) => {
         const start = Date.now();
         try {
@@ -37,7 +37,7 @@ const otelExpressMiddleware = (req, res, next) => {
             return out;
         }
     };
-    // On finish, record the time spent after serialization until socket flush
+
     res.on('finish', () => {
         try {
             const start = afterJsonAt || Date.now();

@@ -17,9 +17,7 @@ const http_status_codes_1 = require("http-status-codes");
 const catchAsync_1 = __importDefault(require("../../../shared/catchAsync"));
 const sendResponse_1 = __importDefault(require("../../../shared/sendResponse"));
 const interviewSlot_service_1 = require("./interviewSlot.service");
-/**
- * Create interview slot (Admin only)
- */
+
 const createInterviewSlot = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const adminId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
@@ -31,11 +29,7 @@ const createInterviewSlot = (0, catchAsync_1.default)((req, res) => __awaiter(vo
         data: result,
     });
 }));
-/**
- * Get all interview slots
- * Admin: See all slots
- * Applicant: See only available slots
- */
+
 const getAllInterviewSlots = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;
     const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
@@ -49,9 +43,7 @@ const getAllInterviewSlots = (0, catchAsync_1.default)((req, res) => __awaiter(v
         pagination: result.meta,
     });
 }));
-/**
- * Get single interview slot
- */
+
 const getSingleInterviewSlot = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const result = yield interviewSlot_service_1.InterviewSlotService.getSingleInterviewSlot(id);
@@ -62,9 +54,7 @@ const getSingleInterviewSlot = (0, catchAsync_1.default)((req, res) => __awaiter
         data: result,
     });
 }));
-/**
- * Book interview slot (Applicant)
- */
+
 const bookInterviewSlot = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const { id } = req.params;
@@ -78,9 +68,7 @@ const bookInterviewSlot = (0, catchAsync_1.default)((req, res) => __awaiter(void
         data: result,
     });
 }));
-/**
- * Cancel interview slot
- */
+
 const cancelInterviewSlot = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const { id } = req.params;
@@ -94,9 +82,7 @@ const cancelInterviewSlot = (0, catchAsync_1.default)((req, res) => __awaiter(vo
         data: result,
     });
 }));
-/**
- * Reschedule interview slot (Applicant)
- */
+
 const rescheduleInterviewSlot = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const { id } = req.params;
@@ -110,9 +96,7 @@ const rescheduleInterviewSlot = (0, catchAsync_1.default)((req, res) => __awaite
         data: result,
     });
 }));
-/**
- * Mark interview as completed (Admin only)
- */
+
 const markAsCompleted = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const result = yield interviewSlot_service_1.InterviewSlotService.markAsCompleted(id);
@@ -123,9 +107,7 @@ const markAsCompleted = (0, catchAsync_1.default)((req, res) => __awaiter(void 0
         data: result,
     });
 }));
-/**
- * Update interview slot (Admin only)
- */
+
 const updateInterviewSlot = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const result = yield interviewSlot_service_1.InterviewSlotService.updateInterviewSlot(id, req.body);
@@ -136,9 +118,7 @@ const updateInterviewSlot = (0, catchAsync_1.default)((req, res) => __awaiter(vo
         data: result,
     });
 }));
-/**
- * Delete interview slot (Admin only)
- */
+
 const deleteInterviewSlot = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const result = yield interviewSlot_service_1.InterviewSlotService.deleteInterviewSlot(id);
@@ -149,9 +129,7 @@ const deleteInterviewSlot = (0, catchAsync_1.default)((req, res) => __awaiter(vo
         data: result,
     });
 }));
-/**
- * Get my booked interview slot (Applicant only)
- */
+
 const getMyBookedInterview = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const applicantId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
@@ -165,9 +143,7 @@ const getMyBookedInterview = (0, catchAsync_1.default)((req, res) => __awaiter(v
         data: result,
     });
 }));
-/**
- * Get all scheduled meetings (Admin only)
- */
+
 const getScheduledMeetings = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield interviewSlot_service_1.InterviewSlotService.getScheduledMeetings(req.query);
     (0, sendResponse_1.default)(res, {
@@ -178,9 +154,7 @@ const getScheduledMeetings = (0, catchAsync_1.default)((req, res) => __awaiter(v
         pagination: result.meta,
     });
 }));
-/**
- * Get meeting token for interview video call
- */
+
 const getMeetingToken = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const { id } = req.params;

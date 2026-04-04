@@ -11,10 +11,8 @@ const user_1 = require("../../../enums/user");
 const bookmark_controller_1 = require("./bookmark.controller");
 const bookmark_validation_1 = require("./bookmark.validation");
 const router = express_1.default.Router();
-// Toggle bookmark (add if not exists, remove if exists)
-// ❌ NOT INTEGRATED IN FRONTEND
+
 router.post('/', (0, auth_1.default)(user_1.USER_ROLES.STUDENT, user_1.USER_ROLES.TUTOR), (0, validateRequest_1.default)(bookmark_validation_1.BookmarkValidation.toggle), bookmark_controller_1.BookmarkController.toggleBookmark);
-// Get all bookmarks of the current user
-// ❌ NOT INTEGRATED IN FRONTEND
+
 router.get('/my-bookmarks', (0, auth_1.default)(user_1.USER_ROLES.STUDENT, user_1.USER_ROLES.TUTOR), (0, validateRequest_1.default)(bookmark_validation_1.BookmarkValidation.getUserBookmarksQuery), bookmark_controller_1.BookmarkController.getUserBookmarks);
 exports.BookmarkRoutes = router;

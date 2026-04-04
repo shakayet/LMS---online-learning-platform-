@@ -8,7 +8,6 @@ import { TutorSessionFeedbackValidation } from './tutorSessionFeedback.validatio
 
 const router = express.Router();
 
-// Admin routes (must be before parameterized routes)
 router.get(
   '/admin/forfeited-summary',
   auth(USER_ROLES.SUPER_ADMIN),
@@ -21,7 +20,6 @@ router.get(
   TutorSessionFeedbackController.getForfeitedFeedbacksList
 );
 
-// Tutor routes
 router.post(
   '/',
   auth(USER_ROLES.TUTOR),
@@ -42,14 +40,12 @@ router.get(
   TutorSessionFeedbackController.getTutorFeedbacks
 );
 
-// Student routes
 router.get(
   '/received',
   auth(USER_ROLES.STUDENT),
   TutorSessionFeedbackController.getMyReceivedFeedbacks
 );
 
-// Shared routes (tutor or student can view feedback for their sessions)
 router.get(
   '/session/:sessionId',
   auth(USER_ROLES.TUTOR, USER_ROLES.STUDENT),

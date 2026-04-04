@@ -4,24 +4,17 @@ import catchAsync from '../../../shared/catchAsync';
 import sendResponse from '../../../shared/sendResponse';
 import { TrialRequestService } from './trialRequest.service';
 
-/**
- * Create trial request (Student or Guest)
- * Can be used by:
- * - Logged-in students (auth token required)
- * - Guest users (no auth required, studentInfo must be complete)
- */
 const createTrialRequest = catchAsync(async (req: Request, res: Response) => {
-  // studentId will be null for guest users
+
   const studentId = req.user?.id || null;
   const result = await TrialRequestService.createTrialRequest(studentId, req.body);
 
-  // Set refresh token in cookie if new user was created (auto-login)
   if (result.refreshToken) {
     res.cookie('refreshToken', result.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
   }
 
@@ -37,13 +30,6 @@ const createTrialRequest = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// NOTE: getMatchingTrialRequests, getMyTrialRequests, getAllTrialRequests removed
-// Use /session-requests endpoints instead (unified view with requestType filter)
-
-/**
- * Get available trial requests matching tutor's subjects (Tutor)
- * Shows requests tutor can accept based on their teaching subjects
- */
 const getAvailableTrialRequests = catchAsync(async (req: Request, res: Response) => {
   const tutorId = req.user!.id as string;
   const result = await TrialRequestService.getAvailableTrialRequests(tutorId, req.query);
@@ -57,10 +43,6 @@ const getAvailableTrialRequests = catchAsync(async (req: Request, res: Response)
   });
 });
 
-/**
- * Get tutor's accepted trial requests (Tutor)
- * Shows requests the tutor has already accepted
- */
 const getMyAcceptedTrialRequests = catchAsync(async (req: Request, res: Response) => {
   const tutorId = req.user!.id as string;
   const result = await TrialRequestService.getMyAcceptedTrialRequests(tutorId, req.query);
@@ -74,9 +56,6 @@ const getMyAcceptedTrialRequests = catchAsync(async (req: Request, res: Response
   });
 });
 
-/**
- * Get single trial request
- */
 const getSingleTrialRequest = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const result = await TrialRequestService.getSingleTrialRequest(id);
@@ -89,10 +68,6 @@ const getSingleTrialRequest = catchAsync(async (req: Request, res: Response) => 
   });
 });
 
-/**
- * Accept trial request (Tutor)
- * Creates chat with student and sends introductory message
- */
 const acceptTrialRequest = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const tutorId = req.user!.id as string;
@@ -108,9 +83,6 @@ const acceptTrialRequest = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Cancel trial request (Student)
- */
 const cancelTrialRequest = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const studentId = req.user!.id as string;
@@ -130,13 +102,9 @@ const cancelTrialRequest = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Extend trial request (Student)
- * Can be called by logged-in student or via email link (guest)
- */
 const extendTrialRequest = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
-  // Support both logged-in users and email-based extension
+
   const studentIdOrEmail = req.user?.id || req.body.email || '';
 
   const result = await TrialRequestService.extendTrialRequest(id, studentIdOrEmail);
@@ -149,9 +117,6 @@ const extendTrialRequest = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Send expiration reminders (Cron job endpoint)
- */
 const sendExpirationReminders = catchAsync(async (req: Request, res: Response) => {
   const count = await TrialRequestService.sendExpirationReminders();
 
@@ -163,9 +128,6 @@ const sendExpirationReminders = catchAsync(async (req: Request, res: Response) =
   });
 });
 
-/**
- * Auto-delete expired requests (Cron job endpoint)
- */
 const autoDeleteExpiredRequests = catchAsync(async (req: Request, res: Response) => {
   const count = await TrialRequestService.autoDeleteExpiredRequests();
 
@@ -177,9 +139,6 @@ const autoDeleteExpiredRequests = catchAsync(async (req: Request, res: Response)
   });
 });
 
-/**
- * Expire old trial requests (Cron job endpoint - marks as EXPIRED)
- */
 const expireOldRequests = catchAsync(async (req: Request, res: Response) => {
   const count = await TrialRequestService.expireOldRequests();
 

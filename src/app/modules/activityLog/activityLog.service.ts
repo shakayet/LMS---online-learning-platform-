@@ -5,7 +5,6 @@ import {
   IActivityLogResponse,
 } from './activityLog.interface';
 
-// Log a new activity
 const logActivity = async (data: IActivityLogCreate): Promise<void> => {
   try {
     await ActivityLog.create({
@@ -19,12 +18,11 @@ const logActivity = async (data: IActivityLogCreate): Promise<void> => {
       status: data.status || 'success',
     });
   } catch (error) {
-    // Log error but don't throw - activity logging should not break main flow
+
     console.error('Failed to log activity:', error);
   }
 };
 
-// Get recent activities with pagination and filters
 const getRecentActivities = async (
   query: IActivityLogQuery
 ): Promise<{
@@ -37,10 +35,9 @@ const getRecentActivities = async (
   };
 }> => {
   const page = query.page || 1;
-  const limit = Math.min(query.limit || 10, 100); // Max 100
+  const limit = Math.min(query.limit || 10, 100);
   const skip = (page - 1) * limit;
 
-  // Build filter
   const filter: Record<string, unknown> = {};
 
   if (query.actionType) {
@@ -69,10 +66,8 @@ const getRecentActivities = async (
     }
   }
 
-  // Get total count
   const total = await ActivityLog.countDocuments(filter);
 
-  // Get activities with user population
   const activities = await ActivityLog.find(filter)
     .sort({ createdAt: -1 })
     .skip(skip)
@@ -80,7 +75,6 @@ const getRecentActivities = async (
     .populate('userId', 'name email profilePicture')
     .lean();
 
-  // Transform response
   const data: IActivityLogResponse[] = activities.map(activity => {
     const user = activity.userId as unknown as {
       _id: string;
@@ -113,7 +107,6 @@ const getRecentActivities = async (
   };
 };
 
-// Get activity statistics
 const getActivityStats = async (): Promise<{
   totalActivities: number;
   activitiesByType: Record<string, number>;

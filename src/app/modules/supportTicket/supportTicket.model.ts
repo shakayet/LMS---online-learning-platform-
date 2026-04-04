@@ -73,7 +73,6 @@ const supportTicketSchema = new Schema<ISupportTicket>(
   { timestamps: true }
 );
 
-// Indexes for faster queries
 supportTicketSchema.index({ status: 1 });
 supportTicketSchema.index({ category: 1 });
 supportTicketSchema.index({ priority: 1 });

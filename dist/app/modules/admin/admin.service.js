@@ -29,15 +29,13 @@ const AggregationBuilder_1 = __importDefault(require("../../builder/AggregationB
 const trialRequest_model_1 = require("../trialRequest/trialRequest.model");
 const trialRequest_interface_1 = require("../trialRequest/trialRequest.interface");
 const tutorEarnings_interface_1 = require("../tutorEarnings/tutorEarnings.interface");
-/**
- * Get comprehensive dashboard statistics
- */
+
 const getDashboardStats = () => __awaiter(void 0, void 0, void 0, function* () {
     const now = new Date();
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    // User Statistics
+
     const [totalUsers, totalStudents, totalTutors, totalApplicants, newUsersThisMonth, activeStudentsCount, activeTutorsCount,] = yield Promise.all([
         user_model_1.User.countDocuments(),
         user_model_1.User.countDocuments({ role: user_1.USER_ROLES.STUDENT }),
@@ -50,7 +48,7 @@ const getDashboardStats = () => __awaiter(void 0, void 0, void 0, function* () {
             completedAt: { $gte: firstDayOfMonth, $lte: lastDayOfMonth },
         }).then(ids => ids.length),
     ]);
-    // Application Statistics
+
     const [totalApplications, pendingApplications, approvedApplications, rejectedApplications, applicationsThisMonth,] = yield Promise.all([
         tutorApplication_model_1.TutorApplication.countDocuments(),
         tutorApplication_model_1.TutorApplication.countDocuments({ status: tutorApplication_interface_1.APPLICATION_STATUS.SUBMITTED }),
@@ -58,7 +56,7 @@ const getDashboardStats = () => __awaiter(void 0, void 0, void 0, function* () {
         tutorApplication_model_1.TutorApplication.countDocuments({ status: tutorApplication_interface_1.APPLICATION_STATUS.REJECTED }),
         tutorApplication_model_1.TutorApplication.countDocuments({ createdAt: { $gte: firstDayOfMonth } }),
     ]);
-    // Session Statistics
+
     const [totalSessions, completedSessions, upcomingSessions, cancelledSessions, sessionsThisMonth,] = yield Promise.all([
         session_model_1.Session.countDocuments(),
         session_model_1.Session.countDocuments({ status: session_interface_1.SESSION_STATUS.COMPLETED }),
@@ -72,13 +70,13 @@ const getDashboardStats = () => __awaiter(void 0, void 0, void 0, function* () {
             completedAt: { $gte: firstDayOfMonth, $lte: lastDayOfMonth },
         }),
     ]);
-    // Total hours this month
+
     const sessionsThisMonthData = yield session_model_1.Session.find({
         status: session_interface_1.SESSION_STATUS.COMPLETED,
         completedAt: { $gte: firstDayOfMonth, $lte: lastDayOfMonth },
     });
     const totalHoursThisMonth = sessionsThisMonthData.reduce((sum, session) => sum + session.duration / 60, 0);
-    // Financial Statistics
+
     const [allBillings, billingsThisMonth, pendingBillingsCount] = yield Promise.all([
         monthlyBilling_model_1.MonthlyBilling.find({ status: monthlyBilling_interface_1.BILLING_STATUS.PAID }),
         monthlyBilling_model_1.MonthlyBilling.find({
@@ -89,7 +87,7 @@ const getDashboardStats = () => __awaiter(void 0, void 0, void 0, function* () {
     ]);
     const totalRevenue = allBillings.reduce((sum, billing) => sum + billing.total, 0);
     const revenueThisMonth = billingsThisMonth.reduce((sum, billing) => sum + billing.total, 0);
-    // Last month revenue
+
     const firstDayOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const lastDayOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
     const billingsLastMonth = yield monthlyBilling_model_1.MonthlyBilling.find({
@@ -97,7 +95,7 @@ const getDashboardStats = () => __awaiter(void 0, void 0, void 0, function* () {
         paidAt: { $gte: firstDayOfLastMonth, $lte: lastDayOfLastMonth },
     });
     const revenueLastMonth = billingsLastMonth.reduce((sum, billing) => sum + billing.total, 0);
-    // Platform commission
+
     const allEarnings = yield tutorEarnings_model_1.TutorEarnings.find({});
     const totalPlatformCommission = allEarnings.reduce((sum, earning) => sum + earning.platformCommission, 0);
     const earningsThisMonth = yield tutorEarnings_model_1.TutorEarnings.find({
@@ -105,14 +103,14 @@ const getDashboardStats = () => __awaiter(void 0, void 0, void 0, function* () {
         payoutYear: now.getFullYear(),
     });
     const platformCommissionThisMonth = earningsThisMonth.reduce((sum, earning) => sum + earning.platformCommission, 0);
-    // Subscription Statistics
+
     const activeSubscriptions = yield studentSubscription_model_1.StudentSubscription.find({
         status: studentSubscription_interface_1.SUBSCRIPTION_STATUS.ACTIVE,
     });
     const flexiblePlanCount = activeSubscriptions.filter(sub => sub.tier === 'FLEXIBLE').length;
     const regularPlanCount = activeSubscriptions.filter(sub => sub.tier === 'REGULAR').length;
     const longTermPlanCount = activeSubscriptions.filter(sub => sub.tier === 'LONG_TERM').length;
-    // Recent Activity (last 30 days)
+
     const [newStudents, newTutors, newApplications, recentCompletedSessions] = yield Promise.all([
         user_model_1.User.countDocuments({
             role: user_1.USER_ROLES.STUDENT,
@@ -175,9 +173,7 @@ const getDashboardStats = () => __awaiter(void 0, void 0, void 0, function* () {
         },
     };
 });
-/**
- * Get revenue statistics by month
- */
+
 const getRevenueByMonth = (year, months) => __awaiter(void 0, void 0, void 0, function* () {
     const targetMonths = months || [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
     const stats = [];
@@ -213,9 +209,7 @@ const getRevenueByMonth = (year, months) => __awaiter(void 0, void 0, void 0, fu
     }
     return stats;
 });
-/**
- * Get popular subjects by session count
- */
+
 const getPopularSubjects = (...args_1) => __awaiter(void 0, [...args_1], void 0, function* (limit = 10) {
     const result = yield session_model_1.Session.aggregate([
         { $match: { status: session_interface_1.SESSION_STATUS.COMPLETED } },
@@ -239,9 +233,7 @@ const getPopularSubjects = (...args_1) => __awaiter(void 0, [...args_1], void 0,
     ]);
     return result;
 });
-/**
- * Get top tutors by session count or earnings
- */
+
 const getTopTutors = (...args_1) => __awaiter(void 0, [...args_1], void 0, function* (limit = 10, sortBy = 'sessions') {
     if (sortBy === 'sessions') {
         const result = yield session_model_1.Session.aggregate([
@@ -314,9 +306,7 @@ const getTopTutors = (...args_1) => __awaiter(void 0, [...args_1], void 0, funct
         return result;
     }
 });
-/**
- * Get top students by spending or sessions
- */
+
 const getTopStudents = (...args_1) => __awaiter(void 0, [...args_1], void 0, function* (limit = 10, sortBy = 'spending') {
     if (sortBy === 'spending') {
         const result = yield monthlyBilling_model_1.MonthlyBilling.aggregate([
@@ -409,9 +399,7 @@ const getTopStudents = (...args_1) => __awaiter(void 0, [...args_1], void 0, fun
         return result;
     }
 });
-/**
- * Get user growth statistics (monthly new users)
- */
+
 const getUserGrowth = (year, months) => __awaiter(void 0, void 0, void 0, function* () {
     const targetMonths = months || [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
     const stats = [];
@@ -444,24 +432,21 @@ const getUserGrowth = (year, months) => __awaiter(void 0, void 0, void 0, functi
     }
     return stats;
 });
-/**
- * Get overview stats with percentage changes
- * Returns Total Revenue, Total Students, Total Tutors with growth metrics
- */
+
 const getOverviewStats = (...args_1) => __awaiter(void 0, [...args_1], void 0, function* (period = 'month') {
     const [revenue, students, tutors] = yield Promise.all([
-        // Revenue from MonthlyBilling (sum of 'total' field)
+
         new AggregationBuilder_1.default(monthlyBilling_model_1.MonthlyBilling).calculateGrowth({
             sumField: 'total',
             filter: { status: monthlyBilling_interface_1.BILLING_STATUS.PAID },
             period,
         }),
-        // Students count
+
         new AggregationBuilder_1.default(user_model_1.User).calculateGrowth({
             filter: { role: user_1.USER_ROLES.STUDENT },
             period,
         }),
-        // Tutors count
+
         new AggregationBuilder_1.default(user_model_1.User).calculateGrowth({
             filter: { role: user_1.USER_ROLES.TUTOR },
             period,
@@ -469,16 +454,14 @@ const getOverviewStats = (...args_1) => __awaiter(void 0, [...args_1], void 0, f
     ]);
     return { revenue, students, tutors };
 });
-/**
- * Get monthly revenue with advanced filters
- */
+
 const getMonthlyRevenue = (year, months, filters) => __awaiter(void 0, void 0, void 0, function* () {
     const targetMonths = months || [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
     const stats = [];
     for (const month of targetMonths) {
         const startDate = new Date(year, month - 1, 1);
         const endDate = new Date(year, month, 0, 23, 59, 59);
-        // Build session filter
+
         const sessionFilter = {
             status: session_interface_1.SESSION_STATUS.COMPLETED,
             completedAt: { $gte: startDate, $lte: endDate },
@@ -492,14 +475,14 @@ const getMonthlyRevenue = (year, months, filters) => __awaiter(void 0, void 0, v
         if (filters === null || filters === void 0 ? void 0 : filters.subject) {
             sessionFilter.subject = filters.subject;
         }
-        // Get sessions with filters
+
         const sessions = yield session_model_1.Session.find(sessionFilter);
-        // Calculate session stats
+
         const sessionCount = sessions.length;
         const totalHours = sessions.reduce((sum, s) => sum + s.duration / 60, 0);
         const sessionRevenue = sessions.reduce((sum, s) => sum + (s.totalPrice || 0), 0);
         const averageSessionPrice = sessionCount > 0 ? sessionRevenue / sessionCount : 0;
-        // Build billing filter
+
         const billingFilter = {
             billingYear: year,
             billingMonth: month,
@@ -508,9 +491,9 @@ const getMonthlyRevenue = (year, months, filters) => __awaiter(void 0, void 0, v
         if (filters === null || filters === void 0 ? void 0 : filters.studentId) {
             billingFilter.studentId = new mongoose_1.Types.ObjectId(filters.studentId);
         }
-        // Get billings with tier filter if needed
+
         let billings = yield monthlyBilling_model_1.MonthlyBilling.find(billingFilter).populate('studentId');
-        // Filter by subscription tier if provided
+
         if (filters === null || filters === void 0 ? void 0 : filters.subscriptionTier) {
             const studentsWithTier = yield studentSubscription_model_1.StudentSubscription.find({
                 tier: filters.subscriptionTier,
@@ -519,7 +502,7 @@ const getMonthlyRevenue = (year, months, filters) => __awaiter(void 0, void 0, v
             billings = billings.filter(billing => studentsWithTier.some(studentId => { var _a; return studentId.toString() === ((_a = billing.studentId) === null || _a === void 0 ? void 0 : _a.toString()); }));
         }
         const totalRevenue = billings.reduce((sum, billing) => sum + billing.total, 0);
-        // Get earnings for commission/payout calculation
+
         const earningsFilter = {
             payoutYear: year,
             payoutMonth: month,
@@ -544,9 +527,7 @@ const getMonthlyRevenue = (year, months, filters) => __awaiter(void 0, void 0, v
     }
     return stats;
 });
-/**
- * Get user distribution by role and/or status
- */
+
 const getUserDistribution = (...args_1) => __awaiter(void 0, [...args_1], void 0, function* (groupBy = 'role') {
     const total = yield user_model_1.User.countDocuments();
     const result = { total };
@@ -586,13 +567,10 @@ const getUserDistribution = (...args_1) => __awaiter(void 0, [...args_1], void 0
     }
     return result;
 });
-/**
- * Get unified sessions (Sessions + Trial Requests)
- * Merges both sessions and pending trial requests into a single view
- */
+
 const getUnifiedSessions = (query) => __awaiter(void 0, void 0, void 0, function* () {
     const { page = 1, limit = 10, status, paymentStatus, isTrial, search, sortBy = 'createdAt', sortOrder = 'desc', } = query;
-    // Get all sessions with populated fields
+
     const sessions = yield session_model_1.Session.find()
         .populate('studentId', 'name email phone profilePicture')
         .populate('tutorId', 'name email phone profilePicture')
@@ -605,12 +583,11 @@ const getUnifiedSessions = (query) => __awaiter(void 0, void 0, void 0, function
         },
     })
         .lean();
-    // Get trialRequestIds that already have sessions created (to avoid duplicates)
-    // Note: trialRequestId is now populated, so we need to get _id from the object
+
     const trialRequestIdsWithSessions = sessions
         .filter((s) => s.trialRequestId)
         .map((s) => { var _a; return ((_a = s.trialRequestId._id) === null || _a === void 0 ? void 0 : _a.toString()) || s.trialRequestId.toString(); });
-    // Get pending/accepted trial requests (excluding those that already have sessions)
+
     const pendingTrialRequests = yield trialRequest_model_1.TrialRequest.find(Object.assign({ status: { $in: [trialRequest_interface_1.TRIAL_REQUEST_STATUS.PENDING, trialRequest_interface_1.TRIAL_REQUEST_STATUS.ACCEPTED] } }, (trialRequestIdsWithSessions.length > 0 && {
         _id: { $nin: trialRequestIdsWithSessions },
     })))
@@ -618,7 +595,7 @@ const getUnifiedSessions = (query) => __awaiter(void 0, void 0, void 0, function
         .populate('acceptedTutorId', 'name email phone profilePicture')
         .populate('subject', 'name')
         .lean();
-    // Transform sessions to unified format
+
     const unifiedSessions = sessions.map((s) => {
         var _a, _b, _c, _d, _e, _f, _g, _h;
         return ({
@@ -630,7 +607,7 @@ const getUnifiedSessions = (query) => __awaiter(void 0, void 0, void 0, function
             tutorName: (_d = s.tutorId) === null || _d === void 0 ? void 0 : _d.name,
             tutorEmail: (_e = s.tutorId) === null || _e === void 0 ? void 0 : _e.email,
             tutorPhone: (_f = s.tutorId) === null || _f === void 0 ? void 0 : _f.phone,
-            // Use trialRequest subject if session subject is generic "Tutoring Session"
+
             subject: (s.subject === 'Tutoring Session' && ((_h = (_g = s.trialRequestId) === null || _g === void 0 ? void 0 : _g.subject) === null || _h === void 0 ? void 0 : _h.name))
                 ? s.trialRequestId.subject.name
                 : s.subject,
@@ -644,7 +621,7 @@ const getUnifiedSessions = (query) => __awaiter(void 0, void 0, void 0, function
             totalPrice: s.totalPrice,
         });
     });
-    // Transform trial requests to unified format
+
     const unifiedTrialRequests = pendingTrialRequests.map((tr) => {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o;
         return ({
@@ -667,9 +644,9 @@ const getUnifiedSessions = (query) => __awaiter(void 0, void 0, void 0, function
             totalPrice: 0,
         });
     });
-    // Merge all items
+
     let unified = [...unifiedSessions, ...unifiedTrialRequests];
-    // Apply filters
+
     if (status) {
         unified = unified.filter(item => item.status === status);
     }
@@ -689,7 +666,7 @@ const getUnifiedSessions = (query) => __awaiter(void 0, void 0, void 0, function
                 ((_d = item.subject) === null || _d === void 0 ? void 0 : _d.toLowerCase().includes(searchLower));
         });
     }
-    // Sort
+
     unified.sort((a, b) => {
         const aValue = a[sortBy];
         const bValue = b[sortBy];
@@ -709,7 +686,7 @@ const getUnifiedSessions = (query) => __awaiter(void 0, void 0, void 0, function
         }
         return 0;
     });
-    // Pagination
+
     const total = unified.length;
     const totalPage = Math.ceil(total / limit);
     const startIndex = (page - 1) * limit;
@@ -724,43 +701,40 @@ const getUnifiedSessions = (query) => __awaiter(void 0, void 0, void 0, function
         },
     };
 });
-/**
- * Get session stats for admin dashboard
- * Includes both Session records and TrialRequest records for accurate counts
- */
+
 const getSessionStats = () => __awaiter(void 0, void 0, void 0, function* () {
-    // Get trial request IDs that already have sessions created (to avoid double counting)
+
     const trialRequestIdsWithSessions = yield session_model_1.Session.distinct('trialRequestId', {
         trialRequestId: { $ne: null },
     });
     const [
-    // Session counts
-    sessionTotal, sessionPending, sessionCompleted, sessionTrial, 
-    // TrialRequest counts (ONLY those WITHOUT sessions - to avoid double counting)
+
+    sessionTotal, sessionPending, sessionCompleted, sessionTrial,
+
     trialRequestPending, trialRequestAccepted,] = yield Promise.all([
-        // Sessions
+
         session_model_1.Session.countDocuments(),
         session_model_1.Session.countDocuments({
             status: { $in: [session_interface_1.SESSION_STATUS.SCHEDULED, session_interface_1.SESSION_STATUS.STARTING_SOON, session_interface_1.SESSION_STATUS.AWAITING_RESPONSE] },
         }),
         session_model_1.Session.countDocuments({ status: session_interface_1.SESSION_STATUS.COMPLETED }),
         session_model_1.Session.countDocuments({ isTrial: true }),
-        // TrialRequests (pending = not yet matched with tutor, excluding those with sessions)
+
         trialRequest_model_1.TrialRequest.countDocuments(Object.assign({ status: trialRequest_interface_1.TRIAL_REQUEST_STATUS.PENDING }, (trialRequestIdsWithSessions.length > 0 && {
             _id: { $nin: trialRequestIdsWithSessions },
         }))),
-        // TrialRequests (accepted = matched but session not yet created/scheduled, excluding those with sessions)
+
         trialRequest_model_1.TrialRequest.countDocuments(Object.assign({ status: trialRequest_interface_1.TRIAL_REQUEST_STATUS.ACCEPTED }, (trialRequestIdsWithSessions.length > 0 && {
             _id: { $nin: trialRequestIdsWithSessions },
         }))),
     ]);
-    // Total = Sessions + Pending/Accepted TrialRequests (without sessions)
+
     const totalSessions = sessionTotal + trialRequestPending + trialRequestAccepted;
-    // Pending = Session pending + TrialRequest pending/accepted (without sessions)
+
     const pendingSessions = sessionPending + trialRequestPending + trialRequestAccepted;
-    // Completed = Only completed sessions
+
     const completedSessions = sessionCompleted;
-    // Trial = Session trials + TrialRequests (without sessions)
+
     const trialSessions = sessionTrial + trialRequestPending + trialRequestAccepted;
     return {
         totalSessions,
@@ -769,16 +743,13 @@ const getSessionStats = () => __awaiter(void 0, void 0, void 0, function* () {
         trialSessions,
     };
 });
-/**
- * Get application statistics for admin dashboard
- * Returns counts by status with growth metrics (current month vs last month)
- */
+
 const getApplicationStats = () => __awaiter(void 0, void 0, void 0, function* () {
     const now = new Date();
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const firstDayOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const lastDayOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
-    // Get total counts
+
     const [total, pending, interview, approved, rejected, revision] = yield Promise.all([
         tutorApplication_model_1.TutorApplication.countDocuments(),
         tutorApplication_model_1.TutorApplication.countDocuments({ status: tutorApplication_interface_1.APPLICATION_STATUS.SUBMITTED }),
@@ -787,7 +758,7 @@ const getApplicationStats = () => __awaiter(void 0, void 0, void 0, function* ()
         tutorApplication_model_1.TutorApplication.countDocuments({ status: tutorApplication_interface_1.APPLICATION_STATUS.REJECTED }),
         tutorApplication_model_1.TutorApplication.countDocuments({ status: tutorApplication_interface_1.APPLICATION_STATUS.REVISION }),
     ]);
-    // Get this month counts
+
     const [totalThisMonth, pendingThisMonth, interviewThisMonth, approvedThisMonth, rejectedThisMonth, revisionThisMonth,] = yield Promise.all([
         tutorApplication_model_1.TutorApplication.countDocuments({ createdAt: { $gte: firstDayOfMonth } }),
         tutorApplication_model_1.TutorApplication.countDocuments({ status: tutorApplication_interface_1.APPLICATION_STATUS.SUBMITTED, createdAt: { $gte: firstDayOfMonth } }),
@@ -796,7 +767,7 @@ const getApplicationStats = () => __awaiter(void 0, void 0, void 0, function* ()
         tutorApplication_model_1.TutorApplication.countDocuments({ status: tutorApplication_interface_1.APPLICATION_STATUS.REJECTED, rejectedAt: { $gte: firstDayOfMonth } }),
         tutorApplication_model_1.TutorApplication.countDocuments({ status: tutorApplication_interface_1.APPLICATION_STATUS.REVISION, revisionRequestedAt: { $gte: firstDayOfMonth } }),
     ]);
-    // Get last month counts
+
     const [totalLastMonth, pendingLastMonth, interviewLastMonth, approvedLastMonth, rejectedLastMonth, revisionLastMonth,] = yield Promise.all([
         tutorApplication_model_1.TutorApplication.countDocuments({ createdAt: { $gte: firstDayOfLastMonth, $lte: lastDayOfLastMonth } }),
         tutorApplication_model_1.TutorApplication.countDocuments({ status: tutorApplication_interface_1.APPLICATION_STATUS.SUBMITTED, createdAt: { $gte: firstDayOfLastMonth, $lte: lastDayOfLastMonth } }),
@@ -805,7 +776,7 @@ const getApplicationStats = () => __awaiter(void 0, void 0, void 0, function* ()
         tutorApplication_model_1.TutorApplication.countDocuments({ status: tutorApplication_interface_1.APPLICATION_STATUS.REJECTED, rejectedAt: { $gte: firstDayOfLastMonth, $lte: lastDayOfLastMonth } }),
         tutorApplication_model_1.TutorApplication.countDocuments({ status: tutorApplication_interface_1.APPLICATION_STATUS.REVISION, revisionRequestedAt: { $gte: firstDayOfLastMonth, $lte: lastDayOfLastMonth } }),
     ]);
-    // Calculate growth helper
+
     const calculateGrowth = (current, previous) => {
         if (previous === 0) {
             return {
@@ -828,14 +799,11 @@ const getApplicationStats = () => __awaiter(void 0, void 0, void 0, function* ()
         revision: Object.assign({ count: revision }, calculateGrowth(revisionThisMonth, revisionLastMonth)),
     };
 });
-/**
- * Get all transactions (Student Payments + Tutor Payouts + Subscription Purchases)
- * Combines MonthlyBilling (student payments), TutorEarnings (tutor payouts), and StudentSubscription (subscription purchases)
- */
+
 const getTransactions = (query) => __awaiter(void 0, void 0, void 0, function* () {
     const { page = 1, limit = 10, type = 'all', status, search, sortBy = 'date', sortOrder = 'desc', } = query;
     const transactions = [];
-    // Get Student Payments (MonthlyBilling)
+
     if (type === 'all' || type === 'STUDENT_PAYMENT') {
         const billings = yield monthlyBilling_model_1.MonthlyBilling.find()
             .populate('studentId', 'name email')
@@ -857,32 +825,32 @@ const getTransactions = (query) => __awaiter(void 0, void 0, void 0, function* (
                 hours: billing.totalHours,
             });
         });
-        // Get All Subscription Purchases
+
         const subscriptions = yield studentSubscription_model_1.StudentSubscription.find()
             .populate('studentId', 'name email')
             .lean();
         subscriptions.forEach((sub) => {
             var _a, _b;
-            // Calculate subscription value based on tier
+
             let subscriptionAmount = 0;
             let tierName = '';
             let description = '';
             if (sub.tier === 'FLEXIBLE') {
                 tierName = 'Flexible';
-                subscriptionAmount = 0; // Pay as you go - no upfront
+                subscriptionAmount = 0;
                 description = 'Flexible Plan Activation (Pay per session)';
             }
             else if (sub.tier === 'REGULAR') {
                 tierName = 'Regular';
-                subscriptionAmount = sub.pricePerHour * sub.minimumHours; // €28 * 4 = €112
+                subscriptionAmount = sub.pricePerHour * sub.minimumHours;
                 description = `${tierName} Subscription (${sub.minimumHours}hrs @ €${sub.pricePerHour}/hr)`;
             }
             else if (sub.tier === 'LONG_TERM') {
                 tierName = 'Long-term';
-                subscriptionAmount = sub.pricePerHour * sub.minimumHours * sub.commitmentMonths; // €25 * 4 * 3 = €300
+                subscriptionAmount = sub.pricePerHour * sub.minimumHours * sub.commitmentMonths;
                 description = `${tierName} Subscription (${sub.commitmentMonths} months)`;
             }
-            // Generate a subscription reference
+
             const subDate = new Date(sub.createdAt);
             const subRef = `SUB-${subDate.getFullYear().toString().slice(-2)}${(subDate.getMonth() + 1).toString().padStart(2, '0')}-${sub._id.toString().slice(-6).toUpperCase()}`;
             transactions.push({
@@ -899,7 +867,7 @@ const getTransactions = (query) => __awaiter(void 0, void 0, void 0, function* (
             });
         });
     }
-    // Get Tutor Payouts (TutorEarnings)
+
     if (type === 'all' || type === 'TUTOR_PAYOUT') {
         const earnings = yield tutorEarnings_model_1.TutorEarnings.find()
             .populate('tutorId', 'name email')
@@ -922,7 +890,7 @@ const getTransactions = (query) => __awaiter(void 0, void 0, void 0, function* (
             });
         });
     }
-    // Apply filters
+
     let filtered = transactions;
     if (status) {
         filtered = filtered.filter(t => t.status === status);
@@ -936,13 +904,13 @@ const getTransactions = (query) => __awaiter(void 0, void 0, void 0, function* (
                 ((_c = t.userEmail) === null || _c === void 0 ? void 0 : _c.toLowerCase().includes(searchLower));
         });
     }
-    // Sort
+
     filtered.sort((a, b) => {
         const aValue = sortBy === 'date' ? new Date(a.date).getTime() : a.amount;
         const bValue = sortBy === 'date' ? new Date(b.date).getTime() : b.amount;
         return sortOrder === 'desc' ? bValue - aValue : aValue - bValue;
     });
-    // Pagination
+
     const total = filtered.length;
     const totalPage = Math.ceil(total / limit);
     const startIndex = (page - 1) * limit;
@@ -957,14 +925,12 @@ const getTransactions = (query) => __awaiter(void 0, void 0, void 0, function* (
         },
     };
 });
-/**
- * Get transaction statistics
- */
+
 const getTransactionStats = () => __awaiter(void 0, void 0, void 0, function* () {
-    // Student payments (paid billings)
+
     const paidBillings = yield monthlyBilling_model_1.MonthlyBilling.find({ status: monthlyBilling_interface_1.BILLING_STATUS.PAID });
     const billingPaymentsTotal = paidBillings.reduce((sum, b) => sum + b.total, 0);
-    // All subscription purchases
+
     const allSubscriptions = yield studentSubscription_model_1.StudentSubscription.find({
         status: studentSubscription_interface_1.SUBSCRIPTION_STATUS.ACTIVE,
     });
@@ -976,14 +942,14 @@ const getTransactionStats = () => __awaiter(void 0, void 0, void 0, function* ()
         else if (sub.tier === 'LONG_TERM') {
             subscriptionPaymentsTotal += sub.pricePerHour * sub.minimumHours * sub.commitmentMonths;
         }
-        // FLEXIBLE = 0, no upfront payment
+
     });
     const studentPaymentsTotal = billingPaymentsTotal + subscriptionPaymentsTotal;
     const studentPaymentsCount = paidBillings.length + allSubscriptions.length;
-    // Tutor payouts (paid earnings)
+
     const paidEarnings = yield tutorEarnings_model_1.TutorEarnings.find({ status: tutorEarnings_interface_1.PAYOUT_STATUS.PAID });
     const tutorPayoutsTotal = paidEarnings.reduce((sum, e) => sum + e.netEarnings, 0);
-    // All billings, subscriptions and earnings count
+
     const allBillingsCount = yield monthlyBilling_model_1.MonthlyBilling.countDocuments();
     const allSubscriptionsCount = yield studentSubscription_model_1.StudentSubscription.countDocuments();
     const allEarningsCount = yield tutorEarnings_model_1.TutorEarnings.countDocuments();

@@ -17,24 +17,19 @@ const http_status_codes_1 = require("http-status-codes");
 const catchAsync_1 = __importDefault(require("../../../shared/catchAsync"));
 const sendResponse_1 = __importDefault(require("../../../shared/sendResponse"));
 const trialRequest_service_1 = require("./trialRequest.service");
-/**
- * Create trial request (Student or Guest)
- * Can be used by:
- * - Logged-in students (auth token required)
- * - Guest users (no auth required, studentInfo must be complete)
- */
+
 const createTrialRequest = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
-    // studentId will be null for guest users
+
     const studentId = ((_a = req.user) === null || _a === void 0 ? void 0 : _a.id) || null;
     const result = yield trialRequest_service_1.TrialRequestService.createTrialRequest(studentId, req.body);
-    // Set refresh token in cookie if new user was created (auto-login)
+
     if (result.refreshToken) {
         res.cookie('refreshToken', result.refreshToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+            maxAge: 7 * 24 * 60 * 60 * 1000,
         });
     }
     (0, sendResponse_1.default)(res, {
@@ -48,12 +43,7 @@ const createTrialRequest = (0, catchAsync_1.default)((req, res) => __awaiter(voi
         },
     });
 }));
-// NOTE: getMatchingTrialRequests, getMyTrialRequests, getAllTrialRequests removed
-// Use /session-requests endpoints instead (unified view with requestType filter)
-/**
- * Get available trial requests matching tutor's subjects (Tutor)
- * Shows requests tutor can accept based on their teaching subjects
- */
+
 const getAvailableTrialRequests = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const tutorId = req.user.id;
     const result = yield trialRequest_service_1.TrialRequestService.getAvailableTrialRequests(tutorId, req.query);
@@ -65,10 +55,7 @@ const getAvailableTrialRequests = (0, catchAsync_1.default)((req, res) => __awai
         data: result.data,
     });
 }));
-/**
- * Get tutor's accepted trial requests (Tutor)
- * Shows requests the tutor has already accepted
- */
+
 const getMyAcceptedTrialRequests = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const tutorId = req.user.id;
     const result = yield trialRequest_service_1.TrialRequestService.getMyAcceptedTrialRequests(tutorId, req.query);
@@ -80,9 +67,7 @@ const getMyAcceptedTrialRequests = (0, catchAsync_1.default)((req, res) => __awa
         data: result.data,
     });
 }));
-/**
- * Get single trial request
- */
+
 const getSingleTrialRequest = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const result = yield trialRequest_service_1.TrialRequestService.getSingleTrialRequest(id);
@@ -93,10 +78,7 @@ const getSingleTrialRequest = (0, catchAsync_1.default)((req, res) => __awaiter(
         data: result,
     });
 }));
-/**
- * Accept trial request (Tutor)
- * Creates chat with student and sends introductory message
- */
+
 const acceptTrialRequest = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const tutorId = req.user.id;
@@ -109,9 +91,7 @@ const acceptTrialRequest = (0, catchAsync_1.default)((req, res) => __awaiter(voi
         data: result,
     });
 }));
-/**
- * Cancel trial request (Student)
- */
+
 const cancelTrialRequest = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const studentId = req.user.id;
@@ -124,14 +104,11 @@ const cancelTrialRequest = (0, catchAsync_1.default)((req, res) => __awaiter(voi
         data: result,
     });
 }));
-/**
- * Extend trial request (Student)
- * Can be called by logged-in student or via email link (guest)
- */
+
 const extendTrialRequest = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const { id } = req.params;
-    // Support both logged-in users and email-based extension
+
     const studentIdOrEmail = ((_a = req.user) === null || _a === void 0 ? void 0 : _a.id) || req.body.email || '';
     const result = yield trialRequest_service_1.TrialRequestService.extendTrialRequest(id, studentIdOrEmail);
     (0, sendResponse_1.default)(res, {
@@ -141,9 +118,7 @@ const extendTrialRequest = (0, catchAsync_1.default)((req, res) => __awaiter(voi
         data: result,
     });
 }));
-/**
- * Send expiration reminders (Cron job endpoint)
- */
+
 const sendExpirationReminders = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const count = yield trialRequest_service_1.TrialRequestService.sendExpirationReminders();
     (0, sendResponse_1.default)(res, {
@@ -153,9 +128,7 @@ const sendExpirationReminders = (0, catchAsync_1.default)((req, res) => __awaite
         data: { reminderCount: count },
     });
 }));
-/**
- * Auto-delete expired requests (Cron job endpoint)
- */
+
 const autoDeleteExpiredRequests = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const count = yield trialRequest_service_1.TrialRequestService.autoDeleteExpiredRequests();
     (0, sendResponse_1.default)(res, {
@@ -165,9 +138,7 @@ const autoDeleteExpiredRequests = (0, catchAsync_1.default)((req, res) => __awai
         data: { deletedCount: count },
     });
 }));
-/**
- * Expire old trial requests (Cron job endpoint - marks as EXPIRED)
- */
+
 const expireOldRequests = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const count = yield trialRequest_service_1.TrialRequestService.expireOldRequests();
     (0, sendResponse_1.default)(res, {

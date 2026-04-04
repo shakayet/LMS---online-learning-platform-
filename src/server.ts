@@ -1,8 +1,6 @@
 import mongoose from 'mongoose';
 import { Server } from 'socket.io';
-// Load configuration (this runs dotenv.config) BEFORE importing `app` so
-// any modules that read process.env during initialization (like Stripe)
-// get the environment variables correctly.
+
 import config from './config';
 import app from './app';
 import { seedSuperAdmin } from './DB/seedAdmin';
@@ -11,17 +9,16 @@ import { errorLogger, logger, notifyCritical } from './shared/logger';
 import { CacheHelper } from './app/shared/CacheHelper';
 import { CronService } from './app/services/cron.service';
 
-// uncaught exception — ensure server closes before exit to avoid EADDRINUSE on respawn
 process.on('uncaughtException', error => {
   errorLogger.error('UncaughtException Detected', error);
   if (server && typeof server.close === 'function') {
     try {
       server.close(() => {
-        // small delay so OS can release the port cleanly
+
         setTimeout(() => process.exit(1), 500);
       });
     } catch (e) {
-      // fallback if close throws
+
       setTimeout(() => process.exit(1), 500);
     }
   } else {
@@ -32,17 +29,15 @@ process.on('uncaughtException', error => {
 let server: any;
 async function main() {
   try {
-    // Environment & config logs
+
     logger.info(`🌐 Environment: ${config.node_env || 'unknown'}`);
     logger.info(
       `🛠️ Debug Mode: ${config.node_env === 'development' ? 'ON' : 'OFF'}`
     );
-    // Redis removed; no external cache URL
 
     mongoose.connect(config.database_url as string);
     logger.info('🚀 Database connected successfully');
 
-    //Seed Super Admin after database connection is successful
     await seedSuperAdmin();
 
     const port = Number(config.port) || 5001;
@@ -55,11 +50,11 @@ async function main() {
       const url = `http://${host}:${port}/`;
       logger.info(`♻️ Application listening on ${url}`);
     });
-    // handle listen errors gracefully
+
     server.on('error', (err: any) => {
       if (err && err.code === 'EADDRINUSE') {
         errorLogger.error(`⚠️ Port in use ${host}:${port} (EADDRINUSE)`);
-        // attempt a graceful retry after closing
+
         try {
           server.close(() => {
             setTimeout(() => {
@@ -74,10 +69,8 @@ async function main() {
       }
     });
 
-    // Initialize CacheHelper (in-memory)
     const cache = CacheHelper.getInstance();
 
-    //socket
     const io = new Server(server, {
       pingTimeout: 60000,
       cors: {
@@ -85,13 +78,11 @@ async function main() {
       },
     });
     socketHelper.socket(io);
-    //@ts-ignore
+
     global.io = io;
 
-    // Initialize Cron Jobs (session auto-transition, reminders, etc.)
     CronService.initializeCronJobs();
 
-    // Startup Summary
     const summary = [
       `📝 Startup Summary:`,
       `      - DB connected ${
@@ -113,7 +104,6 @@ async function main() {
     );
   }
 
-  //handle unhandleRejection
   process.on('unhandledRejection', error => {
     if (server) {
       server.close(() => {
@@ -132,7 +122,6 @@ async function main() {
 
 main();
 
-//SIGTERM
 process.on('SIGTERM', () => {
   logger.info('SIGTERM IS RECEIVE');
   if (server) {

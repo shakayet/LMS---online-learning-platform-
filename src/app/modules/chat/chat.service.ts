@@ -45,12 +45,10 @@ const getChatFromDB = async (user: any, search: string): Promise<IChat[]> => {
     })
     .select('participants status updatedAt trialRequestId sessionRequestId');
 
-  // Filter out chats where no participants match the search (empty participants)
   const filteredChats = chats?.filter(
     (chat: any) => chat?.participants?.length > 0
   );
 
-  //Use Promise.all to handle the asynchronous operations inside the map
   const chatList: IChat[] = await Promise.all(
     filteredChats?.map(async (chat: any) => {
       const data = chat?.toObject();
@@ -61,7 +59,6 @@ const getChatFromDB = async (user: any, search: string): Promise<IChat[]> => {
         .sort({ createdAt: -1 })
         .select('text offer createdAt sender');
 
-      // Compute unread count for current user with Redis cache fallback
       const cachedUnread = await getUnreadCountCached(String(chat?._id), String(user.id));
       let unreadCount: number;
       if (typeof cachedUnread === 'number') {
@@ -72,13 +69,12 @@ const getChatFromDB = async (user: any, search: string): Promise<IChat[]> => {
           sender: { $ne: user.id },
           readBy: { $ne: user.id },
         });
-        // Cache the count for faster subsequent retrievals
+
         try {
           await setUnreadCount(String(chat?._id), String(user.id), unreadCount);
         } catch {}
       }
 
-      // Presence of the other participant (first populated one)
       const other = data?.participants?.[0];
       let presence: { isOnline: boolean; lastActive?: number } | null = null;
       if (other?._id) {
@@ -94,9 +90,6 @@ const getChatFromDB = async (user: any, search: string): Promise<IChat[]> => {
         presence = { isOnline: online, lastActive: last };
       }
 
-
-      // Extract subject from sessionRequest first (latest), then trialRequest as fallback
-      // Session request takes priority because it comes after trial in user flow
       const subject = data?.sessionRequestId?.subject?.name || data?.trialRequestId?.subject?.name || null;
 
       return {

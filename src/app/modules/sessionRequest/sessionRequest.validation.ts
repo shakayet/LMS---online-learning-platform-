@@ -1,11 +1,8 @@
 import { z } from 'zod';
 
-// Create session request validation (Student only - must be logged in)
-// Simplified form: only subject, gradeLevel, schoolType, learningGoals, documents
-// No description or preferredDateTime needed (unlike trial request)
 const createSessionRequestZodSchema = z.object({
   body: z.object({
-    // Academic Information (Required)
+
     subject: z
       .string({
         required_error: 'Subject is required',
@@ -27,24 +24,20 @@ const createSessionRequestZodSchema = z.object({
       .trim()
       .min(1, 'School type is required'),
 
-    // Learning Goals (Optional)
     learningGoals: z
       .string()
       .trim()
       .max(1000, 'Learning goals cannot exceed 1000 characters')
       .optional(),
 
-    // Documents (Optional)
     documents: z.array(z.string()).optional(),
   }),
 });
 
-// Cancel session request validation (Student) - no reason required
 const cancelSessionRequestZodSchema = z.object({
   body: z.object({}).optional(),
 });
 
-// Accept session request validation (Tutor)
 const acceptSessionRequestZodSchema = z.object({
   body: z.object({
     introductoryMessage: z

@@ -4,9 +4,6 @@ import catchAsync from '../../../shared/catchAsync';
 import sendResponse from '../../../shared/sendResponse';
 import { TutorEarningsService } from './tutorEarnings.service';
 
-/**
- * Generate tutor earnings (Cron job or manual trigger)
- */
 const generateTutorEarnings = catchAsync(async (req: Request, res: Response) => {
   const { month, year, commissionRate } = req.body;
   const result = await TutorEarningsService.generateTutorEarnings(
@@ -23,9 +20,6 @@ const generateTutorEarnings = catchAsync(async (req: Request, res: Response) => 
   });
 });
 
-/**
- * Get tutor's earnings history
- */
 const getMyEarnings = catchAsync(async (req: Request, res: Response) => {
   const tutorId = req.user!.id as string;
   const result = await TutorEarningsService.getMyEarnings(tutorId, req.query);
@@ -39,9 +33,6 @@ const getMyEarnings = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Get all earnings (Admin)
- */
 const getAllEarnings = catchAsync(async (req: Request, res: Response) => {
   const result = await TutorEarningsService.getAllEarnings(req.query);
 
@@ -54,9 +45,6 @@ const getAllEarnings = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Get single earnings record
- */
 const getSingleEarning = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const result = await TutorEarningsService.getSingleEarning(id);
@@ -69,9 +57,6 @@ const getSingleEarning = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Initiate payout to tutor (Stripe Connect transfer)
- */
 const initiatePayout = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const result = await TutorEarningsService.initiatePayout(id, req.body);
@@ -84,9 +69,6 @@ const initiatePayout = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Mark payout as paid (Manual or webhook)
- */
 const markAsPaid = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const result = await TutorEarningsService.markAsPaid(id, req.body);
@@ -99,9 +81,6 @@ const markAsPaid = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Mark payout as failed
- */
 const markAsFailed = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const { failureReason } = req.body;
@@ -115,11 +94,6 @@ const markAsFailed = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// ============ PAYOUT SETTINGS ============
-
-/**
- * Get tutor's payout settings
- */
 const getPayoutSettings = catchAsync(async (req: Request, res: Response) => {
   const tutorId = req.user!.id as string;
   const result = await TutorEarningsService.getPayoutSettings(tutorId);
@@ -132,9 +106,6 @@ const getPayoutSettings = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Update tutor's payout settings
- */
 const updatePayoutSettings = catchAsync(async (req: Request, res: Response) => {
   const tutorId = req.user!.id as string;
   const result = await TutorEarningsService.updatePayoutSettings(tutorId, req.body);
@@ -147,11 +118,6 @@ const updatePayoutSettings = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// ============ TUTOR STATS ============
-
-/**
- * Get tutor's comprehensive stats including level progress
- */
 const getMyStats = catchAsync(async (req: Request, res: Response) => {
   const tutorId = req.user!.id as string;
   const result = await TutorEarningsService.getMyStats(tutorId);
@@ -164,9 +130,6 @@ const getMyStats = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Get formatted earnings history for frontend
- */
 const getEarningsHistory = catchAsync(async (req: Request, res: Response) => {
   const tutorId = req.user!.id as string;
   const page = parseInt(req.query.page as string) || 1;
@@ -196,7 +159,7 @@ export const TutorEarningsController = {
   initiatePayout,
   markAsPaid,
   markAsFailed,
-  // New methods
+
   getPayoutSettings,
   updatePayoutSettings,
   getMyStats,

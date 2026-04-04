@@ -18,9 +18,7 @@ const ApiError_1 = __importDefault(require("../../../errors/ApiError"));
 const user_model_1 = require("../user/user.model");
 const user_1 = require("../../../enums/user");
 const stripe_1 = require("../../../config/stripe");
-/**
- * Get all saved payment methods for a student
- */
+
 const getPaymentMethods = (studentId) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;
     const student = yield user_model_1.User.findById(studentId);
@@ -31,12 +29,12 @@ const getPaymentMethods = (studentId) => __awaiter(void 0, void 0, void 0, funct
     if (!stripeCustomerId) {
         return { paymentMethods: [], defaultPaymentMethodId: null };
     }
-    // Get all payment methods
+
     const paymentMethods = yield stripe_1.stripe.paymentMethods.list({
         customer: stripeCustomerId,
         type: 'card',
     });
-    // Get customer to find default payment method
+
     const customer = yield stripe_1.stripe.customers.retrieve(stripeCustomerId);
     const defaultPaymentMethodId = ((_b = customer.invoice_settings) === null || _b === void 0 ? void 0 : _b.default_payment_method) || null;
     return {
@@ -54,17 +52,14 @@ const getPaymentMethods = (studentId) => __awaiter(void 0, void 0, void 0, funct
         defaultPaymentMethodId,
     };
 });
-/**
- * Create SetupIntent for adding a new payment method
- * Frontend uses this to securely collect card details
- */
+
 const createSetupIntent = (studentId) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const student = yield user_model_1.User.findById(studentId);
     if (!student || student.role !== user_1.USER_ROLES.STUDENT) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.FORBIDDEN, 'Only students can add payment methods');
     }
-    // Get or create Stripe customer
+
     let stripeCustomerId = (_a = student.studentProfile) === null || _a === void 0 ? void 0 : _a.stripeCustomerId;
     if (!stripeCustomerId) {
         const customer = yield stripe_1.stripe.customers.create({
@@ -73,14 +68,14 @@ const createSetupIntent = (studentId) => __awaiter(void 0, void 0, void 0, funct
             metadata: { userId: studentId },
         });
         stripeCustomerId = customer.id;
-        // Save customer ID to user - ensure studentProfile exists
+
         if (student.studentProfile) {
             yield user_model_1.User.findByIdAndUpdate(studentId, {
                 'studentProfile.stripeCustomerId': stripeCustomerId,
             });
         }
         else {
-            // Create studentProfile if it doesn't exist
+
             yield user_model_1.User.findByIdAndUpdate(studentId, {
                 studentProfile: {
                     stripeCustomerId: stripeCustomerId,
@@ -88,7 +83,7 @@ const createSetupIntent = (studentId) => __awaiter(void 0, void 0, void 0, funct
             });
         }
     }
-    // Create SetupIntent
+
     const setupIntent = yield stripe_1.stripe.setupIntents.create({
         customer: stripeCustomerId,
         payment_method_types: ['card'],
@@ -99,9 +94,7 @@ const createSetupIntent = (studentId) => __awaiter(void 0, void 0, void 0, funct
         setupIntentId: setupIntent.id,
     };
 });
-/**
- * Confirm and attach payment method after SetupIntent succeeds
- */
+
 const attachPaymentMethod = (studentId_1, paymentMethodId_1, ...args_1) => __awaiter(void 0, [studentId_1, paymentMethodId_1, ...args_1], void 0, function* (studentId, paymentMethodId, setAsDefault = false) {
     var _a, _b, _c, _d, _e;
     const student = yield user_model_1.User.findById(studentId);
@@ -112,11 +105,11 @@ const attachPaymentMethod = (studentId_1, paymentMethodId_1, ...args_1) => __awa
     if (!stripeCustomerId) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'No Stripe customer found');
     }
-    // Attach payment method to customer
+
     yield stripe_1.stripe.paymentMethods.attach(paymentMethodId, {
         customer: stripeCustomerId,
     });
-    // Set as default if requested or if it's the first payment method
+
     if (setAsDefault) {
         yield stripe_1.stripe.customers.update(stripeCustomerId, {
             invoice_settings: {
@@ -124,7 +117,7 @@ const attachPaymentMethod = (studentId_1, paymentMethodId_1, ...args_1) => __awa
             },
         });
     }
-    // Return updated payment method
+
     const paymentMethod = yield stripe_1.stripe.paymentMethods.retrieve(paymentMethodId);
     return {
         id: paymentMethod.id,
@@ -135,9 +128,7 @@ const attachPaymentMethod = (studentId_1, paymentMethodId_1, ...args_1) => __awa
         isDefault: setAsDefault,
     };
 });
-/**
- * Set a payment method as default
- */
+
 const setDefaultPaymentMethod = (studentId, paymentMethodId) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const student = yield user_model_1.User.findById(studentId);
@@ -148,12 +139,12 @@ const setDefaultPaymentMethod = (studentId, paymentMethodId) => __awaiter(void 0
     if (!stripeCustomerId) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'No Stripe customer found');
     }
-    // Verify payment method belongs to this customer
+
     const paymentMethod = yield stripe_1.stripe.paymentMethods.retrieve(paymentMethodId);
     if (paymentMethod.customer !== stripeCustomerId) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.FORBIDDEN, 'Payment method does not belong to this customer');
     }
-    // Set as default
+
     yield stripe_1.stripe.customers.update(stripeCustomerId, {
         invoice_settings: {
             default_payment_method: paymentMethodId,
@@ -161,9 +152,7 @@ const setDefaultPaymentMethod = (studentId, paymentMethodId) => __awaiter(void 0
     });
     return { success: true, defaultPaymentMethodId: paymentMethodId };
 });
-/**
- * Delete/detach a payment method
- */
+
 const deletePaymentMethod = (studentId, paymentMethodId) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const student = yield user_model_1.User.findById(studentId);
@@ -174,12 +163,12 @@ const deletePaymentMethod = (studentId, paymentMethodId) => __awaiter(void 0, vo
     if (!stripeCustomerId) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'No Stripe customer found');
     }
-    // Verify payment method belongs to this customer
+
     const paymentMethod = yield stripe_1.stripe.paymentMethods.retrieve(paymentMethodId);
     if (paymentMethod.customer !== stripeCustomerId) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.FORBIDDEN, 'Payment method does not belong to this customer');
     }
-    // Detach payment method
+
     yield stripe_1.stripe.paymentMethods.detach(paymentMethodId);
     return { success: true, deletedPaymentMethodId: paymentMethodId };
 });

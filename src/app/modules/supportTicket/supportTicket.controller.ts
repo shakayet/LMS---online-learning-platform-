@@ -4,9 +4,6 @@ import catchAsync from '../../../shared/catchAsync';
 import sendResponse from '../../../shared/sendResponse';
 import { SupportTicketService } from './supportTicket.service';
 
-// ============ USER ROUTES (Student/Tutor) ============
-
-// Create a new support ticket
 const createSupportTicket = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user!.id!;
   const userRole = req.user!.role === 'STUDENT' ? 'STUDENT' : 'TUTOR';
@@ -25,7 +22,6 @@ const createSupportTicket = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// Get my tickets (for logged-in user)
 const getMyTickets = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user!.id!;
   const result = await SupportTicketService.getMyTickets(userId, req.query);
@@ -39,7 +35,6 @@ const getMyTickets = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// Get single ticket (for logged-in user - only their own)
 const getMyTicketById = catchAsync(async (req: Request, res: Response) => {
   const { ticketId } = req.params;
   const userId = req.user!.id!;
@@ -54,7 +49,6 @@ const getMyTicketById = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// Get ticket categories (public - for dropdown)
 const getTicketCategories = catchAsync(async (_req: Request, res: Response) => {
   const result = SupportTicketService.getTicketCategories();
 
@@ -66,9 +60,6 @@ const getTicketCategories = catchAsync(async (_req: Request, res: Response) => {
   });
 });
 
-// ============ ADMIN ROUTES ============
-
-// Get all tickets (admin only)
 const getAllTickets = catchAsync(async (req: Request, res: Response) => {
   const result = await SupportTicketService.getAllTickets(req.query);
 
@@ -81,7 +72,6 @@ const getAllTickets = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// Get single ticket by ID (admin only)
 const getTicketById = catchAsync(async (req: Request, res: Response) => {
   const { ticketId } = req.params;
   const result = await SupportTicketService.getTicketById(ticketId);
@@ -94,7 +84,6 @@ const getTicketById = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// Update ticket status (admin only)
 const updateTicketStatus = catchAsync(async (req: Request, res: Response) => {
   const { ticketId } = req.params;
   const { status, adminNotes } = req.body;
@@ -113,7 +102,6 @@ const updateTicketStatus = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// Update ticket priority (admin only)
 const updateTicketPriority = catchAsync(async (req: Request, res: Response) => {
   const { ticketId } = req.params;
   const { priority } = req.body;
@@ -131,7 +119,6 @@ const updateTicketPriority = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// Assign ticket to admin
 const assignTicket = catchAsync(async (req: Request, res: Response) => {
   const { ticketId } = req.params;
   const { assignedTo } = req.body;
@@ -146,7 +133,6 @@ const assignTicket = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// Add admin notes
 const addAdminNotes = catchAsync(async (req: Request, res: Response) => {
   const { ticketId } = req.params;
   const { adminNotes } = req.body;
@@ -161,7 +147,6 @@ const addAdminNotes = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// Get ticket statistics (admin dashboard)
 const getTicketStats = catchAsync(async (_req: Request, res: Response) => {
   const result = await SupportTicketService.getTicketStats();
 

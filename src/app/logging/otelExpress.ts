@@ -1,11 +1,9 @@
 import type { Request, Response, NextFunction } from 'express';
 import { context, trace } from '@opentelemetry/api';
 
-// Express middleware to emit helpful spans for timeline rendering
 export const otelExpressMiddleware = (req: Request, res: Response, next: NextFunction) => {
   const tracer = trace.getTracer('app');
 
-  // Quick marker at the start of middleware chain
   try {
     tracer.startActiveSpan('Middleware Start', span => {
       span.end();
@@ -15,7 +13,6 @@ export const otelExpressMiddleware = (req: Request, res: Response, next: NextFun
   const originalJson = res.json.bind(res);
   let afterJsonAt: number | undefined;
 
-  // Wrap res.json to measure serialization
   (res as any).json = (body: any) => {
     const start = Date.now();
     try {
@@ -37,7 +34,6 @@ export const otelExpressMiddleware = (req: Request, res: Response, next: NextFun
     }
   };
 
-  // On finish, record the time spent after serialization until socket flush
   res.on('finish', () => {
     try {
       const start = afterJsonAt || Date.now();

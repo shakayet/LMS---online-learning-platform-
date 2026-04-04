@@ -1,19 +1,6 @@
 const fs = require('fs');
 const path = require('path');
 
-/**
- * Route Comment Analyzer
- *
- * Analyzes route files to detect missing comments and suggests meaningful descriptions.
- *
- * Usage:
- *   node scripts/postman/analyze-routes.js                 # Analyze all modules
- *   node scripts/postman/analyze-routes.js auth            # Analyze specific module
- *   node scripts/postman/analyze-routes.js --suggest       # Show suggestions only
- *   node scripts/postman/analyze-routes.js --fix           # Auto-add comments
- *   node scripts/postman/analyze-routes.js auth --fix      # Fix specific module
- */
-
 class RouteCommentAnalyzer {
   constructor() {
     this.stats = {
@@ -25,9 +12,6 @@ class RouteCommentAnalyzer {
     this.findings = [];
   }
 
-  /**
-   * Main analysis method
-   */
   async analyze(moduleName = null, options = {}) {
     try {
       console.log('🔍 Starting route comment analysis...\n');
@@ -57,9 +41,6 @@ class RouteCommentAnalyzer {
     }
   }
 
-  /**
-   * Get all available modules
-   */
   async getAllModules() {
     const modulesPath = path.join(process.cwd(), 'src', 'app', 'modules');
     if (!fs.existsSync(modulesPath)) {
@@ -72,9 +53,6 @@ class RouteCommentAnalyzer {
       .map(dirent => dirent.name);
   }
 
-  /**
-   * Analyze a specific module
-   */
   async analyzeModule(moduleName, options) {
     const routeFile = this.findRouteFile(moduleName);
 
@@ -108,15 +86,11 @@ class RouteCommentAnalyzer {
 
     this.findings.push(moduleFindings);
 
-    // Auto-fix if requested
     if (options.fix && moduleFindings.missingComments.length > 0) {
       await this.fixRouteFile(routeFile, moduleFindings.missingComments);
     }
   }
 
-  /**
-   * Find route file for a module
-   */
   findRouteFile(moduleName) {
     const possibleNames = [
       `${moduleName}.route.ts`,
@@ -144,14 +118,10 @@ class RouteCommentAnalyzer {
     return null;
   }
 
-  /**
-   * Parse routes from file content
-   */
   parseRoutes(content) {
     const lines = content.split('\n');
     const routes = [];
 
-    // Match router method calls
     const routeRegex =
       /router\.(get|post|put|patch|delete)\s*\(\s*['\"`]([^'\"`]+)['\"`]/g;
     let match;
@@ -496,7 +466,6 @@ Notes:
 `);
 }
 
-// Run if called directly
 if (require.main === module) {
   main().catch(console.error);
 }

@@ -10,7 +10,7 @@ const validateRequest =
       try {
         span.setAttribute('layer', 'Middleware > Validation');
         span.setAttribute('validation.type', 'zod');
-        // Capture callsite to help timeline printer show Source when exception stack lacks paths
+
         try {
           const cs = new Error().stack || '';
           span.setAttribute('validation.source', cs);

@@ -1,4 +1,3 @@
-// OER Resource Types
 
 export type IOERResource = {
   id: string;
@@ -6,8 +5,8 @@ export type IOERResource = {
   description: string;
   subject: string;
   grade: string;
-  type: string; // PDF, Video, Interactive, Audio, etc.
-  source: string; // OERSI, WLO, MUNDO, etc.
+  type: string;
+  source: string;
   url: string;
   thumbnail?: string;
   author?: string;
@@ -33,7 +32,6 @@ export type IOERSearchResponse = {
   totalPages: number;
 };
 
-// OERSI Elasticsearch Response Types
 export type IOERSIHit = {
   _id: string;
   _source: {

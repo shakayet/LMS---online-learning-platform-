@@ -1,23 +1,23 @@
 import { Model } from 'mongoose';
 
 export type IPricingPlan = {
-  name: string;                    // "Flexible", "Regular", "Longterm"
+  name: string;
   tier: 'FLEXIBLE' | 'REGULAR' | 'LONG_TERM';
-  pricePerHour: number;            // EUR (30, 28, 25)
-  courseDuration: string;          // "None", "1 Month", "3 Months"
-  commitmentMonths: number;        // 0, 1, 3
-  minimumHours: number;            // 0, 4, 4
-  selectedHours: string;           // "Flexible number of sessions"
-  selectedHoursDetails: string;    // "No minimum requirement", "Min. 4 hours per month"
-  termType: string;                // "Flexible", "Flexible or recurring"
-  inclusions: string[];            // ["Shortterm support", "Exam preparation"]
-  isActive: boolean;               // To enable/disable plans
-  sortOrder: number;               // Display order (1, 2, 3)
+  pricePerHour: number;
+  courseDuration: string;
+  commitmentMonths: number;
+  minimumHours: number;
+  selectedHours: string;
+  selectedHoursDetails: string;
+  termType: string;
+  inclusions: string[];
+  isActive: boolean;
+  sortOrder: number;
 };
 
 export type IPricingConfig = {
   plans: IPricingPlan[];
-  updatedBy?: string;              // Admin who last updated
+  updatedBy?: string;
   createdAt?: Date;
   updatedAt?: Date;
 };

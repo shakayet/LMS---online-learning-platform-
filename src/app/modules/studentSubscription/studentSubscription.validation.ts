@@ -1,6 +1,5 @@
 import { z } from 'zod';
 
-// Subscribe to plan validation (Student)
 const subscribeToPlanZodSchema = z.object({
   body: z.object({
     tier: z.enum(['FLEXIBLE', 'REGULAR', 'LONG_TERM'], {
@@ -9,7 +8,6 @@ const subscribeToPlanZodSchema = z.object({
   }),
 });
 
-// Cancel subscription validation (Student)
 const cancelSubscriptionZodSchema = z.object({
   body: z.object({
     cancellationReason: z
@@ -21,7 +19,6 @@ const cancelSubscriptionZodSchema = z.object({
   }),
 });
 
-// Confirm payment validation (Student)
 const confirmPaymentZodSchema = z.object({
   body: z.object({
     subscriptionId: z.string({

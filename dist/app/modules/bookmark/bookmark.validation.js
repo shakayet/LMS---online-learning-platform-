@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BookmarkValidation = void 0;
 const zod_1 = require("zod");
-// Validate generic toggle body: targetId + targetModel
+
 const toggle = zod_1.z.object({
     body: zod_1.z.object({
         targetId: zod_1.z
@@ -14,7 +14,7 @@ const toggle = zod_1.z.object({
             .regex(/^[A-Za-z][A-Za-z0-9_]*$/, 'Invalid model name format'),
     }),
 });
-// Validate query for listing bookmarks; allow optional targetModel
+
 const getUserBookmarksQuery = zod_1.z.object({
     query: zod_1.z.object({
         limit: zod_1.z
@@ -30,7 +30,7 @@ const getUserBookmarksQuery = zod_1.z.object({
         sortBy: zod_1.z.string().optional(),
         sortOrder: zod_1.z.enum(['asc', 'desc']).optional(),
         targetModel: zod_1.z.string().optional(),
-        // Task-specific filters (used only when targetModel === 'Task')
+
         category: zod_1.z
             .string()
             .regex(/^[0-9a-fA-F]{24}$/, 'Invalid category ID format')

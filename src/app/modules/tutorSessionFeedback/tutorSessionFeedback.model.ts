@@ -12,7 +12,7 @@ const tutorSessionFeedbackSchema = new Schema<ITutorSessionFeedback>(
       type: Schema.Types.ObjectId,
       ref: 'Session',
       required: [true, 'Session ID is required'],
-      unique: true, // One feedback per session
+      unique: true,
     },
     tutorId: {
       type: Schema.Types.ObjectId,
@@ -66,7 +66,6 @@ const tutorSessionFeedbackSchema = new Schema<ITutorSessionFeedback>(
       default: FEEDBACK_STATUS.PENDING,
     },
 
-    // Payment forfeit tracking
     paymentForfeited: {
       type: Boolean,
       default: false,
@@ -81,15 +80,13 @@ const tutorSessionFeedbackSchema = new Schema<ITutorSessionFeedback>(
   { timestamps: true }
 );
 
-// Indexes for performance
 tutorSessionFeedbackSchema.index({ tutorId: 1, status: 1 });
 tutorSessionFeedbackSchema.index({ studentId: 1, createdAt: -1 });
 
-tutorSessionFeedbackSchema.index({ status: 1, dueDate: 1 }); // For finding pending feedbacks due soon
-tutorSessionFeedbackSchema.index({ tutorId: 1, dueDate: 1 }); // For tutor's pending feedbacks
-tutorSessionFeedbackSchema.index({ paymentForfeited: 1, forfeitedAt: 1 }); // For forfeit queries
+tutorSessionFeedbackSchema.index({ status: 1, dueDate: 1 });
+tutorSessionFeedbackSchema.index({ tutorId: 1, dueDate: 1 });
+tutorSessionFeedbackSchema.index({ paymentForfeited: 1, forfeitedAt: 1 });
 
-// Pre-save validation for feedback type
 tutorSessionFeedbackSchema.pre('save', function (next) {
   if (this.feedbackType === FEEDBACK_TYPE.TEXT && !this.feedbackText) {
     next(new Error('Feedback text is required for TEXT feedback type'));
@@ -100,7 +97,6 @@ tutorSessionFeedbackSchema.pre('save', function (next) {
   }
 });
 
-// Check if late when submitting
 tutorSessionFeedbackSchema.pre('save', function (next) {
   if (this.status === FEEDBACK_STATUS.SUBMITTED && this.submittedAt && this.dueDate) {
     this.isLate = this.submittedAt > this.dueDate;

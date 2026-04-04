@@ -1,24 +1,6 @@
 const fs = require('fs');
 const path = require('path');
 
-/**
- * Enhanced Postman Collection Generator
- *
- * Features:
- * - Generate all modules in one collection
- * - Smart merge (preserve existing data)
- * - Collection variables with auto-token injection
- * - Pre-request and test scripts
- * - File upload support
- * - Environment files generation
- *
- * Usage:
- *   node scripts/postman/generate-all.js              # All modules
- *   node scripts/postman/generate-all.js auth         # Single module
- *   node scripts/postman/generate-all.js --env        # Generate environments
- *   node scripts/postman/generate-all.js --force      # Force fresh generation
- */
-
 class EnhancedPostmanGenerator {
   constructor() {
     this.baseUrl = '{{BASE_URL}}';
@@ -34,16 +16,12 @@ class EnhancedPostmanGenerator {
       },
       item: [],
       variable: [],
-      event: [], // Collection-level scripts
+      event: [],
     };
 
-    // Module configurations - auto-detected from routes/index.ts
     this.moduleConfig = this.detectModulesFromRoutes();
   }
 
-  /**
-   * Auto-detect modules from src/routes/index.ts
-   */
   detectModulesFromRoutes() {
     const modules = {};
 
@@ -1306,22 +1284,17 @@ if (response.success && response.data) {
     });
   }
 
-  /**
-   * Capitalize first letter
-   */
   capitalizeFirst(str) {
     return str.charAt(0).toUpperCase() + str.slice(1);
   }
 }
 
-// Main execution
 async function main() {
   const args = process.argv.slice(2);
   const generator = new EnhancedPostmanGenerator();
   await generator.run(args);
 }
 
-// Run
 if (require.main === module) {
   main().catch(console.error);
 }

@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.POLICY_TYPE = void 0;
-// Policy types enum
+
 var POLICY_TYPE;
 (function (POLICY_TYPE) {
     POLICY_TYPE["PRIVACY_POLICY"] = "PRIVACY_POLICY";

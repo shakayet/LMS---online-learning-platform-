@@ -13,6 +13,6 @@ const gradeSchema = new mongoose_1.Schema({
         default: true,
     },
 }, { timestamps: true });
-// Index for faster queries
+
 gradeSchema.index({ isActive: 1 });
 exports.Grade = (0, mongoose_1.model)('Grade', gradeSchema);

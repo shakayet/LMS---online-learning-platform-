@@ -14,11 +14,11 @@ type IData<T> = {
   pagination?: IPagination;
   meta?: Record<string, unknown>;
   data?: T;
-  accessToken?: string; // For role updates (e.g., APPLICANT -> TUTOR)
+  accessToken?: string;
 };
 
 const sendResponse = <T>(res: Response, data: IData<T>) => {
-  // 👇 store full response data for logger middleware
+
   res.locals.responsePayload = data;
 
   const resData: Record<string, unknown> = {
@@ -29,7 +29,6 @@ const sendResponse = <T>(res: Response, data: IData<T>) => {
     data: data.data,
   };
 
-  // Include accessToken if provided (for role updates)
   if (data.accessToken) {
     resData.accessToken = data.accessToken;
   }

@@ -7,14 +7,11 @@ import { Session } from '../session/session.model';
 import { SESSION_STATUS } from '../session/session.interface';
 import QueryBuilder from '../../builder/QueryBuilder';
 
-/**
- * Create a new session review
- */
 const createReview = async (
   studentId: string,
   payload: Partial<ISessionReview>
 ): Promise<ISessionReview> => {
-  // Verify session exists and is completed
+
   const session = await Session.findById(payload.sessionId);
 
   if (!session) {
@@ -28,7 +25,6 @@ const createReview = async (
     );
   }
 
-  // Verify student owns the session
   if (session.studentId.toString() !== studentId) {
     throw new ApiError(
       StatusCodes.FORBIDDEN,
@@ -36,7 +32,6 @@ const createReview = async (
     );
   }
 
-  // Check if review already exists
   const existingReview = await SessionReview.findOne({
     sessionId: payload.sessionId,
   });
@@ -48,19 +43,16 @@ const createReview = async (
     );
   }
 
-  // Create review
   const review = await SessionReview.create({
     ...payload,
     studentId: new Types.ObjectId(studentId),
     tutorId: session.tutorId,
   });
 
-  // Update session with reviewId
   await Session.findByIdAndUpdate(payload.sessionId, {
     reviewId: review._id,
   });
 
-  // Emit socket event for real-time update
   const io = global.io;
   if (io && session.chatId) {
     const chatIdStr = String(session.chatId);
@@ -71,7 +63,6 @@ const createReview = async (
       rating: review.overallRating,
     };
 
-    // Emit to chat room and both users
     io.to(`chat::${chatIdStr}`).emit('STUDENT_REVIEW_SUBMITTED', reviewPayload);
     io.to(`user::${studentId}`).emit('STUDENT_REVIEW_SUBMITTED', reviewPayload);
     io.to(`user::${String(session.tutorId)}`).emit('STUDENT_REVIEW_SUBMITTED', reviewPayload);
@@ -82,9 +73,6 @@ const createReview = async (
   return review;
 };
 
-/**
- * Get student's reviews
- */
 const getMyReviews = async (studentId: string, query: Record<string, unknown>) => {
   const reviewQuery = new QueryBuilder(
     SessionReview.find({ studentId })
@@ -103,9 +91,6 @@ const getMyReviews = async (studentId: string, query: Record<string, unknown>) =
   return { data: result, meta };
 };
 
-/**
- * Get tutor's reviews (public only or all for admin)
- */
 const getTutorReviews = async (
   tutorId: string,
   query: Record<string, unknown>,
@@ -132,9 +117,6 @@ const getTutorReviews = async (
   return { data: result, meta };
 };
 
-/**
- * Get review by session ID
- */
 const getReviewBySession = async (sessionId: string): Promise<ISessionReview | null> => {
   const review = await SessionReview.findOne({ sessionId })
     .populate('studentId', 'name email')
@@ -144,9 +126,6 @@ const getReviewBySession = async (sessionId: string): Promise<ISessionReview | n
   return review;
 };
 
-/**
- * Get single review
- */
 const getSingleReview = async (id: string): Promise<ISessionReview | null> => {
   const review = await SessionReview.findById(id)
     .populate('studentId', 'name email')
@@ -160,9 +139,6 @@ const getSingleReview = async (id: string): Promise<ISessionReview | null> => {
   return review;
 };
 
-/**
- * Update review (only by student who created it)
- */
 const updateReview = async (
   id: string,
   studentId: string,
@@ -174,7 +150,6 @@ const updateReview = async (
     throw new ApiError(StatusCodes.NOT_FOUND, 'Review not found');
   }
 
-  // Verify ownership
   if (review.studentId?.toString() !== studentId) {
     throw new ApiError(
       StatusCodes.FORBIDDEN,
@@ -182,7 +157,6 @@ const updateReview = async (
     );
   }
 
-  // Update fields
   Object.assign(review, payload);
   review.isEdited = true;
   review.editedAt = new Date();
@@ -192,9 +166,6 @@ const updateReview = async (
   return review;
 };
 
-/**
- * Delete review (only by student who created it)
- */
 const deleteReview = async (
   id: string,
   studentId: string
@@ -205,7 +176,6 @@ const deleteReview = async (
     throw new ApiError(StatusCodes.NOT_FOUND, 'Review not found');
   }
 
-  // Verify ownership
   if (review.studentId?.toString() !== studentId) {
     throw new ApiError(
       StatusCodes.FORBIDDEN,
@@ -218,9 +188,6 @@ const deleteReview = async (
   return review;
 };
 
-/**
- * Get tutor's review statistics
- */
 const getTutorStats = async (tutorId: string): Promise<IReviewStats> => {
   const reviews = await SessionReview.find({ tutorId, isPublic: true });
 
@@ -240,7 +207,6 @@ const getTutorStats = async (tutorId: string): Promise<IReviewStats> => {
 
   const totalReviews = reviews.length;
 
-  // Calculate averages
   const averageOverallRating =
     reviews.reduce((sum, r) => sum + r.overallRating, 0) / totalReviews;
   const averageTeachingQuality =
@@ -252,11 +218,9 @@ const getTutorStats = async (tutorId: string): Promise<IReviewStats> => {
   const averagePreparedness =
     reviews.reduce((sum, r) => sum + r.preparedness, 0) / totalReviews;
 
-  // Calculate recommendation percentage
   const wouldRecommendCount = reviews.filter(r => r.wouldRecommend).length;
   const wouldRecommendPercentage = (wouldRecommendCount / totalReviews) * 100;
 
-  // Calculate rating distribution
   const ratingDistribution = reviews.reduce(
     (dist, r) => {
       const rating = Math.floor(r.overallRating) as 1 | 2 | 3 | 4 | 5;
@@ -279,9 +243,6 @@ const getTutorStats = async (tutorId: string): Promise<IReviewStats> => {
   };
 };
 
-/**
- * Toggle review visibility (Admin only)
- */
 const toggleVisibility = async (
   id: string,
   isPublic: boolean
@@ -298,10 +259,6 @@ const toggleVisibility = async (
   return review;
 };
 
-/**
- * Link orphaned reviews to sessions (migration helper)
- * This fixes reviews that were created before the reviewId update was added
- */
 const linkOrphanedReviews = async (): Promise<{ linked: number; alreadyLinked: number }> => {
   const reviews = await SessionReview.find({});
   let linked = 0;
@@ -324,10 +281,6 @@ const linkOrphanedReviews = async (): Promise<{ linked: number; alreadyLinked: n
   return { linked, alreadyLinked };
 };
 
-/**
- * Admin: Create a review for a tutor (without session requirement)
- * This allows admin to add reviews directly for tutors
- */
 interface AdminCreateReviewPayload {
   tutorId: string;
   overallRating: number;
@@ -338,24 +291,23 @@ interface AdminCreateReviewPayload {
   comment?: string;
   wouldRecommend: boolean;
   isPublic?: boolean;
-  reviewerName?: string; // Optional name for the review
+  reviewerName?: string;
 }
 
 const adminCreateReview = async (
   payload: AdminCreateReviewPayload
 ): Promise<ISessionReview> => {
-  // Validate tutor exists
+
   const { User } = await import('../user/user.model');
   const tutor = await User.findById(payload.tutorId);
   if (!tutor) {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Tutor not found');
   }
 
-  // Create review without session (admin-created)
   const review = await SessionReview.create({
     tutorId: new Types.ObjectId(payload.tutorId),
-    studentId: null, // Admin created, no student
-    sessionId: null, // No session for admin-created reviews
+    studentId: null,
+    sessionId: null,
     overallRating: payload.overallRating,
     teachingQuality: payload.teachingQuality,
     communication: payload.communication,
@@ -371,9 +323,6 @@ const adminCreateReview = async (
   return review;
 };
 
-/**
- * Admin: Update any review
- */
 const adminUpdateReview = async (
   id: string,
   payload: Partial<ISessionReview>
@@ -384,7 +333,6 @@ const adminUpdateReview = async (
     throw new ApiError(StatusCodes.NOT_FOUND, 'Review not found');
   }
 
-  // Update fields
   Object.assign(review, payload);
   review.isEdited = true;
   review.editedAt = new Date();
@@ -394,9 +342,6 @@ const adminUpdateReview = async (
   return review;
 };
 
-/**
- * Admin: Delete any review
- */
 const adminDeleteReview = async (id: string): Promise<ISessionReview | null> => {
   const review = await SessionReview.findById(id);
 
@@ -404,7 +349,6 @@ const adminDeleteReview = async (id: string): Promise<ISessionReview | null> => 
     throw new ApiError(StatusCodes.NOT_FOUND, 'Review not found');
   }
 
-  // If review has a session, remove reviewId from session
   if (review.sessionId) {
     await Session.findByIdAndUpdate(review.sessionId, {
       $unset: { reviewId: 1 },
@@ -427,7 +371,7 @@ export const SessionReviewService = {
   getTutorStats,
   toggleVisibility,
   linkOrphanedReviews,
-  // Admin functions
+
   adminCreateReview,
   adminUpdateReview,
   adminDeleteReview,

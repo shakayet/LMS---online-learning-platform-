@@ -1,18 +1,14 @@
 import { Request, Response, NextFunction } from 'express';
 import { UAParser } from 'ua-parser-js';
 
-// Normalize header value to a clean string (strip quotes from CH headers)
 const asToken = (v: unknown): string | undefined => {
   if (!v) return undefined;
   const s = String(v).trim();
   if (!s) return undefined;
-  // Client Hints often come as quoted strings, e.g. "Windows"
+
   return s.replace(/^"|"$/g, '');
 };
 
-// Map Windows Client Hint platformVersion tokens to friendly marketing names.
-// Chrome provides numeric tokens (e.g., 19.0.0) that do not equal "Windows 11".
-// Heuristic: major >= 13 => Windows 11, else Windows 10.
 const windowsLabelFromPlatformVersion = (v?: string): string | undefined => {
   if (!v) return undefined;
   const major = parseInt(String(v).split('.')[0], 10);
@@ -37,7 +33,6 @@ export const clientInfo = (req: Request, res: Response, next: NextFunction) => {
   const deviceModel = asToken(chModel) || parsed.device.model || undefined;
   const osFriendly = os === 'Windows' ? windowsLabelFromPlatformVersion(osVersion) || 'Windows' : os;
 
-  // sec-ch-ua-mobile: '?1' (true) or '?0' (false)
   const mobileFlag = typeof chMobile === 'string' ? chMobile : undefined;
   const deviceType = mobileFlag === '?1' ? 'mobile' : mobileFlag === '?0' ? 'desktop' : parsed.device.type || 'desktop';
 

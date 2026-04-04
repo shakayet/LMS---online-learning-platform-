@@ -4,9 +4,6 @@ import catchAsync from '../../../shared/catchAsync';
 import sendResponse from '../../../shared/sendResponse';
 import { SessionReviewService } from './sessionReview.service';
 
-/**
- * Create a new review
- */
 const createReview = catchAsync(async (req: Request, res: Response) => {
   const studentId = req.user!.id as string;
   const result = await SessionReviewService.createReview(studentId, req.body);
@@ -19,9 +16,6 @@ const createReview = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Get student's reviews
- */
 const getMyReviews = catchAsync(async (req: Request, res: Response) => {
   const studentId = req.user!.id as string;
   const result = await SessionReviewService.getMyReviews(studentId, req.query);
@@ -35,9 +29,6 @@ const getMyReviews = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Get tutor's reviews
- */
 const getTutorReviews = catchAsync(async (req: Request, res: Response) => {
   const { tutorId } = req.params;
   const isAdmin = req.user?.role === 'SUPER_ADMIN';
@@ -56,9 +47,6 @@ const getTutorReviews = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Get single review
- */
 const getSingleReview = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const result = await SessionReviewService.getSingleReview(id);
@@ -71,9 +59,6 @@ const getSingleReview = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Get review by session ID
- */
 const getReviewBySession = catchAsync(async (req: Request, res: Response) => {
   const { sessionId } = req.params;
   const result = await SessionReviewService.getReviewBySession(sessionId);
@@ -86,9 +71,6 @@ const getReviewBySession = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Update review
- */
 const updateReview = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const studentId = req.user!.id as string;
@@ -102,9 +84,6 @@ const updateReview = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Delete review
- */
 const deleteReview = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const studentId = req.user!.id as string;
@@ -118,9 +97,6 @@ const deleteReview = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Get tutor's review statistics
- */
 const getTutorStats = catchAsync(async (req: Request, res: Response) => {
   const { tutorId } = req.params;
   const result = await SessionReviewService.getTutorStats(tutorId);
@@ -133,9 +109,6 @@ const getTutorStats = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Toggle review visibility (Admin only)
- */
 const toggleVisibility = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const { isPublic } = req.body;
@@ -149,9 +122,6 @@ const toggleVisibility = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Link orphaned reviews to sessions (Admin only - migration helper)
- */
 const linkOrphanedReviews = catchAsync(async (req: Request, res: Response) => {
   const result = await SessionReviewService.linkOrphanedReviews();
 
@@ -163,9 +133,6 @@ const linkOrphanedReviews = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Admin: Create a review for a tutor (without session requirement)
- */
 const adminCreateReview = catchAsync(async (req: Request, res: Response) => {
   const result = await SessionReviewService.adminCreateReview(req.body);
 
@@ -177,9 +144,6 @@ const adminCreateReview = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Admin: Update any review
- */
 const adminUpdateReview = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const result = await SessionReviewService.adminUpdateReview(id, req.body);
@@ -192,9 +156,6 @@ const adminUpdateReview = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Admin: Delete any review
- */
 const adminDeleteReview = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   await SessionReviewService.adminDeleteReview(id);
@@ -218,7 +179,7 @@ export const SessionReviewController = {
   getTutorStats,
   toggleVisibility,
   linkOrphanedReviews,
-  // Admin functions
+
   adminCreateReview,
   adminUpdateReview,
   adminDeleteReview,

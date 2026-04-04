@@ -31,7 +31,7 @@ class CacheHelper {
         }
         return CacheHelper.instance;
     }
-    // ------------------- Basic Cache Operations -------------------
+
     set(key, value, ttl) {
         return __awaiter(this, void 0, void 0, function* () {
             const start = Date.now();
@@ -43,7 +43,7 @@ class CacheHelper {
             }
             catch (err) {
                 logger_1.errorLogger.error(`${logPrefix} ❌ | ${err.message} | ⏱ ${Date.now() - start}ms`);
-                // Fallback to memory
+
                 const ok = this.cache.set(key, value, ttl || 0);
                 return ok;
             }
@@ -119,7 +119,7 @@ class CacheHelper {
             logger_1.logger.info(`${logPrefix} ✅ | ⏱ ${Date.now() - start}ms`);
         });
     }
-    // ------------------- Advanced Operations -------------------
+
     getOrSet(key, fetchFunction, ttl) {
         return __awaiter(this, void 0, void 0, function* () {
             const start = Date.now();
@@ -158,7 +158,7 @@ class CacheHelper {
             return deletedCount;
         });
     }
-    // ------------------- Utility -------------------
+
     getStats() {
         return this.cache.getStats();
     }

@@ -5,7 +5,6 @@ import sendResponse from '../../../shared/sendResponse';
 import { LegalPolicyService } from './legalPolicy.service';
 import { POLICY_TYPE } from './legalPolicy.interface';
 
-// Get all policies (admin)
 const getAllPolicies = catchAsync(async (_req: Request, res: Response) => {
   const result = await LegalPolicyService.getAllPolicies();
 
@@ -17,7 +16,6 @@ const getAllPolicies = catchAsync(async (_req: Request, res: Response) => {
   });
 });
 
-// Get policy by type (admin)
 const getPolicyByType = catchAsync(async (req: Request, res: Response) => {
   const { type } = req.params;
   const result = await LegalPolicyService.getPolicyByType(type as POLICY_TYPE);
@@ -30,7 +28,6 @@ const getPolicyByType = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// Get active policy by type (public)
 const getActivePolicyByType = catchAsync(async (req: Request, res: Response) => {
   const { type } = req.params;
   const result = await LegalPolicyService.getActivePolicyByType(type as POLICY_TYPE);
@@ -43,7 +40,6 @@ const getActivePolicyByType = catchAsync(async (req: Request, res: Response) => 
   });
 });
 
-// Create or update policy (admin)
 const upsertPolicy = catchAsync(async (req: Request, res: Response) => {
   const { type } = req.params;
   const userId = req.user?.userId;
@@ -57,7 +53,6 @@ const upsertPolicy = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// Update policy (admin)
 const updatePolicy = catchAsync(async (req: Request, res: Response) => {
   const { type } = req.params;
   const userId = req.user?.userId;
@@ -71,7 +66,6 @@ const updatePolicy = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// Delete policy (admin - soft delete)
 const deletePolicy = catchAsync(async (req: Request, res: Response) => {
   const { type } = req.params;
   const result = await LegalPolicyService.deletePolicy(type as POLICY_TYPE);
@@ -84,7 +78,6 @@ const deletePolicy = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// Get all active policies (public)
 const getAllActivePolicies = catchAsync(async (_req: Request, res: Response) => {
   const result = await LegalPolicyService.getAllActivePolicies();
 
@@ -96,7 +89,6 @@ const getAllActivePolicies = catchAsync(async (_req: Request, res: Response) => 
   });
 });
 
-// Initialize default policies (admin)
 const initializeDefaultPolicies = catchAsync(async (_req: Request, res: Response) => {
   await LegalPolicyService.initializeDefaultPolicies();
 

@@ -4,9 +4,6 @@ import catchAsync from '../../../shared/catchAsync';
 import sendResponse from '../../../shared/sendResponse';
 import { StudentSubscriptionService } from './studentSubscription.service';
 
-/**
- * Subscribe to a plan (Student)
- */
 const subscribeToPlan = catchAsync(async (req: Request, res: Response) => {
   const studentId = req.user!.id as string;
   const { tier } = req.body;
@@ -20,9 +17,6 @@ const subscribeToPlan = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Get student's active subscription
- */
 const getMySubscription = catchAsync(async (req: Request, res: Response) => {
   const studentId = req.user!.id as string;
   const result = await StudentSubscriptionService.getMySubscription(studentId);
@@ -35,9 +29,6 @@ const getMySubscription = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Get all subscriptions (Admin)
- */
 const getAllSubscriptions = catchAsync(async (req: Request, res: Response) => {
   const result = await StudentSubscriptionService.getAllSubscriptions(req.query);
 
@@ -50,9 +41,6 @@ const getAllSubscriptions = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Get single subscription
- */
 const getSingleSubscription = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const result = await StudentSubscriptionService.getSingleSubscription(id);
@@ -65,9 +53,6 @@ const getSingleSubscription = catchAsync(async (req: Request, res: Response) => 
   });
 });
 
-/**
- * Cancel subscription (Student)
- */
 const cancelSubscription = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const studentId = req.user!.id as string;
@@ -87,9 +72,6 @@ const cancelSubscription = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Expire old subscriptions (Cron job endpoint)
- */
 const expireOldSubscriptions = catchAsync(async (req: Request, res: Response) => {
   const count = await StudentSubscriptionService.expireOldSubscriptions();
 
@@ -101,10 +83,6 @@ const expireOldSubscriptions = catchAsync(async (req: Request, res: Response) =>
   });
 });
 
-/**
- * Get plan usage details (Student)
- * Includes: plan details, usage stats, spending, upcoming sessions
- */
 const getMyPlanUsage = catchAsync(async (req: Request, res: Response) => {
   const studentId = req.user!.id as string;
   const result = await StudentSubscriptionService.getMyPlanUsage(studentId);
@@ -117,10 +95,6 @@ const getMyPlanUsage = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Create Payment Intent for Subscription
- * Called when student selects a plan to initiate payment
- */
 const createPaymentIntent = catchAsync(async (req: Request, res: Response) => {
   const studentId = req.user!.id as string;
   const { tier } = req.body;
@@ -138,10 +112,6 @@ const createPaymentIntent = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Confirm Subscription Payment
- * Called after successful Stripe payment to activate subscription
- */
 const confirmPayment = catchAsync(async (req: Request, res: Response) => {
   const studentId = req.user!.id as string;
   const { subscriptionId, paymentIntentId } = req.body;
@@ -160,10 +130,6 @@ const confirmPayment = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Get Payment History (Student)
- * Returns paginated payment history
- */
 const getPaymentHistory = catchAsync(async (req: Request, res: Response) => {
   const studentId = req.user!.id as string;
   const page = parseInt(req.query.page as string) || 1;

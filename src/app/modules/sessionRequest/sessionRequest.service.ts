@@ -15,21 +15,16 @@ import {
 } from './sessionRequest.interface';
 import { SessionRequest } from './sessionRequest.model';
 
-/**
- * Create session request (Returning Student only)
- * Must be logged in and have completed trial
- */
 const createSessionRequest = async (
   studentId: string,
   payload: Partial<ISessionRequest>
 ): Promise<ISessionRequest> => {
-  // Validate subject exists
+
   const subjectExists = await Subject.findById(payload.subject);
   if (!subjectExists) {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Subject not found');
   }
 
-  // Verify student exists and has completed trial
   const student = await User.findById(studentId);
   if (!student) {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Student not found');
@@ -42,7 +37,6 @@ const createSessionRequest = async (
     );
   }
 
-  // Must have completed trial to create session request
   if (!student.studentProfile?.hasCompletedTrial) {
     throw new ApiError(
       StatusCodes.BAD_REQUEST,
@@ -50,7 +44,6 @@ const createSessionRequest = async (
     );
   }
 
-  // Check if student has pending session request
   const pendingSessionRequest = await SessionRequest.findOne({
     studentId: new Types.ObjectId(studentId),
     status: SESSION_REQUEST_STATUS.PENDING,
@@ -63,7 +56,6 @@ const createSessionRequest = async (
     );
   }
 
-  // Also check for pending trial request (can't have both)
   const pendingTrialRequest = await TrialRequest.findOne({
     studentId: new Types.ObjectId(studentId),
     status: TRIAL_REQUEST_STATUS.PENDING,
@@ -76,33 +68,24 @@ const createSessionRequest = async (
     );
   }
 
-  // Create session request
   const sessionRequest = await SessionRequest.create({
     ...payload,
     studentId: new Types.ObjectId(studentId),
     status: SESSION_REQUEST_STATUS.PENDING,
   });
 
-  // Increment student session request count
   await User.findByIdAndUpdate(studentId, {
     $inc: { 'studentProfile.sessionRequestsCount': 1 },
   });
 
-  // TODO: Send real-time notification to matching tutors
-  // TODO: Send confirmation email to student
-
   return sessionRequest;
 };
 
-/**
- * Get matching requests for tutor (UNIFIED: Trial + Session)
- * Shows PENDING requests in tutor's subjects from both collections
- */
 const getMatchingSessionRequests = async (
   tutorId: string,
   query: Record<string, unknown>
 ) => {
-  // Get tutor's subjects
+
   const tutor = await User.findById(tutorId);
   if (!tutor || tutor.role !== USER_ROLES.TUTOR) {
     throw new ApiError(StatusCodes.FORBIDDEN, 'Only tutors can view matching requests');
@@ -115,39 +98,33 @@ const getMatchingSessionRequests = async (
   const tutorSubjects = tutor.tutorProfile?.subjects || [];
   const now = new Date();
 
-  // Pagination params
   const page = Number(query.page) || 1;
   const limit = Number(query.limit) || 10;
   const skip = (page - 1) * limit;
 
-  // Filter by requestType if provided
   const requestTypeFilter = query.requestType as string | undefined;
 
-  // Base match conditions for session requests
   const sessionMatchConditions: Record<string, unknown> = {
     subject: { $in: tutorSubjects.map(s => new Types.ObjectId(String(s))) },
     status: SESSION_REQUEST_STATUS.PENDING,
     expiresAt: { $gt: now },
   };
 
-  // Base match conditions for trial requests
   const trialMatchConditions: Record<string, unknown> = {
     subject: { $in: tutorSubjects.map(s => new Types.ObjectId(String(s))) },
     status: TRIAL_REQUEST_STATUS.PENDING,
     expiresAt: { $gt: now },
   };
 
-  // Build aggregation pipeline
   const pipeline: Parameters<typeof SessionRequest.aggregate>[0] = [];
 
-  // If filtering by specific type, skip the $unionWith
   if (requestTypeFilter === 'SESSION') {
     pipeline.push(
       { $match: sessionMatchConditions },
       { $addFields: { requestType: 'SESSION' } }
     );
   } else if (requestTypeFilter === 'TRIAL') {
-    // Query only trial requests
+
     const trialResults = await TrialRequest.aggregate([
       { $match: trialMatchConditions },
       { $addFields: { requestType: 'TRIAL' } },
@@ -188,7 +165,7 @@ const getMatchingSessionRequests = async (
       data: trialResults,
     };
   } else {
-    // Unified query: both session and trial requests
+
     pipeline.push(
       { $match: sessionMatchConditions },
       { $addFields: { requestType: 'SESSION' } },
@@ -204,7 +181,6 @@ const getMatchingSessionRequests = async (
     );
   }
 
-  // Add sorting, pagination, and lookups for non-TRIAL-only queries
   if (requestTypeFilter !== 'TRIAL') {
     pipeline.push(
       { $sort: { createdAt: -1 } },
@@ -235,7 +211,6 @@ const getMatchingSessionRequests = async (
 
   const result = await SessionRequest.aggregate(pipeline);
 
-  // Get total count for pagination
   let totalCount = 0;
   if (requestTypeFilter === 'SESSION') {
     totalCount = await SessionRequest.countDocuments(sessionMatchConditions);
@@ -258,27 +233,20 @@ const getMatchingSessionRequests = async (
   };
 };
 
-/**
- * Get student's own requests (UNIFIED: Trial + Session)
- * Returns both trial and session requests for the student
- */
 const getMySessionRequests = async (
   studentId: string,
   query: Record<string, unknown>
 ) => {
   const studentObjectId = new Types.ObjectId(studentId);
 
-  // Pagination params
   const page = Number(query.page) || 1;
   const limit = Number(query.limit) || 10;
   const skip = (page - 1) * limit;
 
-  // Filter by requestType if provided
   const requestTypeFilter = query.requestType as string | undefined;
-  // Filter by status if provided
+
   const statusFilter = query.status as string | undefined;
 
-  // Base match conditions
   const sessionMatchConditions: Record<string, unknown> = { studentId: studentObjectId };
   const trialMatchConditions: Record<string, unknown> = { studentId: studentObjectId };
 
@@ -287,7 +255,6 @@ const getMySessionRequests = async (
     trialMatchConditions.status = statusFilter;
   }
 
-  // Build aggregation pipeline
   const pipeline: Parameters<typeof SessionRequest.aggregate>[0] = [];
 
   if (requestTypeFilter === 'SESSION') {
@@ -296,7 +263,7 @@ const getMySessionRequests = async (
       { $addFields: { requestType: 'SESSION' } }
     );
   } else if (requestTypeFilter === 'TRIAL') {
-    // Query only trial requests
+
     const trialResults = await TrialRequest.aggregate([
       { $match: trialMatchConditions },
       { $addFields: { requestType: 'TRIAL' } },
@@ -346,7 +313,7 @@ const getMySessionRequests = async (
       data: trialResults,
     };
   } else {
-    // Unified query: both session and trial requests
+
     pipeline.push(
       { $match: sessionMatchConditions },
       { $addFields: { requestType: 'SESSION' } },
@@ -362,7 +329,6 @@ const getMySessionRequests = async (
     );
   }
 
-  // Add sorting, pagination, and lookups for non-TRIAL-only queries
   if (requestTypeFilter !== 'TRIAL') {
     pipeline.push(
       { $sort: { createdAt: -1 } },
@@ -402,7 +368,6 @@ const getMySessionRequests = async (
 
   const result = await SessionRequest.aggregate(pipeline);
 
-  // Get total count for pagination
   let totalCount = 0;
   if (requestTypeFilter === 'SESSION') {
     totalCount = await SessionRequest.countDocuments(sessionMatchConditions);
@@ -425,24 +390,18 @@ const getMySessionRequests = async (
   };
 };
 
-/**
- * Get all requests (Admin) - UNIFIED: Trial + Session
- * Returns all trial and session requests for admin dashboard
- */
 const getAllSessionRequests = async (query: Record<string, unknown>) => {
-  // Pagination params
+
   const page = Number(query.page) || 1;
   const limit = Number(query.limit) || 10;
   const skip = (page - 1) * limit;
 
-  // Filter by requestType if provided
   const requestTypeFilter = query.requestType as string | undefined;
-  // Filter by status if provided
+
   const statusFilter = query.status as string | undefined;
-  // Search term
+
   const searchTerm = query.searchTerm as string | undefined;
 
-  // Base match conditions
   const sessionMatchConditions: Record<string, unknown> = {};
   const trialMatchConditions: Record<string, unknown> = {};
 
@@ -460,7 +419,6 @@ const getAllSessionRequests = async (query: Record<string, unknown>) => {
     ];
   }
 
-  // Build aggregation pipeline
   const pipeline: Parameters<typeof SessionRequest.aggregate>[0] = [];
 
   if (requestTypeFilter === 'SESSION') {
@@ -469,7 +427,7 @@ const getAllSessionRequests = async (query: Record<string, unknown>) => {
       { $addFields: { requestType: 'SESSION' } }
     );
   } else if (requestTypeFilter === 'TRIAL') {
-    // Query only trial requests
+
     const trialResults = await TrialRequest.aggregate([
       { $match: trialMatchConditions },
       { $addFields: { requestType: 'TRIAL' } },
@@ -529,7 +487,7 @@ const getAllSessionRequests = async (query: Record<string, unknown>) => {
       data: trialResults,
     };
   } else {
-    // Unified query: both session and trial requests
+
     pipeline.push(
       { $match: sessionMatchConditions },
       { $addFields: { requestType: 'SESSION' } },
@@ -545,7 +503,6 @@ const getAllSessionRequests = async (query: Record<string, unknown>) => {
     );
   }
 
-  // Add sorting, pagination, and lookups for non-TRIAL-only queries
   if (requestTypeFilter !== 'TRIAL') {
     pipeline.push(
       { $sort: { createdAt: -1 } },
@@ -595,7 +552,6 @@ const getAllSessionRequests = async (query: Record<string, unknown>) => {
 
   const result = await SessionRequest.aggregate(pipeline);
 
-  // Get total count for pagination
   let totalCount = 0;
   if (requestTypeFilter === 'SESSION') {
     totalCount = await SessionRequest.countDocuments(sessionMatchConditions);
@@ -618,9 +574,6 @@ const getAllSessionRequests = async (query: Record<string, unknown>) => {
   };
 };
 
-/**
- * Get single session request
- */
 const getSingleSessionRequest = async (id: string): Promise<ISessionRequest | null> => {
   const request = await SessionRequest.findById(id)
     .populate('studentId', 'name email profilePicture phone studentProfile')
@@ -635,17 +588,12 @@ const getSingleSessionRequest = async (id: string): Promise<ISessionRequest | nu
   return request;
 };
 
-/**
- * Accept session request (Tutor)
- * Creates chat and connects student with tutor
- * Sends introductory message to chat
- */
 const acceptSessionRequest = async (
   requestId: string,
   tutorId: string,
   introductoryMessage?: string
 ): Promise<ISessionRequest | null> => {
-  // Verify request exists and is pending
+
   const request = await SessionRequest.findById(requestId).populate('subject', 'name');
   if (!request) {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Session request not found');
@@ -658,14 +606,12 @@ const acceptSessionRequest = async (
     );
   }
 
-  // Check if expired
   if (new Date() > request.expiresAt) {
     request.status = SESSION_REQUEST_STATUS.EXPIRED;
     await request.save();
     throw new ApiError(StatusCodes.BAD_REQUEST, 'This session request has expired');
   }
 
-  // Verify tutor
   const tutor = await User.findById(tutorId);
   if (!tutor || tutor.role !== USER_ROLES.TUTOR) {
     throw new ApiError(StatusCodes.FORBIDDEN, 'Only tutors can accept requests');
@@ -675,8 +621,6 @@ const acceptSessionRequest = async (
     throw new ApiError(StatusCodes.FORBIDDEN, 'Only verified tutors can accept requests');
   }
 
-  // Verify tutor teaches this subject (compare ObjectId)
-  // Handle both populated and non-populated subject field
   const tutorSubjectIds = tutor.tutorProfile?.subjects?.map(s => s.toString()) || [];
   const requestSubjectId = typeof request.subject === 'object' && request.subject._id
     ? request.subject._id.toString()
@@ -688,26 +632,24 @@ const acceptSessionRequest = async (
     );
   }
 
-  // Check if chat already exists between tutor and student (to avoid duplicate chats)
   const chatParticipants = [request.studentId, new Types.ObjectId(tutorId)];
   let chat = await Chat.findOne({
     participants: { $all: chatParticipants },
   });
 
   if (chat) {
-    // Reuse existing chat, update session request reference
+
     chat.sessionRequestId = request._id;
-    chat.trialRequestId = undefined; // Clear trial reference so new sessions aren't marked as trial
+    chat.trialRequestId = undefined;
     await chat.save();
   } else {
-    // Create new chat only if none exists
+
     chat = await Chat.create({
       participants: chatParticipants,
       sessionRequestId: request._id,
     });
   }
 
-  // Send introductory message if provided
   if (introductoryMessage && introductoryMessage.trim()) {
     await Message.create({
       chatId: chat._id,
@@ -717,22 +659,15 @@ const acceptSessionRequest = async (
     });
   }
 
-  // Update session request
   request.status = SESSION_REQUEST_STATUS.ACCEPTED;
   request.acceptedTutorId = new Types.ObjectId(tutorId);
   request.chatId = chat._id as Types.ObjectId;
   request.acceptedAt = new Date();
   await request.save();
 
-  // TODO: Send real-time notification to student
-  // TODO: Send email to student
-
   return request;
 };
 
-/**
- * Cancel session request (Student) - Permanently deletes the request
- */
 const cancelSessionRequest = async (
   requestId: string,
   studentId: string
@@ -743,7 +678,6 @@ const cancelSessionRequest = async (
     throw new ApiError(StatusCodes.NOT_FOUND, 'Session request not found');
   }
 
-  // Verify ownership
   if (request.studentId.toString() !== studentId) {
     throw new ApiError(
       StatusCodes.FORBIDDEN,
@@ -751,7 +685,6 @@ const cancelSessionRequest = async (
     );
   }
 
-  // Can only cancel PENDING requests
   if (request.status !== SESSION_REQUEST_STATUS.PENDING) {
     throw new ApiError(
       StatusCodes.BAD_REQUEST,
@@ -759,17 +692,11 @@ const cancelSessionRequest = async (
     );
   }
 
-  // Permanently delete the request
   await SessionRequest.findByIdAndDelete(requestId);
 
   return { deleted: true };
 };
 
-/**
- * Extend session request (Student)
- * Adds 7 more days to expiration (max 1 extension)
- * Can only extend when 1 day or less remaining (6+ days passed)
- */
 const extendSessionRequest = async (
   requestId: string,
   studentId: string
@@ -780,7 +707,6 @@ const extendSessionRequest = async (
     throw new ApiError(StatusCodes.NOT_FOUND, 'Session request not found');
   }
 
-  // Verify ownership
   if (request.studentId.toString() !== studentId) {
     throw new ApiError(
       StatusCodes.FORBIDDEN,
@@ -788,7 +714,6 @@ const extendSessionRequest = async (
     );
   }
 
-  // Can only extend PENDING requests
   if (request.status !== SESSION_REQUEST_STATUS.PENDING) {
     throw new ApiError(
       StatusCodes.BAD_REQUEST,
@@ -796,7 +721,6 @@ const extendSessionRequest = async (
     );
   }
 
-  // Check extension limit (max 1)
   if (request.extensionCount && request.extensionCount >= 1) {
     throw new ApiError(
       StatusCodes.BAD_REQUEST,
@@ -804,7 +728,6 @@ const extendSessionRequest = async (
     );
   }
 
-  // Can only extend when 1 day or less remaining (6+ days passed)
   const timeRemaining = request.expiresAt.getTime() - Date.now();
   const oneDayInMs = 24 * 60 * 60 * 1000;
   if (timeRemaining > oneDayInMs) {
@@ -814,7 +737,6 @@ const extendSessionRequest = async (
     );
   }
 
-  // Extend by 7 days from now
   const newExpiresAt = new Date();
   newExpiresAt.setDate(newExpiresAt.getDate() + 7);
 
@@ -828,9 +750,6 @@ const extendSessionRequest = async (
   return request;
 };
 
-/**
- * Send reminders for expiring requests (Cron job)
- */
 const sendExpirationReminders = async (): Promise<number> => {
   const now = new Date();
 
@@ -850,16 +769,12 @@ const sendExpirationReminders = async (): Promise<number> => {
     request.finalExpiresAt = finalDeadline;
     await request.save();
 
-    // TODO: Send email notification to student
     reminderCount++;
   }
 
   return reminderCount;
 };
 
-/**
- * Auto-delete requests after final deadline (Cron job)
- */
 const autoDeleteExpiredRequests = async (): Promise<number> => {
   const result = await SessionRequest.deleteMany({
     status: SESSION_REQUEST_STATUS.PENDING,
@@ -869,9 +784,6 @@ const autoDeleteExpiredRequests = async (): Promise<number> => {
   return result.deletedCount;
 };
 
-/**
- * Auto-expire session requests (Cron job)
- */
 const expireOldRequests = async (): Promise<number> => {
   const result = await SessionRequest.updateMany(
     {
@@ -886,32 +798,24 @@ const expireOldRequests = async (): Promise<number> => {
   return result.modifiedCount;
 };
 
-/**
- * Get tutor's accepted requests (UNIFIED: Trial + Session)
- * Returns both trial and session requests accepted by this tutor
- */
 const getMyAcceptedRequests = async (
   tutorId: string,
   query: Record<string, unknown>
 ) => {
   const tutorObjectId = new Types.ObjectId(tutorId);
 
-  // Verify tutor exists
   const tutor = await User.findById(tutorId);
   if (!tutor || tutor.role !== USER_ROLES.TUTOR) {
     throw new ApiError(StatusCodes.FORBIDDEN, 'Only tutors can access this endpoint');
   }
 
-  // Pagination params
   const page = Number(query.page) || 1;
   const limit = Number(query.limit) || 10;
   const skip = (page - 1) * limit;
 
-  // Match conditions
   const sessionMatchConditions = { acceptedTutorId: tutorObjectId };
   const trialMatchConditions = { acceptedTutorId: tutorObjectId };
 
-  // Unified query: both session and trial requests
   const pipeline: Parameters<typeof SessionRequest.aggregate>[0] = [
     { $match: sessionMatchConditions },
     { $addFields: { requestType: 'SESSION' } },
@@ -951,7 +855,6 @@ const getMyAcceptedRequests = async (
 
   const result = await SessionRequest.aggregate(pipeline);
 
-  // Get total count for pagination
   const [sessionCount, trialCount] = await Promise.all([
     SessionRequest.countDocuments(sessionMatchConditions),
     TrialRequest.countDocuments(trialMatchConditions),

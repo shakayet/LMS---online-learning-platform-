@@ -39,10 +39,6 @@ wrapService('AuthService', AuthService);
 wrapService('UserService', UserService);
 wrapService('NotificationService', NotificationService);
 
-// Add more services here to auto-label without touching their files
-// e.g., import { PaymentService } from '../modules/payment/payment.service';
-// wrapService('PaymentService', PaymentService);
-
 const wrapController = (controllerName: string, obj: Record<string, any>) => {
   Object.keys(obj).forEach(key => {
     const original = obj[key];

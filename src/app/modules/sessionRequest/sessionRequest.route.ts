@@ -7,7 +7,6 @@ import { SessionRequestValidation } from './sessionRequest.validation';
 
 const router = express.Router();
 
-// Student routes
 router.post(
   '/',
   auth(USER_ROLES.STUDENT),
@@ -34,7 +33,6 @@ router.patch(
   SessionRequestController.extendSessionRequest
 );
 
-// Tutor routes
 router.get(
   '/matching',
   auth(USER_ROLES.TUTOR),
@@ -54,7 +52,6 @@ router.patch(
   SessionRequestController.acceptSessionRequest
 );
 
-// Admin routes
 router.get(
   '/',
   auth(USER_ROLES.SUPER_ADMIN),
@@ -79,7 +76,6 @@ router.post(
   SessionRequestController.autoDeleteExpiredRequests
 );
 
-// Shared routes (authenticated users)
 router.get(
   '/:id',
   auth(USER_ROLES.STUDENT, USER_ROLES.TUTOR, USER_ROLES.SUPER_ADMIN),

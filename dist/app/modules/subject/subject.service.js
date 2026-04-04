@@ -22,7 +22,7 @@ const sessionRequest_model_1 = require("../sessionRequest/sessionRequest.model")
 const user_model_1 = require("../user/user.model");
 const tutorApplication_model_1 = require("../tutorApplication/tutorApplication.model");
 const createSubject = (payload) => __awaiter(void 0, void 0, void 0, function* () {
-    // Check if subject with the same name already exists
+
     const existingSubject = yield subject_model_1.Subject.findOne({ name: payload.name });
     if (existingSubject) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'Subject with this same name already exists');
@@ -30,7 +30,7 @@ const createSubject = (payload) => __awaiter(void 0, void 0, void 0, function* (
     const result = yield subject_model_1.Subject.create(payload);
     return result;
 });
-// Get all subjects with filtering, searching, pagination
+
 const getAllSubjects = (query) => __awaiter(void 0, void 0, void 0, function* () {
     const subjectQuery = new QueryBuilder_1.default(subject_model_1.Subject.find(), query)
         .search(['name'])
@@ -45,7 +45,7 @@ const getAllSubjects = (query) => __awaiter(void 0, void 0, void 0, function* ()
         pagination,
     };
 });
-// Get single subject by ID
+
 const getSingleSubject = (id) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield subject_model_1.Subject.findById(id);
     if (!result) {
@@ -53,14 +53,14 @@ const getSingleSubject = (id) => __awaiter(void 0, void 0, void 0, function* () 
     }
     return result;
 });
-// Update subject
+
 const updateSubject = (id, payload) => __awaiter(void 0, void 0, void 0, function* () {
-    // Check if subject exists
+
     const subject = yield subject_model_1.Subject.findById(id);
     if (!subject) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, 'Subject not found');
     }
-    // If updating name, check for uniqueness
+
     if (payload.name && payload.name !== subject.name) {
         const existingSubject = yield subject_model_1.Subject.findOne({ name: payload.name });
         if (existingSubject) {
@@ -73,13 +73,13 @@ const updateSubject = (id, payload) => __awaiter(void 0, void 0, void 0, functio
     });
     return result;
 });
-// Hard delete subject (permanently removes from database)
+
 const deleteSubject = (id) => __awaiter(void 0, void 0, void 0, function* () {
     const subject = yield subject_model_1.Subject.findById(id);
     if (!subject) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, 'Subject not found');
     }
-    // Check for active trial requests using this subject
+
     const activeTrialRequests = yield trialRequest_model_1.TrialRequest.countDocuments({
         subject: id,
         status: { $in: ['PENDING', 'ACCEPTED'] },
@@ -87,7 +87,7 @@ const deleteSubject = (id) => __awaiter(void 0, void 0, void 0, function* () {
     if (activeTrialRequests > 0) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, `Cannot delete: ${activeTrialRequests} active trial request(s) use this subject. Deactivate it instead.`);
     }
-    // Check for active session requests using this subject
+
     const activeSessionRequests = yield sessionRequest_model_1.SessionRequest.countDocuments({
         subject: id,
         status: { $in: ['PENDING', 'ACCEPTED'] },
@@ -95,11 +95,11 @@ const deleteSubject = (id) => __awaiter(void 0, void 0, void 0, function* () {
     if (activeSessionRequests > 0) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, `Cannot delete: ${activeSessionRequests} active session request(s) use this subject. Deactivate it instead.`);
     }
-    // Remove subject reference from tutors' subject arrays
+
     yield user_model_1.User.updateMany({ subjects: id }, { $pull: { subjects: id } });
-    // Remove subject reference from tutor applications
+
     yield tutorApplication_model_1.TutorApplication.updateMany({ subjects: id }, { $pull: { subjects: id } });
-    // Hard delete
+
     const result = yield subject_model_1.Subject.findByIdAndDelete(id);
     return result;
 });

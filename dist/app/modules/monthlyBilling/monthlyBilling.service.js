@@ -27,21 +27,13 @@ const stripe_1 = __importDefault(require("stripe"));
 const stripe = new stripe_1.default(process.env.STRIPE_SECRET_KEY || '', {
     apiVersion: '2025-01-27.acacia',
 });
-/**
- * Generate monthly billing for all active students
- * Called by cron job at month-end
- *
- * Billing Logic by Tier:
- * - FLEXIBLE: All sessions are billed (no upfront payment)
- * - REGULAR: First 4 hours/month covered by upfront, extra sessions billed at €28/hr
- * - LONG_TERM: First 4 hours/month covered by upfront, extra sessions billed at €25/hr
- */
+
 const generateMonthlyBillings = (month, year) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
-    // Get period dates
-    const periodStart = new Date(year, month - 1, 1); // First day of month
-    const periodEnd = new Date(year, month, 0, 23, 59, 59); // Last day of month
-    // Find all active subscriptions
+
+    const periodStart = new Date(year, month - 1, 1);
+    const periodEnd = new Date(year, month, 0, 23, 59, 59);
+
     const activeSubscriptions = yield studentSubscription_model_1.StudentSubscription.find({
         status: studentSubscription_interface_1.SUBSCRIPTION_STATUS.ACTIVE,
     }).populate('studentId');
@@ -51,11 +43,11 @@ const generateMonthlyBillings = (month, year) => __awaiter(void 0, void 0, void 
     console.log(`[Billing] Found ${activeSubscriptions.length} active subscriptions`);
     for (const subscription of activeSubscriptions) {
         try {
-            // Get the actual studentId (ObjectId) - after populate, studentId is the full user object
+
             const studentId = subscription.studentId._id || subscription.studentId;
             console.log(`[Billing] Processing student: ${studentId}`);
             console.log(`[Billing] studentId type: ${typeof studentId}, value: ${studentId}`);
-            // Check if billing already exists for this month
+
             const existingBilling = yield monthlyBilling_model_1.MonthlyBilling.findOne({
                 studentId: studentId,
                 billingMonth: month,
@@ -63,29 +55,28 @@ const generateMonthlyBillings = (month, year) => __awaiter(void 0, void 0, void 
             });
             if (existingBilling) {
                 console.log(`[Billing] Skipping - billing already exists for student ${studentId}`);
-                continue; // Skip if already billed
+                continue;
             }
-            // Get completed sessions for this student in billing period
-            // Only get sessions that are NOT already marked as paid upfront and NOT already billed
+
             const sessions = yield session_model_1.Session.find({
                 studentId: studentId,
                 studentCompletionStatus: session_interface_1.COMPLETION_STATUS.COMPLETED,
-                isTrial: false, // Exclude trial sessions
-                isPaidUpfront: { $ne: true }, // Exclude sessions already covered by upfront payment
-                billingId: { $exists: false }, // Exclude already billed sessions
+                isTrial: false,
+                isPaidUpfront: { $ne: true },
+                billingId: { $exists: false },
                 studentCompletedAt: {
                     $gte: periodStart,
                     $lte: periodEnd,
                 },
             }).populate('tutorId', 'name').sort({ studentCompletedAt: 1 });
             console.log(`[Billing] Found ${sessions.length} billable sessions for student ${studentId}`);
-            // For REGULAR and LONG_TERM tiers, check if there are still prepaid hours to use
+
             let sessionsToCharge = sessions;
             let prepaidHoursUsedThisMonth = 0;
             if (subscription.tier === studentSubscription_interface_1.SUBSCRIPTION_TIER.REGULAR || subscription.tier === studentSubscription_interface_1.SUBSCRIPTION_TIER.LONG_TERM) {
-                // Get the minimum hours that are prepaid per month
-                const prepaidHoursPerMonth = subscription.minimumHours; // 4 hours
-                // Calculate how many hours were already marked as prepaid for THIS month
+
+                const prepaidHoursPerMonth = subscription.minimumHours;
+
                 const prepaidSessionsThisMonth = yield session_model_1.Session.countDocuments({
                     studentId: studentId,
                     isPaidUpfront: true,
@@ -94,11 +85,11 @@ const generateMonthlyBillings = (month, year) => __awaiter(void 0, void 0, void 
                         $lte: periodEnd,
                     },
                 });
-                prepaidHoursUsedThisMonth = prepaidSessionsThisMonth; // Each session = 1 hour
-                // Mark remaining sessions as prepaid until we hit the limit
+                prepaidHoursUsedThisMonth = prepaidSessionsThisMonth;
+
                 const remainingPrepaidHours = Math.max(0, prepaidHoursPerMonth - prepaidHoursUsedThisMonth);
                 if (remainingPrepaidHours > 0) {
-                    // Mark the first N sessions as prepaid (covered by upfront payment)
+
                     const sessionsToMarkPrepaid = sessions.slice(0, remainingPrepaidHours);
                     const sessionIdsToMarkPrepaid = sessionsToMarkPrepaid.map(s => s._id);
                     if (sessionIdsToMarkPrepaid.length > 0) {
@@ -108,30 +99,30 @@ const generateMonthlyBillings = (month, year) => __awaiter(void 0, void 0, void 
                                 billedAt: new Date(),
                             }
                         });
-                        // Update subscription's prepaidHoursUsed counter
+
                         yield studentSubscription_model_1.StudentSubscription.findByIdAndUpdate(subscription._id, { $inc: { prepaidHoursUsed: sessionIdsToMarkPrepaid.length } });
                         console.log(`Marked ${sessionIdsToMarkPrepaid.length} sessions as prepaid for student ${subscription.studentId}`);
                     }
-                    // Only charge for sessions beyond the prepaid hours
+
                     sessionsToCharge = sessions.slice(remainingPrepaidHours);
                 }
             }
-            // If no sessions to charge, skip creating a billing
+
             if (sessionsToCharge.length === 0) {
                 console.log(`No billable sessions for student ${subscription.studentId} in ${month}/${year}`);
                 continue;
             }
-            // Build line items for sessions that need to be charged
+
             const lineItems = sessionsToCharge.map(session => ({
                 sessionId: session._id,
                 subject: session.subject,
                 tutorName: session.tutorId.name,
                 date: session.studentCompletedAt || session.completedAt,
                 duration: session.duration,
-                pricePerHour: subscription.pricePerHour, // Use subscription price, not session price
-                amount: subscription.pricePerHour, // Each session is 1 hour
+                pricePerHour: subscription.pricePerHour,
+                amount: subscription.pricePerHour,
             }));
-            // Create billing record
+
             const billing = yield monthlyBilling_model_1.MonthlyBilling.create({
                 studentId: studentId,
                 subscriptionId: subscription._id,
@@ -144,7 +135,7 @@ const generateMonthlyBillings = (month, year) => __awaiter(void 0, void 0, void 
                 pricePerHour: subscription.pricePerHour,
                 status: monthlyBilling_interface_1.BILLING_STATUS.PENDING,
             });
-            // Mark these sessions as billed
+
             const billedSessionIds = sessionsToCharge.map(s => s._id);
             yield session_model_1.Session.updateMany({ _id: { $in: billedSessionIds } }, {
                 $set: {
@@ -153,14 +144,14 @@ const generateMonthlyBillings = (month, year) => __awaiter(void 0, void 0, void 
                 }
             });
             billings.push(billing);
-            // Create Stripe Invoice and auto-charge
+
             const student = subscription.studentId;
             if (subscription.stripeCustomerId && billing.total > 0) {
                 try {
-                    // Create the invoice first, then attach items directly to it
+
                     const invoice = yield stripe.invoices.create({
                         customer: subscription.stripeCustomerId,
-                        currency: 'eur', // Must match invoice items currency
+                        currency: 'eur',
                         auto_advance: true,
                         collection_method: 'charge_automatically',
                         pending_invoice_items_behavior: 'exclude',
@@ -171,36 +162,35 @@ const generateMonthlyBillings = (month, year) => __awaiter(void 0, void 0, void 
                             billingYear: year.toString(),
                         },
                     });
-                    // Create invoice items attached directly to the invoice
+
                     for (const item of lineItems) {
                         yield stripe.invoiceItems.create({
                             customer: subscription.stripeCustomerId,
                             invoice: invoice.id,
-                            amount: Math.round(item.amount * 100), // Convert to cents
+                            amount: Math.round(item.amount * 100),
                             currency: 'eur',
                             description: `${item.subject} session with ${item.tutorName} (${new Date(item.date).toLocaleDateString()})`,
                         });
                     }
-                    // Finalize the invoice (required before payment)
+
                     const finalizedInvoice = yield stripe.invoices.finalizeInvoice(invoice.id);
-                    // Store the invoice ID and URL immediately
+
                     billing.stripeInvoiceId = finalizedInvoice.id;
                     billing.invoiceUrl = finalizedInvoice.hosted_invoice_url || finalizedInvoice.invoice_pdf || undefined;
-                    // Try to pay the invoice
+
                     try {
                         const paidInvoice = yield stripe.invoices.pay(finalizedInvoice.id);
                         if (paidInvoice.status === 'paid') {
                             billing.status = monthlyBilling_interface_1.BILLING_STATUS.PAID;
                             billing.paidAt = new Date();
                             billing.paymentMethod = 'card';
-                            // Update invoice URL after payment (may have changed)
+
                             billing.invoiceUrl = paidInvoice.hosted_invoice_url || paidInvoice.invoice_pdf || billing.invoiceUrl;
                             console.log(`Auto-charged €${billing.total} for student ${studentId}`);
                         }
                     }
                     catch (paymentError) {
-                        // Stripe auto-collects on finalize (auto_advance + charge_automatically),
-                        // so .pay() may throw "Invoice is already paid" — that's actually a success
+
                         if ((_a = paymentError.message) === null || _a === void 0 ? void 0 : _a.includes('already paid')) {
                             const invoice = yield stripe.invoices.retrieve(finalizedInvoice.id);
                             billing.status = monthlyBilling_interface_1.BILLING_STATUS.PAID;
@@ -210,7 +200,7 @@ const generateMonthlyBillings = (month, year) => __awaiter(void 0, void 0, void 
                             console.log(`Invoice already auto-paid for student ${studentId} — marked as PAID`);
                         }
                         else {
-                            // Actual payment failure - student can pay later
+
                             console.error(`Payment failed for student ${studentId}:`, paymentError.message);
                             billing.status = monthlyBilling_interface_1.BILLING_STATUS.FAILED;
                             billing.failureReason = paymentError.message;
@@ -227,15 +217,13 @@ const generateMonthlyBillings = (month, year) => __awaiter(void 0, void 0, void 
             }
         }
         catch (error) {
-            // Log error but continue with other billings
+
             console.error(`Error generating billing for student ${subscription.studentId}:`, error.message);
         }
     }
     return billings;
 });
-/**
- * Get student's billing history
- */
+
 const getMyBillings = (studentId, query) => __awaiter(void 0, void 0, void 0, function* () {
     const billingQuery = new QueryBuilder_1.default(monthlyBilling_model_1.MonthlyBilling.find({ studentId: new mongoose_1.Types.ObjectId(studentId) }), query)
         .filter()
@@ -249,9 +237,7 @@ const getMyBillings = (studentId, query) => __awaiter(void 0, void 0, void 0, fu
         data: result,
     };
 });
-/**
- * Get all billings (Admin)
- */
+
 const getAllBillings = (query) => __awaiter(void 0, void 0, void 0, function* () {
     const billingQuery = new QueryBuilder_1.default(monthlyBilling_model_1.MonthlyBilling.find().populate('studentId', 'name email profilePicture'), query)
         .search(['invoiceNumber'])
@@ -266,9 +252,7 @@ const getAllBillings = (query) => __awaiter(void 0, void 0, void 0, function* ()
         data: result,
     };
 });
-/**
- * Get single billing
- */
+
 const getSingleBilling = (id) => __awaiter(void 0, void 0, void 0, function* () {
     const billing = yield monthlyBilling_model_1.MonthlyBilling.findById(id)
         .populate('studentId', 'name email profilePicture phone')
@@ -278,9 +262,7 @@ const getSingleBilling = (id) => __awaiter(void 0, void 0, void 0, function* () 
     }
     return billing;
 });
-/**
- * Mark billing as paid (Webhook handler or manual)
- */
+
 const markAsPaid = (billingId, paymentDetails) => __awaiter(void 0, void 0, void 0, function* () {
     const billing = yield monthlyBilling_model_1.MonthlyBilling.findById(billingId);
     if (!billing) {
@@ -296,18 +278,10 @@ const markAsPaid = (billingId, paymentDetails) => __awaiter(void 0, void 0, void
         billing.paymentMethod = paymentDetails.paymentMethod;
     }
     yield billing.save();
-    // TODO: Send payment confirmation email
-    // await sendEmail({
-    //   to: student.email,
-    //   subject: 'Payment Received',
-    //   template: 'payment-confirmation',
-    //   data: { billing }
-    // });
+
     return billing;
 });
-/**
- * Mark billing as failed
- */
+
 const markAsFailed = (billingId, failureReason) => __awaiter(void 0, void 0, void 0, function* () {
     const billing = yield monthlyBilling_model_1.MonthlyBilling.findById(billingId);
     if (!billing) {
@@ -316,13 +290,7 @@ const markAsFailed = (billingId, failureReason) => __awaiter(void 0, void 0, voi
     billing.status = monthlyBilling_interface_1.BILLING_STATUS.FAILED;
     billing.failureReason = failureReason;
     yield billing.save();
-    // TODO: Send payment failure email
-    // await sendEmail({
-    //   to: student.email,
-    //   subject: 'Payment Failed',
-    //   template: 'payment-failed',
-    //   data: { billing, failureReason }
-    // });
+
     return billing;
 });
 exports.MonthlyBillingService = {

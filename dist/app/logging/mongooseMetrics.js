@@ -42,7 +42,7 @@ const postEnd = (op) => function (_res, next) {
         const start = this.__metricsStart || Date.now();
         const dur = Date.now() - start;
         const model = getModelName(this);
-        // Capture aggregate pipeline summary when applicable
+
         let pipeline;
         if (op === 'aggregate' && typeof (this === null || this === void 0 ? void 0 : this.pipeline) === 'function') {
             try {
@@ -52,7 +52,7 @@ const postEnd = (op) => function (_res, next) {
             }
             catch (_b) { }
         }
-        // Derive nReturned for common ops from the result
+
         let nReturned;
         try {
             if (op === 'find' && Array.isArray(_res)) {
@@ -72,7 +72,7 @@ const postEnd = (op) => function (_res, next) {
             }
         }
         catch (_c) { }
-        // Try explain('executionStats') via native driver for accurate metrics
+
         let docsExamined;
         let indexUsed;
         let executionStage;
@@ -88,7 +88,7 @@ const postEnd = (op) => function (_res, next) {
                     exp = yield coll.find(filter).limit(1).explain('executionStats');
                 }
                 else if (op === 'countDocuments') {
-                    // For count, use a find explain to observe scan behavior
+
                     exp = yield coll.find(filter).explain('executionStats');
                 }
                 else if (op === 'aggregate' && typeof (this === null || this === void 0 ? void 0 : this.pipeline) === 'function') {
@@ -96,7 +96,7 @@ const postEnd = (op) => function (_res, next) {
                     exp = yield coll.aggregate(pl).explain('executionStats');
                 }
                 else if (op === 'updateOne' || op === 'updateMany' || op === 'deleteOne' || op === 'deleteMany' || op === 'findOneAndUpdate') {
-                    // Use find explain for write filters to infer index usage
+
                     exp = yield coll.find(filter).limit(op === 'updateMany' || op === 'deleteMany' ? 0 : 1).explain('executionStats');
                 }
             }
@@ -111,7 +111,7 @@ const postEnd = (op) => function (_res, next) {
             }
         }
         catch (_d) { }
-        // Index suggestion (basic): if COLLSCAN or docsExamined >> nReturned
+
         let suggestion;
         try {
             const conds = this._conditions || (typeof this.getFilter === 'function' ? this.getFilter() : undefined);
@@ -121,7 +121,7 @@ const postEnd = (op) => function (_res, next) {
             if (!indexUsed || indexUsed === 'NO_INDEX' || (docsExamined && nReturned && docsExamined > nReturned * 50)) {
                 suggestion = idxFields ? `Create compound index on { ${idxFields} }` : undefined;
             }
-            // Attach attributes to OTel span
+
             if (this.__otelSpan) {
                 try {
                     this.__otelSpan.setAttribute('db.model', model || 'unknown');
@@ -150,7 +150,7 @@ const postEnd = (op) => function (_res, next) {
         next();
     });
 };
-// Create a compact, human-readable summary of an aggregation pipeline
+
 function summarizePipeline(pipeline) {
     const parts = [];
     for (const stage of pipeline) {
@@ -198,14 +198,14 @@ function summarizePipeline(pipeline) {
     }
     return parts.join(' → ');
 }
-// Extract docs examined, nReturned, index name, and execution stage from MongoDB explain output
+
 function extractExplainStats(exp) {
     var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x;
     if (!exp || typeof exp !== 'object')
         return {};
     const es = exp.executionStats || {};
     const qp = exp.queryPlanner || {};
-    // Prefer top-level totals, but fall back to nested executionStages chain
+
     const deepDocs = (_g = (_d = (_b = (_a = es.executionStages) === null || _a === void 0 ? void 0 : _a.docsExamined) !== null && _b !== void 0 ? _b : (_c = es.executionStages) === null || _c === void 0 ? void 0 : _c.totalDocsExamined) !== null && _d !== void 0 ? _d : (_f = (_e = es.executionStages) === null || _e === void 0 ? void 0 : _e.inputStage) === null || _f === void 0 ? void 0 : _f.docsExamined) !== null && _g !== void 0 ? _g : (_k = (_j = (_h = es.executionStages) === null || _h === void 0 ? void 0 : _h.inputStage) === null || _j === void 0 ? void 0 : _j.inputStage) === null || _k === void 0 ? void 0 : _k.docsExamined;
     const totalDocsExamined = (_m = (_l = es.totalDocsExamined) !== null && _l !== void 0 ? _l : es.docsExamined) !== null && _m !== void 0 ? _m : deepDocs;
     const nReturned = es.nReturned;
@@ -235,7 +235,7 @@ function extractExplainStats(exp) {
 }
 function registerMongooseMetricsPlugin() {
     const plugin = (schema) => {
-        // Query operations
+
         schema.pre('find', preStart('find'));
         schema.post('find', postEnd('find'));
         schema.pre('findOne', preStart('findOne'));
@@ -254,7 +254,7 @@ function registerMongooseMetricsPlugin() {
         schema.post('deleteOne', postEnd('deleteOne'));
         schema.pre('deleteMany', preStart('deleteMany'));
         schema.post('deleteMany', postEnd('deleteMany'));
-        // Error handlers for query ops (record even if failed)
+
         schema.post('updateOne', function (err, _res, next) {
             if (err) {
                 const start = this.__metricsStart || Date.now();
@@ -330,7 +330,7 @@ function registerMongooseMetricsPlugin() {
             }
             next(err);
         });
-        // Aggregation
+
         schema.pre('aggregate', preStart('aggregate'));
         schema.post('aggregate', postEnd('aggregate'));
         schema.post('aggregate', function (err, _res, next) {
@@ -347,7 +347,7 @@ function registerMongooseMetricsPlugin() {
             }
             next(err);
         });
-        // Document operations (covers create/save)
+
         schema.pre('save', preStart('save'));
         schema.post('save', function (_doc, next) {
             const start = this.__metricsStart || Date.now();
@@ -366,5 +366,5 @@ function registerMongooseMetricsPlugin() {
     };
     mongoose_1.default.plugin(plugin);
 }
-// Auto-register on import
+
 registerMongooseMetricsPlugin();

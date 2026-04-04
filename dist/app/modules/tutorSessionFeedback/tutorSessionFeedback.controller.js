@@ -17,7 +17,7 @@ const http_status_codes_1 = require("http-status-codes");
 const catchAsync_1 = __importDefault(require("../../../shared/catchAsync"));
 const sendResponse_1 = __importDefault(require("../../../shared/sendResponse"));
 const tutorSessionFeedback_service_1 = require("./tutorSessionFeedback.service");
-// Submit feedback for a session (tutor action)
+
 const submitFeedback = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const tutorId = req.user.id;
     const result = yield tutorSessionFeedback_service_1.TutorSessionFeedbackService.submitFeedback(tutorId, req.body);
@@ -28,7 +28,7 @@ const submitFeedback = (0, catchAsync_1.default)((req, res) => __awaiter(void 0,
         data: result,
     });
 }));
-// Get pending feedbacks for logged-in tutor
+
 const getPendingFeedbacks = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const tutorId = req.user.id;
     const result = yield tutorSessionFeedback_service_1.TutorSessionFeedbackService.getPendingFeedbacks(tutorId, req.query);
@@ -40,7 +40,7 @@ const getPendingFeedbacks = (0, catchAsync_1.default)((req, res) => __awaiter(vo
         pagination: result.meta,
     });
 }));
-// Get all submitted feedbacks for logged-in tutor
+
 const getTutorFeedbacks = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const tutorId = req.user.id;
     const result = yield tutorSessionFeedback_service_1.TutorSessionFeedbackService.getTutorFeedbacks(tutorId, req.query);
@@ -52,7 +52,7 @@ const getTutorFeedbacks = (0, catchAsync_1.default)((req, res) => __awaiter(void
         pagination: result.meta,
     });
 }));
-// Get feedback for a specific session
+
 const getFeedbackBySession = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { sessionId } = req.params;
     const userId = req.user.id;
@@ -64,7 +64,7 @@ const getFeedbackBySession = (0, catchAsync_1.default)((req, res) => __awaiter(v
         data: result,
     });
 }));
-// Get feedbacks received by logged-in student
+
 const getMyReceivedFeedbacks = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const studentId = req.user.id;
     const result = yield tutorSessionFeedback_service_1.TutorSessionFeedbackService.getStudentFeedbacks(studentId, req.query);
@@ -76,7 +76,7 @@ const getMyReceivedFeedbacks = (0, catchAsync_1.default)((req, res) => __awaiter
         pagination: result.meta,
     });
 }));
-// Admin: Get forfeited payments summary
+
 const getForfeitedPaymentsSummary = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { month, year } = req.query;
     const result = yield tutorSessionFeedback_service_1.TutorSessionFeedbackService.getForfeitedPaymentsSummary({
@@ -90,7 +90,7 @@ const getForfeitedPaymentsSummary = (0, catchAsync_1.default)((req, res) => __aw
         data: result,
     });
 }));
-// Admin: Get list of forfeited feedbacks
+
 const getForfeitedFeedbacksList = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield tutorSessionFeedback_service_1.TutorSessionFeedbackService.getForfeitedFeedbacksList(req.query);
     (0, sendResponse_1.default)(res, {

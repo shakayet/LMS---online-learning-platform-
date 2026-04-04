@@ -28,7 +28,7 @@ const userSchema = new Schema<IUser, UserModal>(
       type: String,
       required: true,
       minlength: 8,
-      select: false, // hide password by default
+      select: false,
     },
     location: {
       type: String,
@@ -74,7 +74,6 @@ const userSchema = new Schema<IUser, UserModal>(
       default: [],
     },
 
-    // Student Profile (for STUDENT role)
     studentProfile: {
       type: {
         schoolType: String,
@@ -120,10 +119,9 @@ const userSchema = new Schema<IUser, UserModal>(
           default: null,
         },
       },
-      default: undefined, // Only set for STUDENT role
+      default: undefined,
     },
 
-    // Tutor Profile (for TUTOR/APPLICANT role)
     tutorProfile: {
       type: {
         address: String,
@@ -157,7 +155,7 @@ const userSchema = new Schema<IUser, UserModal>(
           type: Number,
           default: 0,
         },
-        // Level System
+
         level: {
           type: String,
           enum: ['STARTER', 'INTERMEDIATE', 'EXPERT'],
@@ -166,7 +164,7 @@ const userSchema = new Schema<IUser, UserModal>(
         levelUpdatedAt: {
           type: Date,
         },
-        // Earnings
+
         totalEarnings: {
           type: Number,
           default: 0,
@@ -175,7 +173,7 @@ const userSchema = new Schema<IUser, UserModal>(
           type: Number,
           default: 0,
         },
-        // Payout Settings
+
         payoutRecipient: {
           type: String,
         },
@@ -202,7 +200,7 @@ const userSchema = new Schema<IUser, UserModal>(
           default: false,
         },
       },
-      default: undefined, // Only set for TUTOR/APPLICANT role
+      default: undefined,
     },
 
     authentication: {
@@ -220,13 +218,12 @@ const userSchema = new Schema<IUser, UserModal>(
           default: null,
         },
       },
-      select: false, // hide auth info by default
+      select: false,
     },
   },
   { timestamps: true }
 );
 
-//exist user check
 userSchema.statics.isExistUserById = async (id: string) => {
   const isExist = await User.findById(id);
   return isExist;
@@ -237,7 +234,6 @@ userSchema.statics.isExistUserByEmail = async (email: string) => {
   return isExist;
 };
 
-//is match password
 userSchema.statics.isMatchPassword = async (
   password: string,
   hashPassword: string
@@ -245,18 +241,16 @@ userSchema.statics.isMatchPassword = async (
   return await bcrypt.compare(password, hashPassword);
 };
 
-//check user
 userSchema.pre('save', async function (next) {
-  //check user - exclude current user from email uniqueness check
-  const isExist = await User.findOne({ 
+
+  const isExist = await User.findOne({
     email: this.email,
-    _id: { $ne: this._id } // exclude current user
+    _id: { $ne: this._id }
   });
   if (isExist) {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Email already exist!');
   }
 
-  //password hash
   this.password = await bcrypt.hash(
     this.password,
     Number(config.bcrypt_salt_rounds)
@@ -264,16 +258,14 @@ userSchema.pre('save', async function (next) {
   next();
 });
 
-// ✅ add device token
 userSchema.statics.addDeviceToken = async (userId: string, token: string) => {
   return await User.findByIdAndUpdate(
     userId,
-    { $addToSet: { deviceTokens: token } }, // prevent duplicates
+    { $addToSet: { deviceTokens: token } },
     { new: true }
   );
 };
 
-// ✅ remove device token
 userSchema.statics.removeDeviceToken = async (
   userId: string,
   token: string

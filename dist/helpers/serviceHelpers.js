@@ -47,17 +47,10 @@ const validateObjectIdOrThrow = (id, field = 'id') => {
     }
 };
 exports.validateObjectIdOrThrow = validateObjectIdOrThrow;
-// Helper to exclude soft deleted docs by default
+
 const notDeleted = (extra = {}) => (Object.assign({ isDeleted: { $ne: true } }, extra));
 exports.notDeleted = notDeleted;
-/**
- * Generic function to find a document by ID with error handling
- * @param model - Mongoose model
- * @param id - Document ID (string or ObjectId)
- * @param entityName - Name of the entity for error messages
- * @returns Found document
- * @throws ApiError if document not found
- */
+
 const findByIdOrThrow = (model_1, id_1, ...args_1) => __awaiter(void 0, [model_1, id_1, ...args_1], void 0, function* (model, id, entityName = 'Resource', opts = {}) {
     (0, exports.validateObjectIdOrThrow)(id);
     let q = model.findById(id, opts.projection);
@@ -72,15 +65,7 @@ const findByIdOrThrow = (model_1, id_1, ...args_1) => __awaiter(void 0, [model_1
     return document;
 });
 exports.findByIdOrThrow = findByIdOrThrow;
-/**
- * Generic function to update a document by ID with validation
- * @param model - Mongoose model
- * @param id - Document ID (string or ObjectId)
- * @param updateData - Data to update
- * @param entityName - Name of the entity for error messages
- * @returns Updated document
- * @throws ApiError if document not found
- */
+
 const updateByIdOrThrow = (model_1, id_1, updateData_1, ...args_1) => __awaiter(void 0, [model_1, id_1, updateData_1, ...args_1], void 0, function* (model, id, updateData, entityName = 'Resource', opts = {}) {
     (0, exports.validateObjectIdOrThrow)(id);
     let q = model.findByIdAndUpdate(id, updateData, {
@@ -98,14 +83,7 @@ const updateByIdOrThrow = (model_1, id_1, updateData_1, ...args_1) => __awaiter(
     return updatedDocument;
 });
 exports.updateByIdOrThrow = updateByIdOrThrow;
-/**
- * Generic function to delete a document by ID with validation
- * @param model - Mongoose model
- * @param id - Document ID (string or ObjectId)
- * @param entityName - Name of the entity for error messages
- * @returns Deleted document
- * @throws ApiError if document not found
- */
+
 const deleteByIdOrThrow = (model_1, id_1, ...args_1) => __awaiter(void 0, [model_1, id_1, ...args_1], void 0, function* (model, id, entityName = 'Resource') {
     (0, exports.validateObjectIdOrThrow)(id);
     const deletedDocument = yield model.findByIdAndDelete(id);
@@ -115,14 +93,7 @@ const deleteByIdOrThrow = (model_1, id_1, ...args_1) => __awaiter(void 0, [model
     return deletedDocument;
 });
 exports.deleteByIdOrThrow = deleteByIdOrThrow;
-/**
- * Generic function to soft delete a document (set isDeleted: true)
- * @param model - Mongoose model
- * @param id - Document ID (string or ObjectId)
- * @param entityName - Name of the entity for error messages
- * @returns Updated document
- * @throws ApiError if document not found
- */
+
 const softDeleteByIdOrThrow = (model_1, id_1, ...args_1) => __awaiter(void 0, [model_1, id_1, ...args_1], void 0, function* (model, id, entityName = 'Resource', opts = {}) {
     (0, exports.validateObjectIdOrThrow)(id);
     let q = model.findByIdAndUpdate(id, { isDeleted: true, deletedAt: new Date() }, { new: true, runValidators: true });
@@ -151,24 +122,14 @@ const restoreByIdOrThrow = (model_1, id_1, ...args_1) => __awaiter(void 0, [mode
     return updatedDocument;
 });
 exports.restoreByIdOrThrow = restoreByIdOrThrow;
-/**
- * Check if a document exists by ID
- * @param model - Mongoose model
- * @param id - Document ID (string or ObjectId)
- * @returns Boolean indicating existence
- */
+
 const existsById = (model, id) => __awaiter(void 0, void 0, void 0, function* () {
     (0, exports.validateObjectIdOrThrow)(id);
     const res = yield model.exists({ _id: id });
     return !!res;
 });
 exports.existsById = existsById;
-/**
- * Get document count with optional filter
- * @param model - Mongoose model
- * @param filter - Optional filter conditions
- * @returns Document count
- */
+
 const getCount = (model_1, ...args_1) => __awaiter(void 0, [model_1, ...args_1], void 0, function* (model, filter = {}) {
     const isEmpty = Object.keys(filter).length === 0;
     if (isEmpty)
@@ -176,11 +137,7 @@ const getCount = (model_1, ...args_1) => __awaiter(void 0, [model_1, ...args_1],
     return yield model.countDocuments(filter);
 });
 exports.getCount = getCount;
-/**
- * Run a set of operations inside a MongoDB transaction
- * @param fn - Callback that receives the session and returns a result
- * @returns Result of the callback after commit
- */
+
 const withTransaction = (fn, opts) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c, _d, _e;
     const session = yield mongoose_1.default.startSession();
@@ -210,12 +167,7 @@ const withTransaction = (fn, opts) => __awaiter(void 0, void 0, void 0, function
     }
 });
 exports.withTransaction = withTransaction;
-/**
- * Ensure a document's status matches expected value(s), otherwise throw
- * @param currentStatus - The current status value
- * @param expected - A single expected status or a list of allowed statuses
- * @param options - Optional error customization
- */
+
 const ensureStatusOrThrow = (currentStatus, expected, options) => {
     var _a, _b, _c;
     const ok = Array.isArray(expected)

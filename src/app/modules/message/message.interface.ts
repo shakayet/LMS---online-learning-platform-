@@ -10,43 +10,40 @@ export type IMessageAttachment = {
   mime?: string;
   width?: number;
   height?: number;
-  duration?: number; // for audio/video
+  duration?: number;
 };
 
-// Session proposal data (in-chat booking)
 export type ISessionProposal = {
-  subject: string;                      // Session subject
-  startTime: Date;                      // Proposed start time
-  endTime: Date;                        // Proposed end time
-  duration: number;                     // Duration in minutes
-  price: number;                        // Price in EUR
-  description?: string;                 // Session description
+  subject: string;
+  startTime: Date;
+  endTime: Date;
+  duration: number;
+  price: number;
+  description?: string;
   status: 'PROPOSED' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED' | 'COUNTER_PROPOSED' | 'CANCELLED' | 'COMPLETED' | 'NO_SHOW' | 'STARTING_SOON' | 'IN_PROGRESS';
-  sessionId?: Types.ObjectId;           // Created session (when accepted)
-  rejectionReason?: string;             // Why rejected
-  expiresAt: Date;                      // Proposal expiration (24 hours)
-  originalProposalId?: Types.ObjectId;  // Reference to original proposal (for counter-proposals)
-  counterProposalReason?: string;       // Why counter-proposed (e.g., "I'm not available at that time")
-  noShowBy?: 'tutor' | 'student';       // Who didn't join (for NO_SHOW status)
+  sessionId?: Types.ObjectId;
+  rejectionReason?: string;
+  expiresAt: Date;
+  originalProposalId?: Types.ObjectId;
+  counterProposalReason?: string;
+  noShowBy?: 'tutor' | 'student';
 };
 
 export type IMessage = {
   chatId: Types.ObjectId;
   sender: Types.ObjectId;
   text?: string;
-  content?: string; // Virtual alias for text (for frontend compatibility)
+  content?: string;
   type: 'text' | 'image' | 'media' | 'doc' | 'mixed' | 'session_proposal';
-  attachments?: IMessageAttachment[]; // unified attachment system
+  attachments?: IMessageAttachment[];
 
-  // In-chat booking (tutoring marketplace)
-  sessionProposal?: ISessionProposal;   // Session proposal data
+  sessionProposal?: ISessionProposal;
 
   deliveredTo?: Types.ObjectId[];
   readBy?: Types.ObjectId[];
   status?: 'sent' | 'delivered' | 'seen';
   editedAt?: Date;
 
-  // Timestamps
   createdAt?: Date;
   updatedAt?: Date;
 };

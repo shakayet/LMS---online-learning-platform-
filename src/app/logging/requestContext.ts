@@ -7,11 +7,11 @@ type DbQueryRecord = {
   durationMs: number;
   cacheHit: boolean;
   docsExamined?: number | string;
-  indexUsed?: string; // e.g., INDEX, NO_INDEX, or specific index name
-  pipeline?: string; // compact summary for aggregate
-  suggestion?: string; // optimization hint for slow/missing index cases
-  nReturned?: number; // documents returned by the operation
-  executionStage?: string; // e.g., COLLSCAN, IXSCAN, FETCH
+  indexUsed?: string;
+  pipeline?: string;
+  suggestion?: string;
+  nReturned?: number;
+  executionStage?: string;
 };
 
 type ContextStore = {
@@ -28,7 +28,6 @@ type ContextStore = {
 
 const storage = new AsyncLocalStorage<ContextStore>();
 
-// Initialize per-request context
 export const requestContextInit = (req: Request, _res: Response, next: NextFunction) => {
   storage.run(
     {
@@ -57,7 +56,6 @@ export const setServiceLabel = (label: string) => {
 
 export const getLabels = () => storage.getStore()?.labels || {};
 
-// ===== Metrics helpers =====
 export const recordDbQuery = (
   durationMs: number,
   meta?: {
@@ -113,8 +111,6 @@ export const recordExternalCall = (durationMs: number) => {
 
 export const getMetrics = () => storage.getStore()?.metrics;
 
-// Helper to convert a base path segment like "auth" -> "AuthController"
-// Known base path -> Controller name mapping (handles plural/singular)
 const BASE_TO_CONTROLLER: Record<string, string> = {
   auth: 'AuthController',
   user: 'UserController',
@@ -136,7 +132,7 @@ export const controllerNameFromBasePath = (baseUrl: string | undefined) => {
   if (!last) return undefined;
   const direct = BASE_TO_CONTROLLER[last];
   if (direct) return direct;
-  // Fallback: PascalCase + Controller
+
   const pascal = last
     .split('-')
     .map(seg => seg.charAt(0).toUpperCase() + seg.slice(1))

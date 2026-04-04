@@ -49,7 +49,6 @@ const activityLogSchema = new Schema<IActivityLogDocument>(
   }
 );
 
-// Indexes for efficient querying
 activityLogSchema.index({ createdAt: -1 });
 activityLogSchema.index({ actionType: 1, createdAt: -1 });
 activityLogSchema.index({ userId: 1, createdAt: -1 });

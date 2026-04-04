@@ -85,7 +85,6 @@ const callSchema = new Schema<ICall, CallModel>(
   { timestamps: true }
 );
 
-// Indexes for faster queries
 callSchema.index({ participants: 1 });
 callSchema.index({ initiator: 1, createdAt: -1 });
 callSchema.index({ receiver: 1, createdAt: -1 });

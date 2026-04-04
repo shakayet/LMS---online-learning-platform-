@@ -16,7 +16,7 @@ const monthlyRevenueQuerySchema = zod_1.z.object({
             .string()
             .optional()
             .transform(val => (val ? parseInt(val) : new Date().getFullYear())),
-        months: zod_1.z.string().optional(), // comma-separated e.g. "1,2,3"
+        months: zod_1.z.string().optional(),
         tutorId: zod_1.z.string().optional(),
         studentId: zod_1.z.string().optional(),
         subscriptionTier: zod_1.z.enum(['FLEXIBLE', 'REGULAR', 'LONG_TERM']).optional(),

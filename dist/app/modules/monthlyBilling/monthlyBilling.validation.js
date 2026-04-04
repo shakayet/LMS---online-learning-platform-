@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MonthlyBillingValidation = void 0;
 const zod_1 = require("zod");
-// Generate monthly billing validation (Admin - Manual trigger)
+
 const generateMonthlyBillingZodSchema = zod_1.z.object({
     body: zod_1.z.object({
         month: zod_1.z

@@ -15,7 +15,6 @@ const createSubject = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// Get all subjects
 const getAllSubjects = catchAsync(async (req: Request, res: Response) => {
   const result = await SubjectService.getAllSubjects(req.query);
 
@@ -28,7 +27,6 @@ const getAllSubjects = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// Get single subject
 const getSingleSubject = catchAsync(async (req: Request, res: Response) => {
   const { subjectId } = req.params;
   const result = await SubjectService.getSingleSubject(subjectId);
@@ -41,7 +39,6 @@ const getSingleSubject = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// Update subject
 const updateSubject = catchAsync(async (req: Request, res: Response) => {
   const { subjectId } = req.params;
   const result = await SubjectService.updateSubject(subjectId, req.body);
@@ -54,7 +51,6 @@ const updateSubject = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// Delete subject
 const deleteSubject = catchAsync(async (req: Request, res: Response) => {
   const { subjectId } = req.params;
   const result = await SubjectService.deleteSubject(subjectId);
@@ -67,7 +63,6 @@ const deleteSubject = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// Get active subjects
 const getActiveSubjects = catchAsync(async (_req: Request, res: Response) => {
   const result = await SubjectService.getActiveSubjects();
 

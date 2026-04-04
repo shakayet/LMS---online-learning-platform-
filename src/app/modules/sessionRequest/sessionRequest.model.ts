@@ -8,21 +8,19 @@ import {
 
 const sessionRequestSchema = new Schema<ISessionRequest>(
   {
-    // Request type (for unified view)
+
     requestType: {
       type: String,
       enum: Object.values(REQUEST_TYPE),
       default: REQUEST_TYPE.SESSION,
     },
 
-    // Student reference (Required - must be logged in)
     studentId: {
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: [true, 'Student ID is required'],
     },
 
-    // Academic Information (Required)
     subject: {
       type: Schema.Types.ObjectId,
       ref: 'Subject',
@@ -39,7 +37,6 @@ const sessionRequestSchema = new Schema<ISessionRequest>(
       trim: true,
     },
 
-    // Learning Details (simplified - no description or preferredDateTime for session requests)
     description: {
       type: String,
       trim: true,
@@ -51,7 +48,6 @@ const sessionRequestSchema = new Schema<ISessionRequest>(
       maxlength: [1000, 'Learning goals cannot exceed 1000 characters'],
     },
 
-    // Documents (Optional)
     documents: [
       {
         type: String,
@@ -59,14 +55,12 @@ const sessionRequestSchema = new Schema<ISessionRequest>(
       },
     ],
 
-    // Request Status
     status: {
       type: String,
       enum: Object.values(SESSION_REQUEST_STATUS),
       default: SESSION_REQUEST_STATUS.PENDING,
     },
 
-    // Matching details
     acceptedTutorId: {
       type: Schema.Types.ObjectId,
       ref: 'User',
@@ -76,12 +70,11 @@ const sessionRequestSchema = new Schema<ISessionRequest>(
       ref: 'Chat',
     },
 
-    // Timestamps & Expiration
     expiresAt: {
       type: Date,
       default: function () {
         const date = new Date();
-        date.setDate(date.getDate() + 7); // 7 days from now
+        date.setDate(date.getDate() + 7);
         return date;
       },
     },
@@ -92,7 +85,6 @@ const sessionRequestSchema = new Schema<ISessionRequest>(
       type: Date,
     },
 
-    // Extension tracking
     isExtended: {
       type: Boolean,
       default: false,
@@ -108,7 +100,6 @@ const sessionRequestSchema = new Schema<ISessionRequest>(
       type: Date,
     },
 
-    // Metadata
     cancellationReason: {
       type: String,
       trim: true,
@@ -117,7 +108,6 @@ const sessionRequestSchema = new Schema<ISessionRequest>(
   { timestamps: true }
 );
 
-// Indexes for performance
 sessionRequestSchema.index({ studentId: 1 });
 sessionRequestSchema.index({ subject: 1 });
 sessionRequestSchema.index({ gradeLevel: 1 });
@@ -125,11 +115,9 @@ sessionRequestSchema.index({ schoolType: 1 });
 sessionRequestSchema.index({ status: 1 });
 sessionRequestSchema.index({ expiresAt: 1 });
 sessionRequestSchema.index({ acceptedTutorId: 1 });
-sessionRequestSchema.index({ createdAt: -1 }); // Latest first
+sessionRequestSchema.index({ createdAt: -1 });
 
-// Compound index for tutor matching queries
 sessionRequestSchema.index({ status: 1, subject: 1, expiresAt: 1 });
-
 
 export const SessionRequest = model<ISessionRequest, SessionRequestModel>(
   'SessionRequest',

@@ -1,6 +1,5 @@
 import { Model } from 'mongoose';
 
-// Policy types enum
 export enum POLICY_TYPE {
   PRIVACY_POLICY = 'PRIVACY_POLICY',
   TERMS_FOR_STUDENTS = 'TERMS_FOR_STUDENTS',

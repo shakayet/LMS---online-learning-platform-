@@ -21,17 +21,13 @@ const http_status_codes_1 = require("http-status-codes");
 const ApiError_1 = __importDefault(require("../../errors/ApiError"));
 const client_s3_1 = require("@aws-sdk/client-s3");
 const cloudinary_1 = __importDefault(require("cloudinary"));
-// ===============================
-// Configuration
-// ===============================
+
 const allowedTypes = {
     images: ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'],
     media: ['video/mp4', 'video/webm', 'audio/mpeg', 'audio/ogg', 'audio/wav', 'audio/webm'],
     documents: ['application/pdf'],
 };
-// ===============================
-// Cloud Providers (Strategy)
-// ===============================
+
 const s3 = new client_s3_1.S3Client({
     region: process.env.AWS_REGION,
     credentials: {
@@ -108,14 +104,12 @@ const CLOUD_PROVIDERS = {
     s3: S3Provider,
     cloudinary: CloudinaryProvider,
 };
-// ===============================
-// Helpers
-// ===============================
+
 const ensureDir = (dir) => {
     if (!fs_1.default.existsSync(dir))
         fs_1.default.mkdirSync(dir, { recursive: true });
 };
-// Human-readable size (e.g., 50.86 KB)
+
 const formatBytes = (bytes) => {
     if (!bytes || bytes <= 0)
         return '0 B';
@@ -225,7 +219,7 @@ const groupFilesByField = (files) => {
     }
     return byField;
 };
-// Simplify files for logging, keyed by field name
+
 const buildFilesLogSummary = (filesByField) => {
     const out = {};
     for (const [field, arr] of Object.entries(filesByField)) {
@@ -290,9 +284,7 @@ const normalizeOptions = (options) => {
     const maxFilesTotal = (_a = base.maxFilesTotal) !== null && _a !== void 0 ? _a : 10;
     return Object.assign(Object.assign({}, base), { storageMode, cloudProvider, maxFileSizeMB, maxFilesTotal });
 };
-// ===============================
-// Middleware
-// ===============================
+
 const fileHandler = (options) => {
     const resolved = normalizeOptions(options);
     const provider = CLOUD_PROVIDERS[resolved.cloudProvider];
@@ -334,9 +326,7 @@ const fileHandler = (options) => {
     });
 };
 exports.fileHandler = fileHandler;
-// ===============================
-// File Deletion
-// ===============================
+
 const deleteFile = (fileUrl, storageMode, cloudProviderKey) => __awaiter(void 0, void 0, void 0, function* () {
     const mode = storageMode || (process.env.UPLOAD_MODE === 'memory' ? 'memory' : 'local');
     const cloud = cloudProviderKey || process.env.CLOUD_PROVIDER || 's3';
@@ -361,9 +351,7 @@ const deleteFile = (fileUrl, storageMode, cloudProviderKey) => __awaiter(void 0,
     }
 });
 exports.deleteFile = deleteFile;
-// ===============================
-// Error Mapper
-// ===============================
+
 const mapMulterError = (err, opts) => {
     var _a;
     const field = err.field;

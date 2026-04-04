@@ -1,6 +1,5 @@
 import { z } from 'zod';
 
-// Propose session validation (Tutor sends in chat)
 const proposeSessionZodSchema = z.object({
   body: z.object({
     chatId: z
@@ -48,7 +47,6 @@ const proposeSessionZodSchema = z.object({
   ),
 });
 
-// Accept session proposal validation (Student accepts)
 const acceptSessionProposalZodSchema = z.object({
   params: z.object({
     messageId: z
@@ -59,7 +57,6 @@ const acceptSessionProposalZodSchema = z.object({
   }),
 });
 
-// Counter-propose session validation (Student suggests alternative time)
 const counterProposeSessionZodSchema = z.object({
   params: z.object({
     messageId: z
@@ -105,7 +102,6 @@ const counterProposeSessionZodSchema = z.object({
   ),
 });
 
-// Reject session proposal validation (Student rejects)
 const rejectSessionProposalZodSchema = z.object({
   params: z.object({
     messageId: z
@@ -124,7 +120,6 @@ const rejectSessionProposalZodSchema = z.object({
   }),
 });
 
-// Cancel session validation
 const cancelSessionZodSchema = z.object({
   body: z.object({
     cancellationReason: z
@@ -136,7 +131,6 @@ const cancelSessionZodSchema = z.object({
   }),
 });
 
-// Mark session as completed validation (Manual completion)
 const completeSessionZodSchema = z.object({
   params: z.object({
     id: z
@@ -147,7 +141,6 @@ const completeSessionZodSchema = z.object({
   }),
 });
 
-// Reschedule session validation
 const rescheduleSessionZodSchema = z.object({
   params: z.object({
     id: z

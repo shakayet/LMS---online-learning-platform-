@@ -17,9 +17,7 @@ const http_status_codes_1 = require("http-status-codes");
 const catchAsync_1 = __importDefault(require("../../../shared/catchAsync"));
 const sendResponse_1 = __importDefault(require("../../../shared/sendResponse"));
 const session_service_1 = require("./session.service");
-/**
- * Propose session (Tutor sends in chat)
- */
+
 const proposeSession = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const tutorId = req.user.id;
     const result = yield session_service_1.SessionService.proposeSession(tutorId, req.body);
@@ -30,10 +28,7 @@ const proposeSession = (0, catchAsync_1.default)((req, res) => __awaiter(void 0,
         data: result,
     });
 }));
-/**
- * Accept session proposal (Student or Tutor accepts)
- * Student accepts tutor's proposal OR Tutor accepts student's counter-proposal
- */
+
 const acceptSessionProposal = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { messageId } = req.params;
     const userId = req.user.id;
@@ -45,9 +40,7 @@ const acceptSessionProposal = (0, catchAsync_1.default)((req, res) => __awaiter(
         data: result,
     });
 }));
-/**
- * Counter-propose session (Student suggests alternative time)
- */
+
 const counterProposeSession = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { messageId } = req.params;
     const studentId = req.user.id;
@@ -59,10 +52,7 @@ const counterProposeSession = (0, catchAsync_1.default)((req, res) => __awaiter(
         data: result,
     });
 }));
-/**
- * Reject session proposal (Student or Tutor rejects)
- * Student rejects tutor's proposal OR Tutor rejects student's counter-proposal
- */
+
 const rejectSessionProposal = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { messageId } = req.params;
     const userId = req.user.id;
@@ -75,12 +65,7 @@ const rejectSessionProposal = (0, catchAsync_1.default)((req, res) => __awaiter(
         data: result,
     });
 }));
-/**
- * Get all sessions
- * Student: Own sessions
- * Tutor: Own sessions
- * Admin: All sessions
- */
+
 const getAllSessions = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;
     const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
@@ -94,9 +79,7 @@ const getAllSessions = (0, catchAsync_1.default)((req, res) => __awaiter(void 0,
         pagination: result.meta,
     });
 }));
-/**
- * Get single session
- */
+
 const getSingleSession = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const result = yield session_service_1.SessionService.getSingleSession(id);
@@ -107,9 +90,7 @@ const getSingleSession = (0, catchAsync_1.default)((req, res) => __awaiter(void 
         data: result,
     });
 }));
-/**
- * Cancel session (Student or Tutor)
- */
+
 const cancelSession = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const userId = req.user.id;
@@ -122,9 +103,7 @@ const cancelSession = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
         data: result,
     });
 }));
-/**
- * Mark session as completed (Admin/Manual)
- */
+
 const markAsCompleted = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const result = yield session_service_1.SessionService.markAsCompleted(id);
@@ -135,9 +114,7 @@ const markAsCompleted = (0, catchAsync_1.default)((req, res) => __awaiter(void 0
         data: result,
     });
 }));
-/**
- * Auto-complete sessions (Cron job endpoint)
- */
+
 const autoCompleteSessions = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const count = yield session_service_1.SessionService.autoCompleteSessions();
     (0, sendResponse_1.default)(res, {
@@ -147,9 +124,7 @@ const autoCompleteSessions = (0, catchAsync_1.default)((req, res) => __awaiter(v
         data: { completedCount: count },
     });
 }));
-/**
- * Get upcoming sessions for logged-in user
- */
+
 const getUpcomingSessions = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const userId = req.user.id;
     const userRole = req.user.role;
@@ -162,9 +137,7 @@ const getUpcomingSessions = (0, catchAsync_1.default)((req, res) => __awaiter(vo
         pagination: result.meta,
     });
 }));
-/**
- * Get completed sessions for logged-in user
- */
+
 const getCompletedSessions = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const userId = req.user.id;
     const userRole = req.user.role;
@@ -177,9 +150,7 @@ const getCompletedSessions = (0, catchAsync_1.default)((req, res) => __awaiter(v
         pagination: result.meta,
     });
 }));
-/**
- * Request session reschedule
- */
+
 const requestReschedule = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const userId = req.user.id;
@@ -191,9 +162,7 @@ const requestReschedule = (0, catchAsync_1.default)((req, res) => __awaiter(void
         data: result,
     });
 }));
-/**
- * Approve reschedule request
- */
+
 const approveReschedule = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const userId = req.user.id;
@@ -205,9 +174,7 @@ const approveReschedule = (0, catchAsync_1.default)((req, res) => __awaiter(void
         data: result,
     });
 }));
-/**
- * Reject reschedule request
- */
+
 const rejectReschedule = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const userId = req.user.id;
@@ -219,9 +186,7 @@ const rejectReschedule = (0, catchAsync_1.default)((req, res) => __awaiter(void 
         data: result,
     });
 }));
-/**
- * Auto-transition session statuses (Cron job endpoint)
- */
+
 const autoTransitionStatuses = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield session_service_1.SessionService.autoTransitionSessionStatuses();
     (0, sendResponse_1.default)(res, {

@@ -22,7 +22,6 @@ const loginUser = catchAsync(async (req: Request, res: Response) => {
   const { ...loginData } = req.body;
   const result = await AuthService.loginUserFromDB(loginData);
 
-  // Set refresh token in httpOnly cookie for better security
   if (result?.tokens?.refreshToken) {
     res.cookie('refreshToken', result.tokens.refreshToken, {
       httpOnly: true,
@@ -43,16 +42,13 @@ const loginUser = catchAsync(async (req: Request, res: Response) => {
 const logoutUser = catchAsync(async (req: Request, res: Response) => {
   const { deviceToken } = req.body;
   console.log('deviceToken', deviceToken);
-  // User is optional now since logout route is public (allows logout even with expired token)
+
   const user = req.user as JwtPayload | undefined;
 
-  // Only call service if user is authenticated (for device token removal)
   if (user) {
     await AuthService.logoutUserFromDB(user, deviceToken);
   }
 
-  // Clear refresh token cookie on logout
-  // Method 1: clearCookie with maxAge: 0
   res.clearCookie('refreshToken', {
     httpOnly: true,
     secure: config.node_env === 'production',
@@ -61,7 +57,6 @@ const logoutUser = catchAsync(async (req: Request, res: Response) => {
     maxAge: 0,
   });
 
-  // Method 2: Set expired cookie as fallback (ensures cookie is removed)
   res.cookie('refreshToken', '', {
     httpOnly: true,
     secure: config.node_env === 'production',
@@ -129,14 +124,13 @@ const resendVerifyEmail = catchAsync(async (req: Request, res: Response) => {
 });
 
 const refreshToken = catchAsync(async (req: Request, res: Response) => {
-  // Prefer reading refresh token from cookie; fallback to body if present
+
   const cookieToken = req.cookies?.refreshToken as string | undefined;
   const bodyToken = (req.body as { refreshToken?: string })?.refreshToken;
   const token = cookieToken || bodyToken || '';
 
   const result = await AuthService.refreshTokenToDB(token);
 
-  // Rotate refresh token in httpOnly cookie
   if (result?.tokens?.refreshToken) {
     res.cookie('refreshToken', result.tokens.refreshToken, {
       httpOnly: true,

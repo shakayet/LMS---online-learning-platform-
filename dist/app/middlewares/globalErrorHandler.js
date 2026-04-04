@@ -12,11 +12,9 @@ const handleCastError_1 = __importDefault(require("../../errors/handleCastError"
 const logger_1 = require("../../shared/logger");
 const api_1 = require("@opentelemetry/api");
 const globalErrorHandler = (error, req, res, next) => {
-    // config.node_env === 'development'
-    //   ? console.log('🚨 globalErrorHandler ~~ ', error)
-    //   : errorLogger.error('🚨 globalErrorHandler ~~ ', error);
+
     logger_1.errorLogger.error('🚨 globalErrorHandler ~~ ', error);
-    // OpenTelemetry: start Error Handler span
+
     const tracer = api_1.trace.getTracer('app');
     const span = tracer.startSpan('Error Handler');
     try {
@@ -24,7 +22,7 @@ const globalErrorHandler = (error, req, res, next) => {
         span.setAttribute('http.method', req.method);
         span.setAttribute('http.route', (req.route && req.route.path) || req.originalUrl || 'n/a');
         span.addEvent('ERROR_HANDLER_START');
-        // Record the incoming error for context but keep handler span non-error
+
         span.recordException(error);
         span.setStatus({ code: 1, message: 'Formatted error response' });
         let statusCode = 500;

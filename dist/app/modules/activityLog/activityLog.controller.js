@@ -17,7 +17,7 @@ const http_status_codes_1 = require("http-status-codes");
 const catchAsync_1 = __importDefault(require("../../../shared/catchAsync"));
 const sendResponse_1 = __importDefault(require("../../../shared/sendResponse"));
 const activityLog_service_1 = require("./activityLog.service");
-// Get recent activities (Admin only)
+
 const getRecentActivities = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield activityLog_service_1.ActivityLogService.getRecentActivities(req.query);
     (0, sendResponse_1.default)(res, {
@@ -28,7 +28,7 @@ const getRecentActivities = (0, catchAsync_1.default)((req, res) => __awaiter(vo
         pagination: result.meta,
     });
 }));
-// Get activity statistics (Admin only)
+
 const getActivityStats = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield activityLog_service_1.ActivityLogService.getActivityStats();
     (0, sendResponse_1.default)(res, {

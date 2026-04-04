@@ -1,6 +1,5 @@
 import { z } from 'zod';
 
-// Guardian info schema (nested inside studentInfo, required for students under 18)
 const guardianInfoSchema = z.object({
   name: z
     .string({
@@ -32,9 +31,6 @@ const guardianInfoSchema = z.object({
     .max(20, 'Phone number cannot exceed 20 characters'),
 });
 
-// Student info schema (with nested guardianInfo)
-// Under 18: only name required, email/password comes from guardian
-// 18+: email and password required for the student
 const studentInfoSchema = z
   .object({
     name: z
@@ -45,10 +41,8 @@ const studentInfoSchema = z
       .min(2, 'Name must be at least 2 characters')
       .max(100, 'Name cannot exceed 100 characters'),
 
-    // Email: Required only if 18+
     email: z.string().trim().email('Invalid email format').optional(),
 
-    // Password: Required only if 18+
     password: z
       .string()
       .min(6, 'Password must be at least 6 characters')
@@ -65,12 +59,11 @@ const studentInfoSchema = z
       })
       .optional(),
 
-    // Guardian info nested inside studentInfo (required if under 18)
     guardianInfo: guardianInfoSchema.optional(),
   })
   .refine(
     data => {
-      // If student is under 18, guardian info is required
+
       if (data.isUnder18 && !data.guardianInfo) {
         return false;
       }
@@ -83,7 +76,7 @@ const studentInfoSchema = z
   )
   .refine(
     data => {
-      // If student is 18+, email is required
+
       if (!data.isUnder18 && !data.email) {
         return false;
       }
@@ -96,7 +89,7 @@ const studentInfoSchema = z
   )
   .refine(
     data => {
-      // If student is 18+, password is required
+
       if (!data.isUnder18 && !data.password) {
         return false;
       }
@@ -108,13 +101,11 @@ const studentInfoSchema = z
     }
   );
 
-// Create trial request validation (Student/Guest)
 const createTrialRequestZodSchema = z.object({
   body: z.object({
-    // Student Information (Required) - with nested guardianInfo
+
     studentInfo: studentInfoSchema,
 
-    // Academic Information (Required)
     subject: z
       .string({
         required_error: 'Subject is required',
@@ -136,7 +127,6 @@ const createTrialRequestZodSchema = z.object({
       .trim()
       .min(1, 'School type is required'),
 
-    // Learning Details
     description: z
       .string({
         required_error: 'Description is required',
@@ -162,12 +152,10 @@ const createTrialRequestZodSchema = z.object({
       })
       .optional(),
 
-    // Documents (Optional) - can be single string or array from fileHandler
     documents: z.union([z.string(), z.array(z.string())]).optional(),
   }),
 });
 
-// Cancel trial request validation (Student)
 const cancelTrialRequestZodSchema = z.object({
   body: z.object({
     cancellationReason: z
@@ -179,7 +167,6 @@ const cancelTrialRequestZodSchema = z.object({
   }),
 });
 
-// Accept trial request validation (Tutor) - with optional introductory message
 const acceptTrialRequestZodSchema = z.object({
   params: z.object({
     id: z

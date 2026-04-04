@@ -4,9 +4,6 @@ import { User } from '../user/user.model';
 import { USER_ROLES } from '../../../enums/user';
 import { stripe } from '../../../config/stripe';
 
-/**
- * Get all saved payment methods for a student
- */
 const getPaymentMethods = async (studentId: string) => {
   const student = await User.findById(studentId);
   if (!student || student.role !== USER_ROLES.STUDENT) {
@@ -18,13 +15,11 @@ const getPaymentMethods = async (studentId: string) => {
     return { paymentMethods: [], defaultPaymentMethodId: null };
   }
 
-  // Get all payment methods
   const paymentMethods = await stripe.paymentMethods.list({
     customer: stripeCustomerId,
     type: 'card',
   });
 
-  // Get customer to find default payment method
   const customer = await stripe.customers.retrieve(stripeCustomerId);
   const defaultPaymentMethodId =
     (customer as any).invoice_settings?.default_payment_method || null;
@@ -42,17 +37,12 @@ const getPaymentMethods = async (studentId: string) => {
   };
 };
 
-/**
- * Create SetupIntent for adding a new payment method
- * Frontend uses this to securely collect card details
- */
 const createSetupIntent = async (studentId: string) => {
   const student = await User.findById(studentId);
   if (!student || student.role !== USER_ROLES.STUDENT) {
     throw new ApiError(StatusCodes.FORBIDDEN, 'Only students can add payment methods');
   }
 
-  // Get or create Stripe customer
   let stripeCustomerId = student.studentProfile?.stripeCustomerId;
 
   if (!stripeCustomerId) {
@@ -63,13 +53,12 @@ const createSetupIntent = async (studentId: string) => {
     });
     stripeCustomerId = customer.id;
 
-    // Save customer ID to user - ensure studentProfile exists
     if (student.studentProfile) {
       await User.findByIdAndUpdate(studentId, {
         'studentProfile.stripeCustomerId': stripeCustomerId,
       });
     } else {
-      // Create studentProfile if it doesn't exist
+
       await User.findByIdAndUpdate(studentId, {
         studentProfile: {
           stripeCustomerId: stripeCustomerId,
@@ -78,7 +67,6 @@ const createSetupIntent = async (studentId: string) => {
     }
   }
 
-  // Create SetupIntent
   const setupIntent = await stripe.setupIntents.create({
     customer: stripeCustomerId,
     payment_method_types: ['card'],
@@ -91,9 +79,6 @@ const createSetupIntent = async (studentId: string) => {
   };
 };
 
-/**
- * Confirm and attach payment method after SetupIntent succeeds
- */
 const attachPaymentMethod = async (
   studentId: string,
   paymentMethodId: string,
@@ -109,12 +94,10 @@ const attachPaymentMethod = async (
     throw new ApiError(StatusCodes.BAD_REQUEST, 'No Stripe customer found');
   }
 
-  // Attach payment method to customer
   await stripe.paymentMethods.attach(paymentMethodId, {
     customer: stripeCustomerId,
   });
 
-  // Set as default if requested or if it's the first payment method
   if (setAsDefault) {
     await stripe.customers.update(stripeCustomerId, {
       invoice_settings: {
@@ -123,7 +106,6 @@ const attachPaymentMethod = async (
     });
   }
 
-  // Return updated payment method
   const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
 
   return {
@@ -136,9 +118,6 @@ const attachPaymentMethod = async (
   };
 };
 
-/**
- * Set a payment method as default
- */
 const setDefaultPaymentMethod = async (studentId: string, paymentMethodId: string) => {
   const student = await User.findById(studentId);
   if (!student || student.role !== USER_ROLES.STUDENT) {
@@ -150,13 +129,11 @@ const setDefaultPaymentMethod = async (studentId: string, paymentMethodId: strin
     throw new ApiError(StatusCodes.BAD_REQUEST, 'No Stripe customer found');
   }
 
-  // Verify payment method belongs to this customer
   const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
   if (paymentMethod.customer !== stripeCustomerId) {
     throw new ApiError(StatusCodes.FORBIDDEN, 'Payment method does not belong to this customer');
   }
 
-  // Set as default
   await stripe.customers.update(stripeCustomerId, {
     invoice_settings: {
       default_payment_method: paymentMethodId,
@@ -166,9 +143,6 @@ const setDefaultPaymentMethod = async (studentId: string, paymentMethodId: strin
   return { success: true, defaultPaymentMethodId: paymentMethodId };
 };
 
-/**
- * Delete/detach a payment method
- */
 const deletePaymentMethod = async (studentId: string, paymentMethodId: string) => {
   const student = await User.findById(studentId);
   if (!student || student.role !== USER_ROLES.STUDENT) {
@@ -180,13 +154,11 @@ const deletePaymentMethod = async (studentId: string, paymentMethodId: string) =
     throw new ApiError(StatusCodes.BAD_REQUEST, 'No Stripe customer found');
   }
 
-  // Verify payment method belongs to this customer
   const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
   if (paymentMethod.customer !== stripeCustomerId) {
     throw new ApiError(StatusCodes.FORBIDDEN, 'Payment method does not belong to this customer');
   }
 
-  // Detach payment method
   await stripe.paymentMethods.detach(paymentMethodId);
 
   return { success: true, deletedPaymentMethodId: paymentMethodId };

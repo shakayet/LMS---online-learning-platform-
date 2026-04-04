@@ -24,17 +24,17 @@ const tutorSessionFeedback_interface_1 = require("./tutorSessionFeedback.interfa
 const QueryBuilder_1 = __importDefault(require("../../builder/QueryBuilder"));
 const emailHelper_1 = require("../../../helpers/emailHelper");
 const date_fns_1 = require("date-fns");
-// Helper to calculate due date (3rd of next month)
+
 const calculateDueDate = (sessionDate) => {
     const dueDate = new Date(sessionDate);
     dueDate.setMonth(dueDate.getMonth() + 1);
     dueDate.setDate(3);
-    dueDate.setHours(23, 59, 59, 999); // End of day
+    dueDate.setHours(23, 59, 59, 999);
     return dueDate;
 };
-// Create feedback record when session is completed
+
 const createPendingFeedback = (sessionId, tutorId, studentId, sessionCompletedAt) => __awaiter(void 0, void 0, void 0, function* () {
-    // Check if feedback already exists
+
     const existingFeedback = yield tutorSessionFeedback_model_1.TutorSessionFeedback.findOne({ sessionId });
     if (existingFeedback) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'Feedback record already exists for this session');
@@ -46,24 +46,24 @@ const createPendingFeedback = (sessionId, tutorId, studentId, sessionCompletedAt
         studentId,
         dueDate,
         status: tutorSessionFeedback_interface_1.FEEDBACK_STATUS.PENDING,
-        rating: 0, // Will be set when tutor submits
-        feedbackType: tutorSessionFeedback_interface_1.FEEDBACK_TYPE.TEXT, // Default, will be set when tutor submits
+        rating: 0,
+        feedbackType: tutorSessionFeedback_interface_1.FEEDBACK_TYPE.TEXT,
     });
-    // Increment tutor's pending feedback count
+
     yield user_model_1.User.findByIdAndUpdate(tutorId, {
         $inc: { 'tutorProfile.pendingFeedbackCount': 1 },
     });
     return feedback;
 });
-// Submit feedback (tutor action)
+
 const submitFeedback = (tutorId, payload) => __awaiter(void 0, void 0, void 0, function* () {
     const { sessionId, rating, feedbackType, feedbackText, feedbackAudioUrl, audioDuration } = payload;
-    // Verify session exists and is completed
+
     const session = yield session_model_1.Session.findById(sessionId);
     if (!session) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, 'Session not found');
     }
-    // Auto-complete session if endTime has passed (handles cron delay)
+
     const now = new Date();
     const eligibleStatuses = [
         session_interface_1.SESSION_STATUS.SCHEDULED,
@@ -74,30 +74,30 @@ const submitFeedback = (tutorId, payload) => __awaiter(void 0, void 0, void 0, f
         session.status = session_interface_1.SESSION_STATUS.COMPLETED;
         session.completedAt = now;
         if (!session.startedAt) {
-            session.startedAt = session.startTime; // Mark as started if wasn't
+            session.startedAt = session.startTime;
         }
         yield session.save();
     }
     if (session.status !== session_interface_1.SESSION_STATUS.COMPLETED && session.status !== session_interface_1.SESSION_STATUS.NO_SHOW) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'Can only submit feedback for completed sessions');
     }
-    // Verify tutor owns this session
+
     if (session.tutorId.toString() !== tutorId) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.FORBIDDEN, 'You can only submit feedback for your own sessions');
     }
-    // Check if feedback already exists
+
     let feedback = yield tutorSessionFeedback_model_1.TutorSessionFeedback.findOne({ sessionId });
     const dueDate = (feedback === null || feedback === void 0 ? void 0 : feedback.dueDate) || calculateDueDate(session.completedAt || now);
-    // ❌ NEW: Check deadline - cannot submit after deadline
+
     if (now > dueDate) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'Feedback deadline has passed. You can no longer submit feedback for this session.');
     }
     if (feedback) {
-        // Update existing feedback record
+
         if (feedback.status === tutorSessionFeedback_interface_1.FEEDBACK_STATUS.SUBMITTED) {
             throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'Feedback already submitted');
         }
-        // Check if already forfeited
+
         if (feedback.paymentForfeited) {
             throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'This feedback has been forfeited due to missed deadline. Payment cannot be recovered.');
         }
@@ -107,12 +107,12 @@ const submitFeedback = (tutorId, payload) => __awaiter(void 0, void 0, void 0, f
         feedback.feedbackAudioUrl = feedbackAudioUrl;
         feedback.audioDuration = audioDuration;
         feedback.submittedAt = now;
-        feedback.isLate = false; // Since we block late submissions, this will always be false
+        feedback.isLate = false;
         feedback.status = tutorSessionFeedback_interface_1.FEEDBACK_STATUS.SUBMITTED;
         yield feedback.save();
     }
     else {
-        // Create new feedback record
+
         feedback = yield tutorSessionFeedback_model_1.TutorSessionFeedback.create({
             sessionId,
             tutorId,
@@ -129,20 +129,20 @@ const submitFeedback = (tutorId, payload) => __awaiter(void 0, void 0, void 0, f
             paymentForfeited: false,
         });
     }
-    // Update session with feedback reference and teacher completion status
+
     yield session_model_1.Session.findByIdAndUpdate(sessionId, {
         tutorFeedbackId: feedback._id,
         teacherCompletionStatus: session_interface_1.COMPLETION_STATUS.COMPLETED,
         teacherCompletedAt: now,
         teacherFeedbackRequired: false,
     });
-    // Decrement tutor's pending feedback count
+
     yield user_model_1.User.findByIdAndUpdate(tutorId, {
         $inc: { 'tutorProfile.pendingFeedbackCount': -1 },
     });
-    // Update tutor's average rating
+
     yield updateTutorRating(tutorId);
-    // Emit socket event for real-time update
+
     const io = global.io;
     if (io && session.chatId) {
         const chatIdStr = String(session.chatId);
@@ -155,7 +155,7 @@ const submitFeedback = (tutorId, payload) => __awaiter(void 0, void 0, void 0, f
             feedbackType: feedback.feedbackType,
             feedbackText: feedback.feedbackText,
         };
-        // Emit to chat room and both users
+
         io.to(`chat::${chatIdStr}`).emit('FEEDBACK_SUBMITTED', feedbackPayload);
         io.to(`user::${String(session.studentId)}`).emit('FEEDBACK_SUBMITTED', feedbackPayload);
         io.to(`user::${tutorId}`).emit('FEEDBACK_SUBMITTED', feedbackPayload);
@@ -163,7 +163,7 @@ const submitFeedback = (tutorId, payload) => __awaiter(void 0, void 0, void 0, f
     }
     return feedback;
 });
-// Update tutor's average rating based on their feedback ratings
+
 const updateTutorRating = (tutorId) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield tutorSessionFeedback_model_1.TutorSessionFeedback.aggregate([
         {
@@ -182,12 +182,12 @@ const updateTutorRating = (tutorId) => __awaiter(void 0, void 0, void 0, functio
     ]);
     if (result.length > 0) {
         yield user_model_1.User.findByIdAndUpdate(tutorId, {
-            averageRating: Math.round(result[0].averageRating * 10) / 10, // Round to 1 decimal
+            averageRating: Math.round(result[0].averageRating * 10) / 10,
             ratingsCount: result[0].count,
         });
     }
 });
-// Get pending feedbacks for a tutor
+
 const getPendingFeedbacks = (tutorId, query) => __awaiter(void 0, void 0, void 0, function* () {
     const feedbackQuery = new QueryBuilder_1.default(tutorSessionFeedback_model_1.TutorSessionFeedback.find({
         tutorId: new mongoose_1.Types.ObjectId(tutorId),
@@ -202,7 +202,7 @@ const getPendingFeedbacks = (tutorId, query) => __awaiter(void 0, void 0, void 0
     const meta = yield feedbackQuery.getPaginationInfo();
     return { data, meta };
 });
-// Get all feedbacks for a tutor (submitted)
+
 const getTutorFeedbacks = (tutorId, query) => __awaiter(void 0, void 0, void 0, function* () {
     const feedbackQuery = new QueryBuilder_1.default(tutorSessionFeedback_model_1.TutorSessionFeedback.find({
         tutorId: new mongoose_1.Types.ObjectId(tutorId),
@@ -217,7 +217,7 @@ const getTutorFeedbacks = (tutorId, query) => __awaiter(void 0, void 0, void 0, 
     const meta = yield feedbackQuery.getPaginationInfo();
     return { data, meta };
 });
-// Get feedback for a specific session
+
 const getFeedbackBySession = (sessionId, userId) => __awaiter(void 0, void 0, void 0, function* () {
     const feedback = yield tutorSessionFeedback_model_1.TutorSessionFeedback.findOne({ sessionId })
         .populate('sessionId', 'subject startTime endTime tutorId studentId')
@@ -226,7 +226,7 @@ const getFeedbackBySession = (sessionId, userId) => __awaiter(void 0, void 0, vo
     if (!feedback) {
         return null;
     }
-    // Verify user is either the tutor or student of this session
+
     const session = yield session_model_1.Session.findById(sessionId);
     if (!session) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, 'Session not found');
@@ -237,7 +237,7 @@ const getFeedbackBySession = (sessionId, userId) => __awaiter(void 0, void 0, vo
     }
     return feedback;
 });
-// Get feedbacks received by a student
+
 const getStudentFeedbacks = (studentId, query) => __awaiter(void 0, void 0, void 0, function* () {
     const feedbackQuery = new QueryBuilder_1.default(tutorSessionFeedback_model_1.TutorSessionFeedback.find({
         studentId: new mongoose_1.Types.ObjectId(studentId),
@@ -252,7 +252,7 @@ const getStudentFeedbacks = (studentId, query) => __awaiter(void 0, void 0, void
     const meta = yield feedbackQuery.getPaginationInfo();
     return { data, meta };
 });
-// Get feedbacks due soon (for reminder cron job)
+
 const getFeedbacksDueSoon = (daysUntilDue) => __awaiter(void 0, void 0, void 0, function* () {
     const now = new Date();
     const targetDate = new Date(now);
@@ -265,7 +265,7 @@ const getFeedbacksDueSoon = (daysUntilDue) => __awaiter(void 0, void 0, void 0, 
         .populate('sessionId', 'subject startTime')
         .populate('studentId', 'name');
 });
-// Get overdue feedbacks
+
 const getOverdueFeedbacks = () => __awaiter(void 0, void 0, void 0, function* () {
     const now = new Date();
     return tutorSessionFeedback_model_1.TutorSessionFeedback.find({
@@ -276,15 +276,12 @@ const getOverdueFeedbacks = () => __awaiter(void 0, void 0, void 0, function* ()
         .populate('sessionId', 'subject startTime')
         .populate('studentId', 'name');
 });
-/**
- * Process feedbacks that missed deadline - Payment forfeit to platform
- * Called by cron on 4th of every month at 1:00 AM
- */
+
 const processForfeitedFeedbacks = () => __awaiter(void 0, void 0, void 0, function* () {
     const now = new Date();
     let processed = 0;
     let totalForfeited = 0;
-    // Find all PENDING feedbacks past deadline that haven't been forfeited yet
+
     const overdueFeedbacks = yield tutorSessionFeedback_model_1.TutorSessionFeedback.find({
         status: tutorSessionFeedback_interface_1.FEEDBACK_STATUS.PENDING,
         dueDate: { $lt: now },
@@ -294,19 +291,19 @@ const processForfeitedFeedbacks = () => __awaiter(void 0, void 0, void 0, functi
         try {
             const session = feedback.sessionId;
             const forfeitedAmount = (session === null || session === void 0 ? void 0 : session.totalPrice) || 0;
-            // Mark feedback as forfeited
+
             feedback.paymentForfeited = true;
             feedback.forfeitedAmount = forfeitedAmount;
             feedback.forfeitedAt = now;
             yield feedback.save();
-            // Update session - teacher will never complete
+
             if (session === null || session === void 0 ? void 0 : session._id) {
                 yield session_model_1.Session.findByIdAndUpdate(session._id, {
                     teacherCompletionStatus: session_interface_1.COMPLETION_STATUS.NOT_APPLICABLE,
                     teacherFeedbackRequired: false,
                 });
             }
-            // Decrement tutor's pending feedback count
+
             yield user_model_1.User.findByIdAndUpdate(feedback.tutorId, {
                 $inc: { 'tutorProfile.pendingFeedbackCount': -1 },
             });
@@ -321,9 +318,7 @@ const processForfeitedFeedbacks = () => __awaiter(void 0, void 0, void 0, functi
     console.log(`Processed ${processed} forfeited feedbacks. Total forfeited: €${totalForfeited}`);
     return { processed, totalForfeited };
 });
-/**
- * Get forfeited payments summary (for admin dashboard)
- */
+
 const getForfeitedPaymentsSummary = (query) => __awaiter(void 0, void 0, void 0, function* () {
     const matchStage = { paymentForfeited: true };
     if ((query === null || query === void 0 ? void 0 : query.month) && (query === null || query === void 0 ? void 0 : query.year)) {
@@ -360,12 +355,9 @@ const getForfeitedPaymentsSummary = (query) => __awaiter(void 0, void 0, void 0,
         grandTotal: grandTotal[0] || { total: 0, count: 0 },
     };
 });
-/**
- * Send deadline reminders to tutors with pending feedbacks
- * Called by cron on 1st of month at 10:00 AM
- */
+
 const sendDeadlineReminders = () => __awaiter(void 0, void 0, void 0, function* () {
-    const feedbacksDueSoon = yield getFeedbacksDueSoon(3); // Due within 3 days
+    const feedbacksDueSoon = yield getFeedbacksDueSoon(3);
     let sent = 0;
     for (const feedback of feedbacksDueSoon) {
         const tutor = feedback.tutorId;
@@ -408,12 +400,9 @@ const sendDeadlineReminders = () => __awaiter(void 0, void 0, void 0, function* 
     console.log(`Sent ${sent}/${feedbacksDueSoon.length} deadline reminders`);
     return sent;
 });
-/**
- * Send final reminders to tutors (last day warning)
- * Called by cron on 2nd of month at 10:00 AM
- */
+
 const sendFinalReminders = () => __awaiter(void 0, void 0, void 0, function* () {
-    const feedbacksDueSoon = yield getFeedbacksDueSoon(1); // Due within 1 day
+    const feedbacksDueSoon = yield getFeedbacksDueSoon(1);
     let sent = 0;
     for (const feedback of feedbacksDueSoon) {
         const tutor = feedback.tutorId;
@@ -453,9 +442,7 @@ const sendFinalReminders = () => __awaiter(void 0, void 0, void 0, function* () 
     console.log(`Sent ${sent}/${feedbacksDueSoon.length} final reminders`);
     return sent;
 });
-/**
- * Get list of forfeited feedbacks with details (for admin dashboard)
- */
+
 const getForfeitedFeedbacksList = (query) => __awaiter(void 0, void 0, void 0, function* () {
     const feedbackQuery = new QueryBuilder_1.default(tutorSessionFeedback_model_1.TutorSessionFeedback.find({
         paymentForfeited: true,

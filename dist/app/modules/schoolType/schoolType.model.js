@@ -13,6 +13,6 @@ const schoolTypeSchema = new mongoose_1.Schema({
         default: true,
     },
 }, { timestamps: true });
-// Index for faster queries
+
 schoolTypeSchema.index({ isActive: 1 });
 exports.SchoolType = (0, mongoose_1.model)('SchoolType', schoolTypeSchema);

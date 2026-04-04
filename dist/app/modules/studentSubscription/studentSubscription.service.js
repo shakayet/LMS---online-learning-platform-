@@ -26,15 +26,13 @@ const session_interface_1 = require("../session/session.interface");
 const monthlyBilling_model_1 = require("../monthlyBilling/monthlyBilling.model");
 const stripe_1 = require("../../../config/stripe");
 const pricingConfig_service_1 = require("../pricingConfig/pricingConfig.service");
-// Fallback pricing configuration (EUR) - used if DB config not available
+
 const FALLBACK_TIER_PRICING = {
     [studentSubscription_interface_1.SUBSCRIPTION_TIER.FLEXIBLE]: { pricePerHour: 30, minimumHours: 0, commitmentMonths: 0 },
     [studentSubscription_interface_1.SUBSCRIPTION_TIER.REGULAR]: { pricePerHour: 28, minimumHours: 4, commitmentMonths: 1 },
     [studentSubscription_interface_1.SUBSCRIPTION_TIER.LONG_TERM]: { pricePerHour: 25, minimumHours: 4, commitmentMonths: 3 },
 };
-/**
- * Get pricing for a tier (from DB or fallback)
- */
+
 const getTierPricing = (tier) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const pricingPlan = yield pricingConfig_service_1.PricingConfigService.getPricingByTier(tier);
@@ -47,20 +45,18 @@ const getTierPricing = (tier) => __awaiter(void 0, void 0, void 0, function* () 
         }
     }
     catch (_a) {
-        // DB not available, use fallback
+
     }
     return FALLBACK_TIER_PRICING[tier];
 });
-/**
- * Subscribe to a plan (Student)
- */
+
 const subscribeToPlan = (studentId, tier) => __awaiter(void 0, void 0, void 0, function* () {
-    // Verify student
+
     const student = yield user_model_1.User.findById(studentId);
     if (!student || student.role !== user_1.USER_ROLES.STUDENT) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.FORBIDDEN, 'Only students can subscribe to plans');
     }
-    // Check if student already has active subscription
+
     const activeSubscription = yield studentSubscription_model_1.StudentSubscription.findOne({
         studentId: new mongoose_1.Types.ObjectId(studentId),
         status: studentSubscription_interface_1.SUBSCRIPTION_STATUS.ACTIVE,
@@ -68,32 +64,21 @@ const subscribeToPlan = (studentId, tier) => __awaiter(void 0, void 0, void 0, f
     if (activeSubscription) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'You already have an active subscription. Please cancel it first to change plans.');
     }
-    // Create subscription
+
     const subscription = yield studentSubscription_model_1.StudentSubscription.create({
         studentId: new mongoose_1.Types.ObjectId(studentId),
         tier,
         startDate: new Date(),
         status: studentSubscription_interface_1.SUBSCRIPTION_STATUS.ACTIVE,
     });
-    // Update user's subscription tier
+
     yield user_model_1.User.findByIdAndUpdate(studentId, {
         'studentProfile.subscriptionTier': tier,
     });
-    // TODO: Create Stripe customer and subscription
-    // if (!student.stripeCustomerId) {
-    //   const customer = await stripe.customers.create({
-    //     email: student.email,
-    //     name: student.name,
-    //     metadata: { userId: studentId }
-    //   });
-    //   subscription.stripeCustomerId = customer.id;
-    //   await subscription.save();
-    // }
+
     return subscription;
 });
-/**
- * Get student's active subscription
- */
+
 const getMySubscription = (studentId) => __awaiter(void 0, void 0, void 0, function* () {
     const subscription = yield studentSubscription_model_1.StudentSubscription.findOne({
         studentId: new mongoose_1.Types.ObjectId(studentId),
@@ -104,9 +89,7 @@ const getMySubscription = (studentId) => __awaiter(void 0, void 0, void 0, funct
     }
     return subscription;
 });
-/**
- * Get all subscriptions (Admin)
- */
+
 const getAllSubscriptions = (query) => __awaiter(void 0, void 0, void 0, function* () {
     const subscriptionQuery = new QueryBuilder_1.default(studentSubscription_model_1.StudentSubscription.find().populate('studentId', 'name email profilePicture'), query)
         .filter()
@@ -120,9 +103,7 @@ const getAllSubscriptions = (query) => __awaiter(void 0, void 0, void 0, functio
         data: result,
     };
 });
-/**
- * Get single subscription
- */
+
 const getSingleSubscription = (id) => __awaiter(void 0, void 0, void 0, function* () {
     const subscription = yield studentSubscription_model_1.StudentSubscription.findById(id).populate('studentId', 'name email profilePicture phone');
     if (!subscription) {
@@ -130,40 +111,33 @@ const getSingleSubscription = (id) => __awaiter(void 0, void 0, void 0, function
     }
     return subscription;
 });
-/**
- * Cancel subscription (Student)
- */
+
 const cancelSubscription = (subscriptionId, studentId, cancellationReason) => __awaiter(void 0, void 0, void 0, function* () {
     const subscription = yield studentSubscription_model_1.StudentSubscription.findById(subscriptionId);
     if (!subscription) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, 'Subscription not found');
     }
-    // Verify ownership
+
     if (subscription.studentId.toString() !== studentId) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.FORBIDDEN, 'You can only cancel your own subscription');
     }
-    // Can only cancel ACTIVE subscriptions
+
     if (subscription.status !== studentSubscription_interface_1.SUBSCRIPTION_STATUS.ACTIVE) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, `Cannot cancel subscription with status: ${subscription.status}`);
     }
-    // Update subscription
+
     subscription.status = studentSubscription_interface_1.SUBSCRIPTION_STATUS.CANCELLED;
     subscription.cancellationReason = cancellationReason;
     subscription.cancelledAt = new Date();
     yield subscription.save();
-    // Update user's subscription tier to null
+
     yield user_model_1.User.findByIdAndUpdate(studentId, {
         'studentProfile.subscriptionTier': null,
     });
-    // TODO: Cancel Stripe subscription
-    // if (subscription.stripeSubscriptionId) {
-    //   await stripe.subscriptions.cancel(subscription.stripeSubscriptionId);
-    // }
+
     return subscription;
 });
-/**
- * Increment hours taken (Called when session completes)
- */
+
 const incrementHoursTaken = (studentId, hours) => __awaiter(void 0, void 0, void 0, function* () {
     const subscription = yield studentSubscription_model_1.StudentSubscription.findOne({
         studentId: new mongoose_1.Types.ObjectId(studentId),
@@ -174,10 +148,7 @@ const incrementHoursTaken = (studentId, hours) => __awaiter(void 0, void 0, void
         yield subscription.save();
     }
 });
-/**
- * Auto-expire subscriptions (Cron job)
- * Marks subscriptions as EXPIRED after endDate passes
- */
+
 const expireOldSubscriptions = () => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield studentSubscription_model_1.StudentSubscription.updateMany({
         status: studentSubscription_interface_1.SUBSCRIPTION_STATUS.ACTIVE,
@@ -185,7 +156,7 @@ const expireOldSubscriptions = () => __awaiter(void 0, void 0, void 0, function*
     }, {
         $set: { status: studentSubscription_interface_1.SUBSCRIPTION_STATUS.EXPIRED },
     });
-    // Update users' subscription tier to null
+
     const expiredSubscriptions = yield studentSubscription_model_1.StudentSubscription.find({
         status: studentSubscription_interface_1.SUBSCRIPTION_STATUS.EXPIRED,
         endDate: { $lt: new Date() },
@@ -198,36 +169,36 @@ const expireOldSubscriptions = () => __awaiter(void 0, void 0, void 0, function*
     return result.modifiedCount;
 });
 const getMyPlanUsage = (studentId) => __awaiter(void 0, void 0, void 0, function* () {
-    // Get active subscription
+
     const subscription = yield studentSubscription_model_1.StudentSubscription.findOne({
         studentId: new mongoose_1.Types.ObjectId(studentId),
         status: studentSubscription_interface_1.SUBSCRIPTION_STATUS.ACTIVE,
     });
-    // Get current month dates
+
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-    // Get completed sessions for current month (excluding trial sessions - they're free!)
+
     const currentMonthSessions = yield session_model_1.Session.find({
         studentId: new mongoose_1.Types.ObjectId(studentId),
         status: session_interface_1.SESSION_STATUS.COMPLETED,
         completedAt: { $gte: startOfMonth, $lte: endOfMonth },
-        isTrial: false, // Exclude trial sessions from billing
+        isTrial: false,
     });
-    // Calculate current month spending
+
     let currentMonthSpending = 0;
     let bufferCharges = 0;
     for (const session of currentMonthSessions) {
         currentMonthSpending += session.totalPrice || 0;
         bufferCharges += session.bufferPrice || 0;
     }
-    // Get all completed sessions for total stats (excluding trial sessions - they're free!)
+
     const allCompletedSessions = yield session_model_1.Session.aggregate([
         {
             $match: {
                 studentId: new mongoose_1.Types.ObjectId(studentId),
                 status: session_interface_1.SESSION_STATUS.COMPLETED,
-                isTrial: false, // Exclude trial sessions from billing
+                isTrial: false,
             },
         },
         {
@@ -246,7 +217,7 @@ const getMyPlanUsage = (studentId) => __awaiter(void 0, void 0, void 0, function
         totalSpending: 0,
         totalBufferCharges: 0,
     };
-    // Get upcoming scheduled sessions
+
     const upcomingSessions = yield session_model_1.Session.aggregate([
         {
             $match: {
@@ -264,13 +235,13 @@ const getMyPlanUsage = (studentId) => __awaiter(void 0, void 0, void 0, function
         },
     ]);
     const upcomingStats = upcomingSessions[0] || { count: 0, totalHours: 0 };
-    // Build response based on subscription status
+
     if (!subscription) {
-        // No active subscription
+
         return {
             plan: {
                 name: null,
-                pricePerHour: 30, // Default FLEXIBLE rate
+                pricePerHour: 30,
                 commitmentMonths: 0,
                 minimumHours: 0,
                 status: null,
@@ -294,12 +265,12 @@ const getMyPlanUsage = (studentId) => __awaiter(void 0, void 0, void 0, function
             },
         };
     }
-    // Calculate remaining hours (only for REGULAR and LONG_TERM)
+
     let hoursRemaining = null;
     let sessionsRemaining = null;
     if (subscription.tier !== studentSubscription_interface_1.SUBSCRIPTION_TIER.FLEXIBLE) {
         hoursRemaining = Math.max(0, subscription.minimumHours - subscription.totalHoursTaken);
-        // Assuming 1 hour per session
+
         sessionsRemaining = Math.ceil(hoursRemaining);
     }
     return {
@@ -331,12 +302,12 @@ const getMyPlanUsage = (studentId) => __awaiter(void 0, void 0, void 0, function
 });
 const createSubscriptionPaymentIntent = (studentId, tier) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
-    // 1. Verify student exists
+
     const student = yield user_model_1.User.findById(studentId);
     if (!student || student.role !== user_1.USER_ROLES.STUDENT) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.FORBIDDEN, 'Only students can subscribe to plans');
     }
-    // 2. Check for existing active subscription
+
     const existingSubscription = yield studentSubscription_model_1.StudentSubscription.findOne({
         studentId: new mongoose_1.Types.ObjectId(studentId),
         status: studentSubscription_interface_1.SUBSCRIPTION_STATUS.ACTIVE,
@@ -344,25 +315,24 @@ const createSubscriptionPaymentIntent = (studentId, tier) => __awaiter(void 0, v
     if (existingSubscription) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'You already have an active subscription. Please cancel it first to change plans.');
     }
-    // 3. Calculate payment amount and subscription details (from DB config)
+
     const pricing = yield getTierPricing(tier);
-    // For FLEXIBLE tier (minimumHours = 0), no upfront payment - pay per session
-    // For other tiers, charge for minimum hours upfront
-    const amount = pricing.pricePerHour * pricing.minimumHours; // EUR (will be 0 for FLEXIBLE)
+
+    const amount = pricing.pricePerHour * pricing.minimumHours;
     const amountInCents = Math.round(amount * 100);
-    // Calculate end date based on tier (from DB config)
+
     const startDate = new Date();
     const endDate = new Date(startDate);
     const commitmentMonths = pricing.commitmentMonths;
     if (commitmentMonths === 0) {
-        // Flexible: No end date (set to 100 years from now)
+
         endDate.setFullYear(endDate.getFullYear() + 100);
     }
     else {
-        // Regular/Long-term: Set end date based on commitment months
+
         endDate.setMonth(endDate.getMonth() + commitmentMonths);
     }
-    // 4. Create or get Stripe customer
+
     let stripeCustomerId = (_a = student.studentProfile) === null || _a === void 0 ? void 0 : _a.stripeCustomerId;
     if (!stripeCustomerId) {
         const customer = yield stripe_1.stripe.customers.create({
@@ -371,17 +341,17 @@ const createSubscriptionPaymentIntent = (studentId, tier) => __awaiter(void 0, v
             metadata: { userId: studentId },
         });
         stripeCustomerId = customer.id;
-        // Save customer ID to user
+
         yield user_model_1.User.findByIdAndUpdate(studentId, {
             'studentProfile.stripeCustomerId': stripeCustomerId,
         });
     }
-    // 5. For FLEXIBLE tier, use SetupIntent to save payment method (required for monthly billing)
+
     if (tier === studentSubscription_interface_1.SUBSCRIPTION_TIER.FLEXIBLE) {
-        // Create SetupIntent to save payment method for future charges
+
         const setupIntent = yield stripe_1.stripe.setupIntents.create({
             customer: stripeCustomerId,
-            usage: 'off_session', // For charging later without customer present
+            usage: 'off_session',
             metadata: {
                 studentId,
                 tier,
@@ -391,7 +361,7 @@ const createSubscriptionPaymentIntent = (studentId, tier) => __awaiter(void 0, v
                 enabled: true,
             },
         });
-        // Create pending subscription (will be activated after SetupIntent succeeds)
+
         const subscription = yield studentSubscription_model_1.StudentSubscription.create({
             studentId: new mongoose_1.Types.ObjectId(studentId),
             tier,
@@ -402,17 +372,17 @@ const createSubscriptionPaymentIntent = (studentId, tier) => __awaiter(void 0, v
             endDate,
             status: studentSubscription_interface_1.SUBSCRIPTION_STATUS.PENDING,
             stripeCustomerId,
-            stripePaymentIntentId: setupIntent.id, // Store SetupIntent ID
+            stripePaymentIntentId: setupIntent.id,
         });
-        // Return SetupIntent clientSecret for FLEXIBLE tier
+
         return {
             clientSecret: setupIntent.client_secret,
             subscriptionId: subscription._id.toString(),
-            amount: 0, // No upfront charge
+            amount: 0,
             currency: 'eur',
         };
     }
-    // 6. For paid tiers, create pending subscription record
+
     const subscription = yield studentSubscription_model_1.StudentSubscription.create({
         studentId: new mongoose_1.Types.ObjectId(studentId),
         tier,
@@ -424,12 +394,12 @@ const createSubscriptionPaymentIntent = (studentId, tier) => __awaiter(void 0, v
         status: studentSubscription_interface_1.SUBSCRIPTION_STATUS.PENDING,
         stripeCustomerId,
     });
-    // 7. Create PaymentIntent for paid tiers
+
     const paymentIntent = yield stripe_1.stripe.paymentIntents.create({
         amount: amountInCents,
         currency: 'eur',
         customer: stripeCustomerId,
-        setup_future_usage: 'off_session', // Attach payment method to customer for future charges
+        setup_future_usage: 'off_session',
         metadata: {
             subscriptionId: subscription._id.toString(),
             studentId,
@@ -440,7 +410,7 @@ const createSubscriptionPaymentIntent = (studentId, tier) => __awaiter(void 0, v
             enabled: true,
         },
     });
-    // 7. Save payment intent ID to subscription
+
     subscription.stripePaymentIntentId = paymentIntent.id;
     yield subscription.save();
     return {
@@ -450,30 +420,26 @@ const createSubscriptionPaymentIntent = (studentId, tier) => __awaiter(void 0, v
         currency: 'EUR',
     };
 });
-/**
- * Confirm Subscription Payment
- * Called after successful payment to activate subscription
- * Handles both PaymentIntent (REGULAR/LONG_TERM) and SetupIntent (FLEXIBLE)
- */
+
 const confirmSubscriptionPayment = (subscriptionId, paymentIntentId, studentId) => __awaiter(void 0, void 0, void 0, function* () {
-    // 1. Find subscription
+
     const subscription = yield studentSubscription_model_1.StudentSubscription.findById(subscriptionId);
     if (!subscription) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, 'Subscription not found');
     }
-    // 2. Verify ownership
+
     if (subscription.studentId.toString() !== studentId) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.FORBIDDEN, 'Unauthorized access to subscription');
     }
-    // 3. Check if this is a SetupIntent (FLEXIBLE tier) or PaymentIntent (others)
+
     const isSetupIntent = paymentIntentId.startsWith('seti_');
     if (isSetupIntent) {
-        // Handle SetupIntent for FLEXIBLE tier
+
         const setupIntent = yield stripe_1.stripe.setupIntents.retrieve(paymentIntentId);
         if (setupIntent.status !== 'succeeded') {
             throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, `Setup not successful. Status: ${setupIntent.status}`);
         }
-        // Set the saved payment method as default for this customer
+
         if (setupIntent.payment_method) {
             yield stripe_1.stripe.customers.update(subscription.stripeCustomerId, {
                 invoice_settings: {
@@ -483,16 +449,16 @@ const confirmSubscriptionPayment = (subscriptionId, paymentIntentId, studentId) 
         }
     }
     else {
-        // Handle PaymentIntent for REGULAR/LONG_TERM tiers
+
         const paymentIntent = yield stripe_1.stripe.paymentIntents.retrieve(paymentIntentId);
         if (paymentIntent.status !== 'succeeded') {
             throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, `Payment not successful. Status: ${paymentIntent.status}`);
         }
-        // Verify payment intent matches subscription
+
         if (paymentIntent.metadata.subscriptionId !== subscriptionId) {
             throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'Payment intent does not match subscription');
         }
-        // Set the payment method as default for this customer (for future charges)
+
         if (paymentIntent.payment_method) {
             yield stripe_1.stripe.customers.update(subscription.stripeCustomerId, {
                 invoice_settings: {
@@ -501,11 +467,11 @@ const confirmSubscriptionPayment = (subscriptionId, paymentIntentId, studentId) 
             });
         }
     }
-    // 4. Activate subscription
+
     subscription.status = studentSubscription_interface_1.SUBSCRIPTION_STATUS.ACTIVE;
     subscription.paidAt = new Date();
     yield subscription.save();
-    // 5. Update user's subscription tier
+
     yield user_model_1.User.findByIdAndUpdate(studentId, {
         'studentProfile.subscriptionTier': subscription.tier,
         'studentProfile.currentPlan': subscription.tier,
@@ -514,18 +480,18 @@ const confirmSubscriptionPayment = (subscriptionId, paymentIntentId, studentId) 
 });
 const getPaymentHistory = (studentId_1, ...args_1) => __awaiter(void 0, [studentId_1, ...args_1], void 0, function* (studentId, page = 1, limit = 10) {
     const skip = (page - 1) * limit;
-    // Get student
+
     const student = yield user_model_1.User.findById(studentId);
     if (!student) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, 'Student not found');
     }
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const formattedPayments = [];
-    // Get monthly billings for this student (this is the source of truth for invoices)
+
     const monthlyBillings = yield monthlyBilling_model_1.MonthlyBilling.find({
         studentId: new mongoose_1.Types.ObjectId(studentId),
     }).sort({ billingYear: -1, billingMonth: -1 });
-    // Add monthly billing records
+
     monthlyBillings.forEach((billing) => {
         formattedPayments.push({
             id: billing._id.toString(),
@@ -540,9 +506,9 @@ const getPaymentHistory = (studentId_1, ...args_1) => __awaiter(void 0, [student
             invoiceUrl: billing.invoiceUrl,
         });
     });
-    // Sort by date (newest first)
+
     formattedPayments.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    // Paginate
+
     const total = formattedPayments.length;
     const paginatedData = formattedPayments.slice(skip, skip + limit);
     return {
@@ -555,12 +521,9 @@ const getPaymentHistory = (studentId_1, ...args_1) => __awaiter(void 0, [student
         },
     };
 });
-/**
- * Handle Stripe Webhook for Payment Success
- * Auto-activates subscription when payment succeeds
- */
+
 const handlePaymentSuccess = (paymentIntent) => __awaiter(void 0, void 0, void 0, function* () {
-    // Only process subscription payments
+
     if (paymentIntent.metadata.type !== 'subscription_payment') {
         return;
     }
@@ -575,15 +538,15 @@ const handlePaymentSuccess = (paymentIntent) => __awaiter(void 0, void 0, void 0
             console.error('Subscription not found:', subscriptionId);
             return;
         }
-        // Skip if already active
+
         if (subscription.status === studentSubscription_interface_1.SUBSCRIPTION_STATUS.ACTIVE) {
             return;
         }
-        // Activate subscription
+
         subscription.status = studentSubscription_interface_1.SUBSCRIPTION_STATUS.ACTIVE;
         subscription.paidAt = new Date();
         yield subscription.save();
-        // Update user
+
         yield user_model_1.User.findByIdAndUpdate(studentId, {
             'studentProfile.subscriptionTier': subscription.tier,
             'studentProfile.currentPlan': subscription.tier,

@@ -90,7 +90,6 @@ const updateReviewZodSchema = z.object({
   }),
 });
 
-// Admin: Create review (without session)
 const adminCreateReviewZodSchema = z.object({
   body: z.object({
     tutorId: z
@@ -149,7 +148,6 @@ const adminCreateReviewZodSchema = z.object({
   }),
 });
 
-// Admin: Update any review
 const adminUpdateReviewZodSchema = z.object({
   body: z.object({
     overallRating: z

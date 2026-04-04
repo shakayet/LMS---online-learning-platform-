@@ -7,15 +7,11 @@ import { StripeConnectController } from './stripeConnect.controller';
 
 const router = express.Router();
 
-// Webhook routes (no authentication required)
-// Note: Raw body parsing is handled at app level for webhook routes
 router.post(
   '/webhook',
   WebhookController.handleStripeWebhook
 );
 
-// Stripe Connect account management
-// APPLICANT can also create account when their application is APPROVED
 router.post(
   '/stripe/account',
   auth(USER_ROLES.TUTOR, USER_ROLES.APPLICANT),
@@ -34,14 +30,12 @@ router.get(
   StripeConnectController.checkOnboardingStatusController
 );
 
-// Payment history route for poster, tasker, super admin
 router.get(
   '/history',
   auth(USER_ROLES.STUDENT, USER_ROLES.TUTOR, USER_ROLES.SUPER_ADMIN),
   PaymentController.getPaymentHistoryController
 );
 
-// Retrieve current intent and client_secret by bidId
 router.get(
   '/by-bid/:bidId/current-intent',
   auth(USER_ROLES.STUDENT, USER_ROLES.TUTOR, USER_ROLES.SUPER_ADMIN),
@@ -54,7 +48,6 @@ router.post(
   PaymentController.refundPaymentController
 );
 
-// Payment information retrieval
 router.get(
   '/:paymentId',
   auth(USER_ROLES.STUDENT, USER_ROLES.TUTOR, USER_ROLES.SUPER_ADMIN),
@@ -78,7 +71,5 @@ router.delete(
   auth(USER_ROLES.SUPER_ADMIN),
   PaymentController.deleteStripeAccountController
 );
-
-
 
 export const PaymentRoutes = router;

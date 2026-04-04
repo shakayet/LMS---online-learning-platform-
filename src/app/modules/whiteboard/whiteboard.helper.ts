@@ -9,9 +9,6 @@ const getHeaders = () => ({
   region: config.agora.whiteboard.region,
 });
 
-/**
- * নতুন Whiteboard Room তৈরি করে
- */
 export const createAgoraWhiteboardRoom = async (
   name: string
 ): Promise<{ uuid: string }> => {
@@ -27,13 +24,10 @@ export const createAgoraWhiteboardRoom = async (
   return { uuid: response.data.uuid };
 };
 
-/**
- * Room Token Generate করে
- */
 export const generateWhiteboardRoomToken = async (
   roomUuid: string,
   role: 'admin' | 'writer' | 'reader' = 'writer',
-  lifespan: number = 3600000 // 1 hour in ms
+  lifespan: number = 3600000
 ): Promise<string> => {
   const response = await axios.post(
     `${WHITEBOARD_API}/tokens/rooms/${roomUuid}`,
@@ -44,9 +38,6 @@ export const generateWhiteboardRoomToken = async (
   return response.data;
 };
 
-/**
- * Room বন্ধ করে
- */
 export const closeWhiteboardRoom = async (roomUuid: string): Promise<void> => {
   await axios.patch(
     `${WHITEBOARD_API}/rooms/${roomUuid}`,
@@ -55,9 +46,6 @@ export const closeWhiteboardRoom = async (roomUuid: string): Promise<void> => {
   );
 };
 
-/**
- * Room state export করে
- */
 export const getWhiteboardRoomInfo = async (
   roomUuid: string
 ): Promise<any> => {
@@ -68,9 +56,6 @@ export const getWhiteboardRoomInfo = async (
   return response.data;
 };
 
-/**
- * Whiteboard এর current state এর image snapshot নেয়
- */
 export const takeWhiteboardSnapshot = async (
   roomUuid: string,
   scenePath: string = '/init'
@@ -88,9 +73,6 @@ export const takeWhiteboardSnapshot = async (
   return response.data.url;
 };
 
-/**
- * Whiteboard এর সব scene list করে
- */
 export const getWhiteboardScenes = async (roomUuid: string): Promise<any[]> => {
   const response = await axios.get(
     `${WHITEBOARD_API}/rooms/${roomUuid}/scenes`,

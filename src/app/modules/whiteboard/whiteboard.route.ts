@@ -6,7 +6,6 @@ import { WhiteboardValidation } from './whiteboard.validation';
 
 const router = express.Router();
 
-// Create a new whiteboard room
 router.post(
   '/rooms',
   auth(),
@@ -14,7 +13,6 @@ router.post(
   WhiteboardController.createRoom
 );
 
-// Get user's whiteboard rooms
 router.get(
   '/rooms',
   auth(),
@@ -22,7 +20,6 @@ router.get(
   WhiteboardController.getUserRooms
 );
 
-// Get or create whiteboard for a call
 router.post(
   '/calls/:callId/room',
   auth(),
@@ -30,7 +27,6 @@ router.post(
   WhiteboardController.getOrCreateForCall
 );
 
-// Get room token
 router.post(
   '/rooms/:roomId/token',
   auth(),
@@ -38,7 +34,6 @@ router.post(
   WhiteboardController.getRoomToken
 );
 
-// Get room snapshots
 router.get(
   '/rooms/:roomId/snapshots',
   auth(),
@@ -46,7 +41,6 @@ router.get(
   WhiteboardController.getRoomSnapshots
 );
 
-// Take snapshot
 router.post(
   '/rooms/:roomId/snapshot',
   auth(),
@@ -54,7 +48,6 @@ router.post(
   WhiteboardController.takeSnapshot
 );
 
-// Delete/close room
 router.delete(
   '/rooms/:roomId',
   auth(),

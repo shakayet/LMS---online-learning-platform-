@@ -1,16 +1,15 @@
 export type IDashboardStats = {
-  // User Statistics
+
   users: {
     totalUsers: number;
     totalStudents: number;
     totalTutors: number;
     totalApplicants: number;
     newUsersThisMonth: number;
-    activeStudents: number; // Students with active subscriptions
-    activeTutors: number; // Tutors with sessions this month
+    activeStudents: number;
+    activeTutors: number;
   };
 
-  // Application Statistics
   applications: {
     totalApplications: number;
     pendingApplications: number;
@@ -19,7 +18,6 @@ export type IDashboardStats = {
     applicationsThisMonth: number;
   };
 
-  // Session Statistics
   sessions: {
     totalSessions: number;
     completedSessions: number;
@@ -29,17 +27,15 @@ export type IDashboardStats = {
     totalHoursThisMonth: number;
   };
 
-  // Financial Statistics
   revenue: {
-    totalRevenue: number; // All-time
+    totalRevenue: number;
     revenueThisMonth: number;
     revenueLastMonth: number;
     pendingBillings: number;
-    totalPlatformCommission: number; // All-time
+    totalPlatformCommission: number;
     platformCommissionThisMonth: number;
   };
 
-  // Subscription Statistics
   subscriptions: {
     totalActiveSubscriptions: number;
     flexiblePlanCount: number;
@@ -47,7 +43,6 @@ export type IDashboardStats = {
     longTermPlanCount: number;
   };
 
-  // Recent Activity (last 30 days)
   recentActivity: {
     newStudents: number;
     newTutors: number;
@@ -92,8 +87,6 @@ export type ITopStudent = {
   subscriptionTier: string;
 };
 
-// ============ OVERVIEW STATS ============
-
 export type IStatistic = {
   total: number;
   thisPeriodCount: number;
@@ -113,8 +106,6 @@ export type IOverviewStatsQuery = {
   period?: 'day' | 'week' | 'month' | 'quarter' | 'year';
 };
 
-// ============ MONTHLY REVENUE ============
-
 export type IMonthlyRevenue = {
   month: number;
   year: number;
@@ -129,14 +120,12 @@ export type IMonthlyRevenue = {
 
 export type IMonthlyRevenueQuery = {
   year?: number;
-  months?: string; // comma-separated e.g. "1,2,3"
+  months?: string;
   tutorId?: string;
   studentId?: string;
   subscriptionTier?: 'FLEXIBLE' | 'REGULAR' | 'LONG_TERM';
   subject?: string;
 };
-
-// ============ USER DISTRIBUTION ============
 
 export type IRoleDistribution = {
   role: string;
@@ -160,8 +149,6 @@ export type IUserDistributionQuery = {
   groupBy?: 'role' | 'status' | 'both';
 };
 
-// ============ UNIFIED SESSIONS ============
-
 export type IUnifiedSession = {
   _id: string;
   type: 'SESSION' | 'TRIAL_REQUEST';
@@ -173,7 +160,7 @@ export type IUnifiedSession = {
   tutorPhone?: string;
   subject: string;
   status: string;
-  paymentStatus: string; // 'FREE_TRIAL' | 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED'
+  paymentStatus: string;
   startTime?: Date;
   endTime?: Date;
   createdAt: Date;
@@ -193,11 +180,9 @@ export type IUnifiedSessionsQuery = {
   sortOrder?: 'asc' | 'desc';
 };
 
-// ============ TRANSACTIONS ============
-
 export type ITransaction = {
   _id: string;
-  transactionId: string; // Invoice number or Payout reference
+  transactionId: string;
   type: 'STUDENT_PAYMENT' | 'TUTOR_PAYOUT';
   amount: number;
   userName: string;

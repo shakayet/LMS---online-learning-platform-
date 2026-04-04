@@ -1,6 +1,5 @@
 import { z } from 'zod';
 
-// Attach payment method validation
 const attachPaymentMethodZodSchema = z.object({
   body: z.object({
     paymentMethodId: z.string({

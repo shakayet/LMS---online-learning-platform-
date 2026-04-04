@@ -1,23 +1,3 @@
-// import { ZodError } from 'zod';
-// import { IErrorMessage } from '../types/errors.types';
-
-// const handleZodError = (error: ZodError) => {
-//   const errorMessages: IErrorMessage[] = error.errors.map(el => {
-//     return {
-//       path: el.path[el.path.length - 1],
-//       message: el.message,
-//     };
-//   });
-
-//   const statusCode = 400;
-//   return {
-//     statusCode,
-//     message: 'Validation Error',
-//     errorMessages,
-//   };
-// };
-
-// export default handleZodError;
 
 import {
   ZodError,
@@ -28,7 +8,6 @@ import {
 import { IErrorMessage } from '../types/errors.types';
 import { closest } from 'fastest-levenshtein';
 
-// Clean the path (always returns string)
 const cleanPath = (pathArray: (string | number)[]): string =>
   pathArray.join('.').replace(/^body\./, '');
 
@@ -39,7 +18,6 @@ const handleZodError = (
   const missingFields: string[] = [];
   const coveredFields: string[] = [];
 
-  // Collect expected fields for suggestions
   const expectedFields = Array.from(
     new Set(
       error.errors
@@ -52,7 +30,6 @@ const handleZodError = (
     )
   );
 
-  // Single pass over all Zod issues
   error.errors.forEach(issue => {
     switch (issue.code) {
       case ZodIssueCode.unrecognized_keys: {
@@ -76,10 +53,10 @@ const handleZodError = (
         const path = cleanPath(invalid.path);
 
         if (invalid.received === 'undefined') {
-          // Missing field
+
           missingFields.push(path);
         } else {
-          // Type mismatch
+
           allErrorMessages.push({
             path,
             message: `Expected ${invalid.expected} for '${path}', but received ${invalid.received}.`,
@@ -97,7 +74,6 @@ const handleZodError = (
     }
   });
 
-  // Add missing fields that are not covered by typo suggestions
   missingFields.forEach(field => {
     if (!coveredFields.includes(field)) {
       allErrorMessages.push({

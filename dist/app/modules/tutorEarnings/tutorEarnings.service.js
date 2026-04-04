@@ -27,13 +27,13 @@ const QueryBuilder_1 = __importDefault(require("../../builder/QueryBuilder"));
 const stripe_1 = require("../../../config/stripe");
 const payment_model_1 = require("../payment/payment.model");
 const emailHelper_1 = require("../../../helpers/emailHelper");
-// Level configuration
+
 const LEVEL_CONFIG = {
     [user_interface_1.TUTOR_LEVEL.STARTER]: { minSessions: 0, maxSessions: 20, hourlyRate: 15, levelNumber: 1 },
     [user_interface_1.TUTOR_LEVEL.INTERMEDIATE]: { minSessions: 21, maxSessions: 50, hourlyRate: 17, levelNumber: 2 },
     [user_interface_1.TUTOR_LEVEL.EXPERT]: { minSessions: 51, maxSessions: Infinity, hourlyRate: 20, levelNumber: 3 },
 };
-// Get next level info
+
 const getNextLevel = (currentLevel) => {
     if (currentLevel === user_interface_1.TUTOR_LEVEL.STARTER) {
         return {
@@ -49,40 +49,37 @@ const getNextLevel = (currentLevel) => {
             levelNumber: LEVEL_CONFIG[user_interface_1.TUTOR_LEVEL.EXPERT].levelNumber,
         };
     }
-    return null; // Already at max level
+    return null;
 };
-/**
- * Generate tutor earnings for all tutors (called at month-end after billing)
- */
-const generateTutorEarnings = (month_1, year_1, ...args_1) => __awaiter(void 0, [month_1, year_1, ...args_1], void 0, function* (month, year, commissionRate = 0 // No commission - tutor gets 100%
+
+const generateTutorEarnings = (month_1, year_1, ...args_1) => __awaiter(void 0, [month_1, year_1, ...args_1], void 0, function* (month, year, commissionRate = 0
 ) {
     const periodStart = new Date(year, month - 1, 1);
     const periodEnd = new Date(year, month, 0, 23, 59, 59);
-    // Get all active tutors
+
     const tutors = yield user_model_1.User.find({ role: user_1.USER_ROLES.TUTOR });
     const earnings = [];
     for (const tutor of tutors) {
-        // Check if payout already exists
+
         const existingPayout = yield tutorEarnings_model_1.TutorEarnings.findOne({
             tutorId: tutor._id,
             payoutMonth: month,
             payoutYear: year,
         });
         if (existingPayout) {
-            continue; // Skip if already generated
+            continue;
         }
-        // Get completed sessions for this tutor in billing period
-        // NEW: Query by teacherCompletionStatus - only sessions where feedback was submitted
+
         const sessions = yield session_model_1.Session.find({
             tutorId: tutor._id,
             teacherCompletionStatus: session_interface_1.COMPLETION_STATUS.COMPLETED,
-            isTrial: false, // Exclude free trial sessions - teacher doesn't get paid for trials
+            isTrial: false,
             teacherCompletedAt: { $gte: periodStart, $lte: periodEnd },
         }).populate('studentId', 'name');
         if (sessions.length === 0) {
-            continue; // Skip tutors with no sessions
+            continue;
         }
-        // Build line items - use teacherCompletedAt for date
+
         const lineItems = sessions.map(session => ({
             sessionId: session._id,
             studentName: session.studentId.name,
@@ -92,7 +89,7 @@ const generateTutorEarnings = (month_1, year_1, ...args_1) => __awaiter(void 0, 
             sessionPrice: session.totalPrice,
             tutorEarning: session.totalPrice * (1 - commissionRate),
         }));
-        // Create earnings record
+
         const earning = yield tutorEarnings_model_1.TutorEarnings.create({
             tutorId: tutor._id,
             payoutMonth: month,
@@ -107,9 +104,7 @@ const generateTutorEarnings = (month_1, year_1, ...args_1) => __awaiter(void 0, 
     }
     return earnings;
 });
-/**
- * Get tutor's earnings history
- */
+
 const getMyEarnings = (tutorId, query) => __awaiter(void 0, void 0, void 0, function* () {
     const earningsQuery = new QueryBuilder_1.default(tutorEarnings_model_1.TutorEarnings.find({ tutorId }), query)
         .filter()
@@ -120,9 +115,7 @@ const getMyEarnings = (tutorId, query) => __awaiter(void 0, void 0, void 0, func
     const meta = yield earningsQuery.getPaginationInfo();
     return { data: result, meta };
 });
-/**
- * Get all earnings (Admin)
- */
+
 const getAllEarnings = (query) => __awaiter(void 0, void 0, void 0, function* () {
     const earningsQuery = new QueryBuilder_1.default(tutorEarnings_model_1.TutorEarnings.find().populate('tutorId', 'name email'), query)
         .search(['payoutReference'])
@@ -134,9 +127,7 @@ const getAllEarnings = (query) => __awaiter(void 0, void 0, void 0, function* ()
     const meta = yield earningsQuery.getPaginationInfo();
     return { data: result, meta };
 });
-/**
- * Get single earnings record
- */
+
 const getSingleEarning = (id) => __awaiter(void 0, void 0, void 0, function* () {
     const earning = yield tutorEarnings_model_1.TutorEarnings.findById(id)
         .populate('tutorId', 'name email')
@@ -146,9 +137,7 @@ const getSingleEarning = (id) => __awaiter(void 0, void 0, void 0, function* () 
     }
     return earning;
 });
-/**
- * Initiate payout to tutor (Stripe Connect transfer)
- */
+
 const initiatePayout = (id, payload) => __awaiter(void 0, void 0, void 0, function* () {
     const earning = yield tutorEarnings_model_1.TutorEarnings.findById(id).populate('tutorId');
     if (!earning) {
@@ -161,7 +150,7 @@ const initiatePayout = (id, payload) => __awaiter(void 0, void 0, void 0, functi
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'Cannot initiate payout with zero or negative earnings');
     }
     const tutor = earning.tutorId;
-    // Look up tutor's Stripe Connect account
+
     const stripeAccount = yield payment_model_1.StripeAccount.findOne({ userId: tutor._id });
     if (!stripeAccount || !stripeAccount.onboardingCompleted) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'Tutor has not completed Stripe onboarding. Cannot initiate payout.');
@@ -169,9 +158,9 @@ const initiatePayout = (id, payload) => __awaiter(void 0, void 0, void 0, functi
     if (!stripeAccount.payoutsEnabled) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'Tutor Stripe account does not have payouts enabled yet.');
     }
-    // Create Stripe Connect transfer
+
     const transfer = yield stripe_1.stripe.transfers.create({
-        amount: Math.round(earning.netEarnings * 100), // Convert to cents
+        amount: Math.round(earning.netEarnings * 100),
         currency: 'eur',
         destination: stripeAccount.stripeAccountId,
         transfer_group: earning.payoutReference,
@@ -189,9 +178,7 @@ const initiatePayout = (id, payload) => __awaiter(void 0, void 0, void 0, functi
     yield earning.save();
     return earning;
 });
-/**
- * Mark payout as completed (Called by Stripe webhook or manual)
- */
+
 const markAsPaid = (id, payload) => __awaiter(void 0, void 0, void 0, function* () {
     const earning = yield tutorEarnings_model_1.TutorEarnings.findById(id);
     if (!earning) {
@@ -206,7 +193,7 @@ const markAsPaid = (id, payload) => __awaiter(void 0, void 0, void 0, function* 
         earning.paymentMethod = payload.paymentMethod;
     }
     yield earning.save();
-    // Send email notification to tutor
+
     const tutor = yield user_model_1.User.findById(earning.tutorId);
     if (tutor === null || tutor === void 0 ? void 0 : tutor.email) {
         const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -232,9 +219,7 @@ const markAsPaid = (id, payload) => __awaiter(void 0, void 0, void 0, function* 
     }
     return earning;
 });
-/**
- * Mark payout as failed
- */
+
 const markAsFailed = (id, failureReason) => __awaiter(void 0, void 0, void 0, function* () {
     const earning = yield tutorEarnings_model_1.TutorEarnings.findById(id);
     if (!earning) {
@@ -243,7 +228,7 @@ const markAsFailed = (id, failureReason) => __awaiter(void 0, void 0, void 0, fu
     earning.status = tutorEarnings_interface_1.PAYOUT_STATUS.FAILED;
     earning.failureReason = failureReason;
     yield earning.save();
-    // Send email notification to tutor
+
     const tutor = yield user_model_1.User.findById(earning.tutorId);
     if (tutor === null || tutor === void 0 ? void 0 : tutor.email) {
         const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -269,10 +254,7 @@ const markAsFailed = (id, failureReason) => __awaiter(void 0, void 0, void 0, fu
     }
     return earning;
 });
-// ============ PAYOUT SETTINGS ============
-/**
- * Get tutor's payout settings
- */
+
 const getPayoutSettings = (tutorId) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;
     const tutor = yield user_model_1.User.findById(tutorId);
@@ -284,9 +266,7 @@ const getPayoutSettings = (tutorId) => __awaiter(void 0, void 0, void 0, functio
         iban: ((_b = tutor.tutorProfile) === null || _b === void 0 ? void 0 : _b.payoutIban) || '',
     };
 });
-/**
- * Update tutor's payout settings
- */
+
 const updatePayoutSettings = (tutorId, payload) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;
     const tutor = yield user_model_1.User.findById(tutorId);
@@ -302,9 +282,7 @@ const updatePayoutSettings = (tutorId, payload) => __awaiter(void 0, void 0, voi
         iban: ((_b = updatedTutor === null || updatedTutor === void 0 ? void 0 : updatedTutor.tutorProfile) === null || _b === void 0 ? void 0 : _b.payoutIban) || '',
     };
 });
-/**
- * Get tutor's comprehensive stats including level progress
- */
+
 const getMyStats = (tutorId) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const tutor = yield user_model_1.User.findById(tutorId);
@@ -314,7 +292,7 @@ const getMyStats = (tutorId) => __awaiter(void 0, void 0, void 0, function* () {
     const tutorProfile = tutor.tutorProfile;
     const currentLevel = (tutorProfile === null || tutorProfile === void 0 ? void 0 : tutorProfile.level) || user_interface_1.TUTOR_LEVEL.STARTER;
     const completedSessions = (tutorProfile === null || tutorProfile === void 0 ? void 0 : tutorProfile.completedSessions) || 0;
-    // Calculate level progress
+
     const currentLevelConfig = LEVEL_CONFIG[currentLevel];
     const nextLevelInfo = getNextLevel(currentLevel);
     let nextLevelData = null;
@@ -331,17 +309,17 @@ const getMyStats = (tutorId) => __awaiter(void 0, void 0, void 0, function* () {
             progressPercent,
         };
     }
-    // Get current month dates
+
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-    // Get current month earnings
+
     const currentMonthEarnings = yield tutorEarnings_model_1.TutorEarnings.findOne({
         tutorId: new mongoose_1.Types.ObjectId(tutorId),
         payoutMonth: now.getMonth() + 1,
         payoutYear: now.getFullYear(),
     });
-    // Get pending payouts total
+
     const pendingPayouts = yield tutorEarnings_model_1.TutorEarnings.aggregate([
         {
             $match: {
@@ -356,7 +334,7 @@ const getMyStats = (tutorId) => __awaiter(void 0, void 0, void 0, function* () {
             },
         },
     ]);
-    // Get trial session stats
+
     const trialStats = yield session_model_1.Session.aggregate([
         {
             $match: {
@@ -405,9 +383,7 @@ const getMyStats = (tutorId) => __awaiter(void 0, void 0, void 0, function* () {
         },
     };
 });
-/**
- * Get earnings history formatted for frontend display
- */
+
 const getEarningsHistory = (tutorId_1, ...args_1) => __awaiter(void 0, [tutorId_1, ...args_1], void 0, function* (tutorId, page = 1, limit = 10) {
     const skip = (page - 1) * limit;
     const earnings = yield tutorEarnings_model_1.TutorEarnings.find({ tutorId: new mongoose_1.Types.ObjectId(tutorId) })
@@ -445,7 +421,7 @@ exports.TutorEarningsService = {
     initiatePayout,
     markAsPaid,
     markAsFailed,
-    // New methods
+
     getPayoutSettings,
     updatePayoutSettings,
     getMyStats,

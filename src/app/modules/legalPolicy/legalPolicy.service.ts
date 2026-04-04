@@ -3,25 +3,21 @@ import ApiError from '../../../errors/ApiError';
 import { ILegalPolicy, POLICY_TYPE } from './legalPolicy.interface';
 import { LegalPolicy } from './legalPolicy.model';
 
-// Get all policies
 const getAllPolicies = async (): Promise<ILegalPolicy[]> => {
   const result = await LegalPolicy.find().sort({ type: 1 }).lean();
   return result;
 };
 
-// Get policy by type
 const getPolicyByType = async (type: POLICY_TYPE): Promise<ILegalPolicy | null> => {
   const result = await LegalPolicy.findOne({ type }).lean();
   return result;
 };
 
-// Get active policy by type (for public display)
 const getActivePolicyByType = async (type: POLICY_TYPE): Promise<ILegalPolicy | null> => {
   const result = await LegalPolicy.findOne({ type, isActive: true }).lean();
   return result;
 };
 
-// Create or update policy
 const upsertPolicy = async (
   type: POLICY_TYPE,
   payload: Partial<ILegalPolicy>,
@@ -30,7 +26,7 @@ const upsertPolicy = async (
   const existingPolicy = await LegalPolicy.findOne({ type });
 
   if (existingPolicy) {
-    // Update existing policy
+
     const result = await LegalPolicy.findOneAndUpdate(
       { type },
       {
@@ -46,7 +42,7 @@ const upsertPolicy = async (
 
     return result;
   } else {
-    // Create new policy
+
     const result = await LegalPolicy.create({
       type,
       ...payload,
@@ -57,7 +53,6 @@ const upsertPolicy = async (
   }
 };
 
-// Update policy
 const updatePolicy = async (
   type: POLICY_TYPE,
   payload: Partial<ILegalPolicy>,
@@ -81,7 +76,6 @@ const updatePolicy = async (
   return result;
 };
 
-// Delete policy (soft delete)
 const deletePolicy = async (type: POLICY_TYPE): Promise<ILegalPolicy | null> => {
   const policy = await LegalPolicy.findOne({ type });
 
@@ -98,13 +92,11 @@ const deletePolicy = async (type: POLICY_TYPE): Promise<ILegalPolicy | null> => 
   return result;
 };
 
-// Get all active policies (for public display)
 const getAllActivePolicies = async (): Promise<ILegalPolicy[]> => {
   const result = await LegalPolicy.find({ isActive: true }).sort({ type: 1 }).lean();
   return result;
 };
 
-// Initialize default policies if they don't exist
 const initializeDefaultPolicies = async (): Promise<void> => {
   const defaultPolicies = [
     {

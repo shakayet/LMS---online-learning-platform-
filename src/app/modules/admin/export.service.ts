@@ -7,30 +7,24 @@ import { TutorEarnings } from '../tutorEarnings/tutorEarnings.model';
 import { StudentSubscription } from '../studentSubscription/studentSubscription.model';
 import { TrialRequest } from '../trialRequest/trialRequest.model';
 
-/**
- * Convert JSON data to CSV format
- */
 const jsonToCSV = (data: any[], headers?: string[]): string => {
   if (!data || data.length === 0) {
     return '';
   }
 
-  // Get headers from first object if not provided
   const csvHeaders = headers || Object.keys(data[0]);
 
-  // Create header row
   const headerRow = csvHeaders.join(',');
 
-  // Create data rows
   const dataRows = data.map(row => {
     return csvHeaders
       .map(header => {
         const value = row[header];
-        // Handle null/undefined
+
         if (value === null || value === undefined) return '';
-        // Handle objects/arrays (convert to JSON string)
+
         if (typeof value === 'object') return `"${JSON.stringify(value).replace(/"/g, '""')}"`;
-        // Handle strings with commas or quotes
+
         if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
           return `"${value.replace(/"/g, '""')}"`;
         }
@@ -42,9 +36,6 @@ const jsonToCSV = (data: any[], headers?: string[]): string => {
   return [headerRow, ...dataRows].join('\n');
 };
 
-/**
- * Export all users to CSV
- */
 const exportUsers = async (role?: string): Promise<string> => {
   const query = role ? { role } : {};
   const users = await User.find(query).select(
@@ -62,9 +53,6 @@ const exportUsers = async (role?: string): Promise<string> => {
   return jsonToCSV(data);
 };
 
-/**
- * Export tutor applications to CSV
- */
 const exportApplications = async (status?: string): Promise<string> => {
   const query = status ? { status } : {};
   const applications = await TutorApplication.find(query).select(
@@ -84,9 +72,6 @@ const exportApplications = async (status?: string): Promise<string> => {
   return jsonToCSV(data);
 };
 
-/**
- * Export sessions to CSV
- */
 const exportSessions = async (
   status?: string,
   startDate?: Date,
@@ -125,9 +110,6 @@ const exportSessions = async (
   return jsonToCSV(data);
 };
 
-/**
- * Export monthly billings to CSV
- */
 const exportBillings = async (
   status?: string,
   year?: number,
@@ -161,9 +143,6 @@ const exportBillings = async (
   return jsonToCSV(data);
 };
 
-/**
- * Export tutor earnings to CSV
- */
 const exportEarnings = async (
   status?: string,
   year?: number,
@@ -197,9 +176,6 @@ const exportEarnings = async (
   return jsonToCSV(data);
 };
 
-/**
- * Export subscriptions to CSV
- */
 const exportSubscriptions = async (status?: string): Promise<string> => {
   const query = status ? { status } : {};
   const subscriptions = await StudentSubscription.find(query)
@@ -220,9 +196,6 @@ const exportSubscriptions = async (status?: string): Promise<string> => {
   return jsonToCSV(data);
 };
 
-/**
- * Export trial requests to CSV
- */
 const exportTrialRequests = async (status?: string): Promise<string> => {
   const query = status ? { status } : {};
   const requests = await TrialRequest.find(query)

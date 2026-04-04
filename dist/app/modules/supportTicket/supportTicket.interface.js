@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TICKET_PRIORITY = exports.TICKET_STATUS = exports.TICKET_CATEGORY = void 0;
-// Support ticket categories - predefined options for dropdown
+
 var TICKET_CATEGORY;
 (function (TICKET_CATEGORY) {
     TICKET_CATEGORY["TECHNICAL_ISSUE"] = "TECHNICAL_ISSUE";
@@ -12,7 +12,7 @@ var TICKET_CATEGORY;
     TICKET_CATEGORY["FEATURE_REQUEST"] = "FEATURE_REQUEST";
     TICKET_CATEGORY["OTHER"] = "OTHER";
 })(TICKET_CATEGORY || (exports.TICKET_CATEGORY = TICKET_CATEGORY = {}));
-// Ticket status for admin to track
+
 var TICKET_STATUS;
 (function (TICKET_STATUS) {
     TICKET_STATUS["OPEN"] = "OPEN";
@@ -20,7 +20,7 @@ var TICKET_STATUS;
     TICKET_STATUS["RESOLVED"] = "RESOLVED";
     TICKET_STATUS["CLOSED"] = "CLOSED";
 })(TICKET_STATUS || (exports.TICKET_STATUS = TICKET_STATUS = {}));
-// Ticket priority for admin to prioritize
+
 var TICKET_PRIORITY;
 (function (TICKET_PRIORITY) {
     TICKET_PRIORITY["LOW"] = "LOW";

@@ -39,7 +39,7 @@ const createChangePasswordZodSchema = zod_1.z.object({
     }),
 });
 const createRefreshTokenZodSchema = zod_1.z.object({
-    // Allow empty body when using cookie-based refresh tokens
+
     body: zod_1.z
         .object({
         refreshToken: zod_1.z.string().optional(),

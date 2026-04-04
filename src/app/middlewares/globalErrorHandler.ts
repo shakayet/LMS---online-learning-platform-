@@ -10,12 +10,9 @@ import { IErrorMessage } from '../../types/errors.types';
 import { trace } from '@opentelemetry/api';
 
 const globalErrorHandler: ErrorRequestHandler = (error, req, res, next) => {
-  // config.node_env === 'development'
-  //   ? console.log('🚨 globalErrorHandler ~~ ', error)
-  //   : errorLogger.error('🚨 globalErrorHandler ~~ ', error);
+
   errorLogger.error('🚨 globalErrorHandler ~~ ', error);
 
-  // OpenTelemetry: start Error Handler span
   const tracer = trace.getTracer('app');
   const span = tracer.startSpan('Error Handler');
   try {
@@ -23,7 +20,7 @@ const globalErrorHandler: ErrorRequestHandler = (error, req, res, next) => {
     span.setAttribute('http.method', req.method);
     span.setAttribute('http.route', (req.route && (req.route as any).path) || req.originalUrl || 'n/a');
     span.addEvent('ERROR_HANDLER_START');
-    // Record the incoming error for context but keep handler span non-error
+
     span.recordException(error as any);
     span.setStatus({ code: 1, message: 'Formatted error response' });
 

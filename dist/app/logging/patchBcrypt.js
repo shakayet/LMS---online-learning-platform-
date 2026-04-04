@@ -1,11 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-/*
-  Monkey-patch bcrypt.hash and bcrypt.compare to emit spans.
-  Import this module early in app bootstrap.
-*/
+
 const api_1 = require("@opentelemetry/api");
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+
 const bcrypt = require('bcrypt');
 const tracer = api_1.trace.getTracer('app');
 try {

@@ -45,7 +45,7 @@ const activityLogSchema = new mongoose_1.Schema({
 }, {
     timestamps: true,
 });
-// Indexes for efficient querying
+
 activityLogSchema.index({ createdAt: -1 });
 activityLogSchema.index({ actionType: 1, createdAt: -1 });
 activityLogSchema.index({ userId: 1, createdAt: -1 });

@@ -4,9 +4,6 @@ import catchAsync from '../../../shared/catchAsync';
 import sendResponse from '../../../shared/sendResponse';
 import { MonthlyBillingService } from './monthlyBilling.service';
 
-/**
- * Generate monthly billings (Cron job or manual trigger)
- */
 const generateMonthlyBillings = catchAsync(async (req: Request, res: Response) => {
   const { month, year } = req.body;
   const result = await MonthlyBillingService.generateMonthlyBillings(month, year);
@@ -19,9 +16,6 @@ const generateMonthlyBillings = catchAsync(async (req: Request, res: Response) =
   });
 });
 
-/**
- * Get student's billing history
- */
 const getMyBillings = catchAsync(async (req: Request, res: Response) => {
   const studentId = req.user!.id as string;
   const result = await MonthlyBillingService.getMyBillings(studentId, req.query);
@@ -35,9 +29,6 @@ const getMyBillings = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Get all billings (Admin)
- */
 const getAllBillings = catchAsync(async (req: Request, res: Response) => {
   const result = await MonthlyBillingService.getAllBillings(req.query);
 
@@ -50,9 +41,6 @@ const getAllBillings = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Get single billing
- */
 const getSingleBilling = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const result = await MonthlyBillingService.getSingleBilling(id);
@@ -65,9 +53,6 @@ const getSingleBilling = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Mark billing as paid (Manual or webhook)
- */
 const markAsPaid = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const result = await MonthlyBillingService.markAsPaid(id, req.body);
@@ -80,9 +65,6 @@ const markAsPaid = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * Mark billing as failed
- */
 const markAsFailed = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const { failureReason } = req.body;

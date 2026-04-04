@@ -9,18 +9,18 @@ const multer_1 = __importDefault(require("multer"));
 const path_1 = __importDefault(require("path"));
 const ApiError_1 = __importDefault(require("../../errors/ApiError"));
 const fileUploadHandler = () => {
-    //create upload folder
+
     const baseUploadDir = path_1.default.join(process.cwd(), 'uploads');
     if (!fs_1.default.existsSync(baseUploadDir)) {
         fs_1.default.mkdirSync(baseUploadDir);
     }
-    //folder create for different file
+
     const createDir = (dirPath) => {
         if (!fs_1.default.existsSync(dirPath)) {
             fs_1.default.mkdirSync(dirPath);
         }
     };
-    //create filename
+
     const storage = multer_1.default.diskStorage({
         destination: (req, file, cb) => {
             let uploadDir;
@@ -52,7 +52,7 @@ const fileUploadHandler = () => {
             cb(null, fileName + fileExt);
         },
     });
-    //file filter
+
     const filterFilter = (req, file, cb) => {
         if (file.fieldname === 'image') {
             if (file.mimetype === 'image/jpeg' ||

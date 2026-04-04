@@ -18,13 +18,13 @@ const ApiError_1 = __importDefault(require("../../../errors/ApiError"));
 const http_status_codes_1 = require("http-status-codes");
 const QueryBuilder_1 = __importDefault(require("../../builder/QueryBuilder"));
 const toggleBookmarkIntoDB = (userId, targetId, targetModel) => __awaiter(void 0, void 0, void 0, function* () {
-    // Fetch existing bookmark only; generic across models
+
     const existingBookmark = yield bookmark_model_1.Bookmark.findOne({
         user: userId,
         target: targetId,
         targetModel,
     });
-    // Remove bookmark or create new bookmark in parallel-safe way
+
     if (existingBookmark) {
         const removedBookmark = yield bookmark_model_1.Bookmark.findOneAndDelete({
             _id: existingBookmark._id,
@@ -46,20 +46,20 @@ const toggleBookmarkIntoDB = (userId, targetId, targetModel) => __awaiter(void 0
     }
 });
 const getUserBookmarksFromDB = (userId, query) => __awaiter(void 0, void 0, void 0, function* () {
-    // Start with base query
+
     let modelQuery = bookmark_model_1.Bookmark.find({ user: userId });
-    // Allow filtering by targetModel; exclude Task-specific filters from generic filter()
+
     const modifiedQuery = Object.assign({}, query);
     delete modifiedQuery.category;
     delete modifiedQuery.searchTerm;
-    // Create QueryBuilder instance
+
     const queryBuilder = new QueryBuilder_1.default(modelQuery, modifiedQuery)
         .filter()
         .dateFilter()
         .sort()
         .paginate()
         .fields();
-    // Populate target; apply Task-specific filters only when targetModel === 'Task'
+
     if (query.targetModel === 'Task') {
         if (query.category && query.searchTerm) {
             queryBuilder.searchInPopulatedFields('target', ['title', 'description', 'taskLocation'], query.searchTerm, { taskCategory: query.category });
@@ -75,10 +75,10 @@ const getUserBookmarksFromDB = (userId, query) => __awaiter(void 0, void 0, void
         }
     }
     else {
-        // Generic population for other models
+
         queryBuilder.populate(['target']);
     }
-    // Get filtered results with custom pagination
+
     const result = yield queryBuilder.getFilteredResults(['target']);
     return result;
 });

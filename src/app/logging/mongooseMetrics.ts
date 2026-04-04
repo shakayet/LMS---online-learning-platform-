@@ -30,7 +30,7 @@ const postEnd = (op: string) =>
     const start = this.__metricsStart || Date.now();
     const dur = Date.now() - start;
     const model = getModelName(this);
-    // Capture aggregate pipeline summary when applicable
+
     let pipeline: string | undefined;
     if (op === 'aggregate' && typeof this?.pipeline === 'function') {
       try {
@@ -38,7 +38,7 @@ const postEnd = (op: string) =>
         if (Array.isArray(pl)) pipeline = summarizePipeline(pl);
       } catch {}
     }
-    // Derive nReturned for common ops from the result
+
     let nReturned: number | undefined;
     try {
       if (op === 'find' && Array.isArray(_res)) {
@@ -53,7 +53,7 @@ const postEnd = (op: string) =>
         nReturned = 1;
       }
     } catch {}
-    // Try explain('executionStats') via native driver for accurate metrics
+
     let docsExamined: number | undefined;
     let indexUsed: string | undefined;
     let executionStage: string | undefined;
@@ -67,13 +67,13 @@ const postEnd = (op: string) =>
         } else if (op === 'findOne') {
           exp = await coll.find(filter as any).limit(1).explain('executionStats');
         } else if (op === 'countDocuments') {
-          // For count, use a find explain to observe scan behavior
+
           exp = await coll.find(filter as any).explain('executionStats');
         } else if (op === 'aggregate' && typeof this?.pipeline === 'function') {
           const pl = this.pipeline();
           exp = await coll.aggregate(pl as any).explain('executionStats');
         } else if (op === 'updateOne' || op === 'updateMany' || op === 'deleteOne' || op === 'deleteMany' || op === 'findOneAndUpdate') {
-          // Use find explain for write filters to infer index usage
+
           exp = await coll.find(filter as any).limit(op === 'updateMany' || op === 'deleteMany' ? 0 : 1).explain('executionStats');
         }
       }
@@ -87,7 +87,7 @@ const postEnd = (op: string) =>
         }
       }
     } catch {}
-    // Index suggestion (basic): if COLLSCAN or docsExamined >> nReturned
+
     let suggestion: string | undefined;
     try {
       const conds = (this as any)._conditions || (typeof (this as any).getFilter === 'function' ? (this as any).getFilter() : undefined);
@@ -97,7 +97,7 @@ const postEnd = (op: string) =>
       if (!indexUsed || indexUsed === 'NO_INDEX' || (docsExamined && nReturned && docsExamined > nReturned * 50)) {
         suggestion = idxFields ? `Create compound index on { ${idxFields} }` : undefined;
       }
-      // Attach attributes to OTel span
+
       if (this.__otelSpan) {
         try {
           this.__otelSpan.setAttribute('db.model', model || 'unknown');
@@ -118,7 +118,6 @@ const postEnd = (op: string) =>
     next();
   };
 
-// Create a compact, human-readable summary of an aggregation pipeline
 function summarizePipeline(pipeline: any[]): string {
   const parts: string[] = [];
   for (const stage of pipeline) {
@@ -166,7 +165,6 @@ function summarizePipeline(pipeline: any[]): string {
   return parts.join(' → ');
 }
 
-// Extract docs examined, nReturned, index name, and execution stage from MongoDB explain output
 function extractExplainStats(exp: any): {
   docsExamined?: number;
   nReturned?: number;
@@ -176,7 +174,7 @@ function extractExplainStats(exp: any): {
   if (!exp || typeof exp !== 'object') return {};
   const es = exp.executionStats || {};
   const qp = exp.queryPlanner || {};
-  // Prefer top-level totals, but fall back to nested executionStages chain
+
   const deepDocs = es.executionStages?.docsExamined
     ?? es.executionStages?.totalDocsExamined
     ?? es.executionStages?.inputStage?.docsExamined
@@ -208,7 +206,7 @@ function extractExplainStats(exp: any): {
 
 export function registerMongooseMetricsPlugin() {
   const plugin = (schema: Schema) => {
-    // Query operations
+
     schema.pre('find', preStart('find'));
     schema.post('find', postEnd('find'));
     schema.pre('findOne', preStart('findOne'));
@@ -228,7 +226,6 @@ export function registerMongooseMetricsPlugin() {
     schema.pre('deleteMany', preStart('deleteMany'));
     schema.post('deleteMany', postEnd('deleteMany'));
 
-    // Error handlers for query ops (record even if failed)
     schema.post('updateOne', function (this: any, err: any, _res: any, next: (err?: any) => void) {
       if (err) {
         const start = this.__metricsStart || Date.now();
@@ -300,7 +297,6 @@ export function registerMongooseMetricsPlugin() {
       next(err);
     });
 
-    // Aggregation
     schema.pre('aggregate', preStart('aggregate'));
     schema.post('aggregate', postEnd('aggregate'));
     schema.post('aggregate', function (this: any, err: any, _res: any, next: (err?: any) => void) {
@@ -316,7 +312,6 @@ export function registerMongooseMetricsPlugin() {
       next(err);
     });
 
-    // Document operations (covers create/save)
     schema.pre('save', preStart('save'));
     schema.post('save', function (this: any, _doc: any, next: (err?: any) => void) {
       const start = this.__metricsStart || Date.now();
@@ -337,5 +332,4 @@ export function registerMongooseMetricsPlugin() {
   mongoose.plugin(plugin);
 }
 
-// Auto-register on import
 registerMongooseMetricsPlugin();

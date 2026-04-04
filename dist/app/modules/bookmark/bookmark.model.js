@@ -21,6 +21,6 @@ const bookmarkSchema = new mongoose_1.Schema({
     timestamps: true,
     versionKey: false,
 });
-// Prevent duplicate bookmarks: same user cannot bookmark same target twice per model
+
 bookmarkSchema.index({ user: 1, target: 1, targetModel: 1 }, { unique: true });
 exports.Bookmark = (0, mongoose_1.model)('Bookmark', bookmarkSchema);

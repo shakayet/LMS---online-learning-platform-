@@ -23,25 +23,21 @@ const tutorApplication_model_1 = require("./tutorApplication.model");
 const jwtHelper_1 = require("../../../helpers/jwtHelper");
 const config_1 = __importDefault(require("../../../config"));
 const activityLog_service_1 = require("../activityLog/activityLog.service");
-/**
- * Submit application (PUBLIC - creates user + application)
- * First-time registration for tutors
- */
+
 const submitApplication = (payload) => __awaiter(void 0, void 0, void 0, function* () {
-    // 1. Check if email already exists
+
     const existingUser = yield user_model_1.User.findOne({ email: payload.email });
     if (existingUser) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.CONFLICT, 'Email already registered');
     }
-    // Check if application with this email already exists
+
     const existingApplication = yield tutorApplication_model_1.TutorApplication.findOne({
         email: payload.email,
     });
     if (existingApplication) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.CONFLICT, 'An application with this email already exists');
     }
-    // 2. Create new User with APPLICANT role
-    // Note: Password will be hashed by User model's pre-save hook
+
     const newUser = yield user_model_1.User.create({
         name: payload.name,
         email: payload.email,
@@ -55,9 +51,9 @@ const submitApplication = (payload) => __awaiter(void 0, void 0, void 0, functio
             abiturCertificateUrl: payload.abiturCertificate,
         },
     });
-    // 3. Generate JWT token for auto-login
+
     const accessToken = jwtHelper_1.jwtHelper.createToken({ id: newUser._id, role: newUser.role, email: newUser.email }, config_1.default.jwt.jwt_secret, config_1.default.jwt.jwt_expire_in);
-    // 4. Create TutorApplication
+
     const application = yield tutorApplication_model_1.TutorApplication.create({
         name: payload.name,
         email: payload.email,
@@ -74,7 +70,7 @@ const submitApplication = (payload) => __awaiter(void 0, void 0, void 0, functio
         status: tutorApplication_interface_1.APPLICATION_STATUS.SUBMITTED,
         submittedAt: new Date(),
     });
-    // Log activity - Application submitted
+
     activityLog_service_1.ActivityLogService.logActivity({
         userId: newUser._id,
         actionType: 'APPLICATION_SUBMITTED',
@@ -95,7 +91,7 @@ const submitApplication = (payload) => __awaiter(void 0, void 0, void 0, functio
         accessToken,
     };
 });
-// Get my application (for logged in applicant)
+
 const getMyApplication = (userEmail, currentUserRole) => __awaiter(void 0, void 0, void 0, function* () {
     const application = yield tutorApplication_model_1.TutorApplication.findOne({
         email: userEmail,
@@ -103,8 +99,7 @@ const getMyApplication = (userEmail, currentUserRole) => __awaiter(void 0, void 
     if (!application) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, 'No application found');
     }
-    // If application is APPROVED but user still has APPLICANT role token,
-    // generate new token with updated TUTOR role
+
     let newAccessToken = null;
     if (application.status === tutorApplication_interface_1.APPLICATION_STATUS.APPROVED &&
         currentUserRole === user_1.USER_ROLES.APPLICANT) {
@@ -115,10 +110,7 @@ const getMyApplication = (userEmail, currentUserRole) => __awaiter(void 0, void 
     }
     return { application, newAccessToken };
 });
-/**
- * Get all applications (admin)
- * With filtering, searching, pagination
- */
+
 const getAllApplications = (query) => __awaiter(void 0, void 0, void 0, function* () {
     const applicationQuery = new QueryBuilder_1.default(tutorApplication_model_1.TutorApplication.find(), query)
         .search(['name', 'email', 'phoneNumber', 'city'])
@@ -126,12 +118,12 @@ const getAllApplications = (query) => __awaiter(void 0, void 0, void 0, function
         .sort()
         .paginate()
         .fields();
-    // Add populate for subjects
+
     applicationQuery.modelQuery = applicationQuery.modelQuery.populate({
         path: 'subjects',
         select: 'name -_id',
     });
-    // Execute query
+
     const result = yield applicationQuery.modelQuery;
     const meta = yield applicationQuery.getPaginationInfo();
     return {
@@ -139,7 +131,7 @@ const getAllApplications = (query) => __awaiter(void 0, void 0, void 0, function
         data: result,
     };
 });
-// Get single application by ID (admin)
+
 const getSingleApplication = (id) => __awaiter(void 0, void 0, void 0, function* () {
     const application = yield tutorApplication_model_1.TutorApplication.findById(id).populate({
         path: 'subjects',
@@ -150,10 +142,7 @@ const getSingleApplication = (id) => __awaiter(void 0, void 0, void 0, function*
     }
     return application;
 });
-/**
- * Select application for interview (admin only)
- * After initial review, admin selects candidate for interview
- */
+
 const selectForInterview = (id, adminNotes) => __awaiter(void 0, void 0, void 0, function* () {
     const application = yield tutorApplication_model_1.TutorApplication.findById(id);
     if (!application) {
@@ -168,27 +157,23 @@ const selectForInterview = (id, adminNotes) => __awaiter(void 0, void 0, void 0,
     if (application.status === tutorApplication_interface_1.APPLICATION_STATUS.REJECTED) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'Cannot select a rejected application for interview');
     }
-    // Only SUBMITTED, REVISION or RESUBMITTED status can be selected for interview
+
     if (application.status !== tutorApplication_interface_1.APPLICATION_STATUS.SUBMITTED &&
         application.status !== tutorApplication_interface_1.APPLICATION_STATUS.REVISION &&
         application.status !== tutorApplication_interface_1.APPLICATION_STATUS.RESUBMITTED) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'Only submitted, revision, or resubmitted applications can be selected for interview');
     }
-    // Update application status
+
     application.status = tutorApplication_interface_1.APPLICATION_STATUS.SELECTED_FOR_INTERVIEW;
     application.selectedForInterviewAt = new Date();
     if (adminNotes) {
         application.adminNotes = adminNotes;
     }
     yield application.save();
-    // TODO: Send email notification to applicant about interview selection
+
     return application;
 });
-/**
- * Approve application (admin only)
- * Changes status to APPROVED and user role to TUTOR
- * Can only approve after interview (SELECTED_FOR_INTERVIEW status)
- */
+
 const approveApplication = (id, adminNotes) => __awaiter(void 0, void 0, void 0, function* () {
     const application = yield tutorApplication_model_1.TutorApplication.findById(id);
     if (!application) {
@@ -200,20 +185,20 @@ const approveApplication = (id, adminNotes) => __awaiter(void 0, void 0, void 0,
     if (application.status === tutorApplication_interface_1.APPLICATION_STATUS.REJECTED) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'Cannot approve a rejected application');
     }
-    // Must be SELECTED_FOR_INTERVIEW to approve (after interview)
+
     if (application.status !== tutorApplication_interface_1.APPLICATION_STATUS.SELECTED_FOR_INTERVIEW) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'Application must be selected for interview before approval. Please select for interview first.');
     }
-    // Update application status
+
     application.status = tutorApplication_interface_1.APPLICATION_STATUS.APPROVED;
     application.approvedAt = new Date();
     if (adminNotes) {
         application.adminNotes = adminNotes;
     }
     yield application.save();
-    // Build full address from application fields
+
     const fullAddress = `${application.street} ${application.houseNumber}, ${application.zip} ${application.city}`;
-    // Update user role to TUTOR and copy data from application
+
     const updatedUser = yield user_model_1.User.findOneAndUpdate({ email: application.email }, {
         role: user_1.USER_ROLES.TUTOR,
         'tutorProfile.isVerified': true,
@@ -224,7 +209,7 @@ const approveApplication = (id, adminNotes) => __awaiter(void 0, void 0, void 0,
         'tutorProfile.cvUrl': application.cv,
         'tutorProfile.abiturCertificateUrl': application.abiturCertificate,
     }, { new: true });
-    // Log activity - Tutor verified
+
     if (updatedUser) {
         activityLog_service_1.ActivityLogService.logActivity({
             userId: updatedUser._id,
@@ -236,16 +221,14 @@ const approveApplication = (id, adminNotes) => __awaiter(void 0, void 0, void 0,
             status: 'success',
         });
     }
-    // Generate new access token with updated TUTOR role
+
     let newAccessToken = null;
     if (updatedUser) {
         newAccessToken = jwtHelper_1.jwtHelper.createToken({ id: updatedUser._id, role: updatedUser.role, email: updatedUser.email }, config_1.default.jwt.jwt_secret, config_1.default.jwt.jwt_expire_in);
     }
     return { application, newAccessToken };
 });
-/**
- * Reject application (admin only)
- */
+
 const rejectApplication = (id, rejectionReason) => __awaiter(void 0, void 0, void 0, function* () {
     const application = yield tutorApplication_model_1.TutorApplication.findById(id);
     if (!application) {
@@ -254,12 +237,12 @@ const rejectApplication = (id, rejectionReason) => __awaiter(void 0, void 0, voi
     if (application.status === tutorApplication_interface_1.APPLICATION_STATUS.APPROVED) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'Cannot reject an approved application');
     }
-    // Update application
+
     application.status = tutorApplication_interface_1.APPLICATION_STATUS.REJECTED;
     application.rejectionReason = rejectionReason;
     application.rejectedAt = new Date();
     yield application.save();
-    // Log activity - Application rejected
+
     const user = yield user_model_1.User.findOne({ email: application.email });
     if (user) {
         activityLog_service_1.ActivityLogService.logActivity({
@@ -274,10 +257,7 @@ const rejectApplication = (id, rejectionReason) => __awaiter(void 0, void 0, voi
     }
     return application;
 });
-/**
- * Send application for revision (admin only)
- * Admin requests the applicant to fix/update something
- */
+
 const sendForRevision = (id, revisionNote) => __awaiter(void 0, void 0, void 0, function* () {
     const application = yield tutorApplication_model_1.TutorApplication.findById(id);
     if (!application) {
@@ -289,17 +269,15 @@ const sendForRevision = (id, revisionNote) => __awaiter(void 0, void 0, void 0, 
     if (application.status === tutorApplication_interface_1.APPLICATION_STATUS.REJECTED) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'Cannot request revision for a rejected application');
     }
-    // Update application
+
     application.status = tutorApplication_interface_1.APPLICATION_STATUS.REVISION;
     application.revisionNote = revisionNote;
     application.revisionRequestedAt = new Date();
     yield application.save();
-    // TODO: Send email notification to applicant about revision request
+
     return application;
 });
-/**
- * Delete application (admin only)
- */
+
 const deleteApplication = (id) => __awaiter(void 0, void 0, void 0, function* () {
     const application = yield tutorApplication_model_1.TutorApplication.findById(id);
     if (!application) {
@@ -308,20 +286,17 @@ const deleteApplication = (id) => __awaiter(void 0, void 0, void 0, function* ()
     const result = yield tutorApplication_model_1.TutorApplication.findByIdAndDelete(id);
     return result;
 });
-/**
- * Update my application (applicant only - when in REVISION status)
- * Allows applicant to update documents and resubmit
- */
+
 const updateMyApplication = (userEmail, payload) => __awaiter(void 0, void 0, void 0, function* () {
     const application = yield tutorApplication_model_1.TutorApplication.findOne({ email: userEmail });
     if (!application) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, 'Application not found');
     }
-    // Only allow updates when in REVISION status
+
     if (application.status !== tutorApplication_interface_1.APPLICATION_STATUS.REVISION) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'You can only update your application when revision is requested');
     }
-    // Update documents if provided
+
     if (payload.cv) {
         application.cv = payload.cv;
     }
@@ -331,16 +306,16 @@ const updateMyApplication = (userEmail, payload) => __awaiter(void 0, void 0, vo
     if (payload.officialId) {
         application.officialId = payload.officialId;
     }
-    // Change status to RESUBMITTED (not back to SUBMITTED)
+
     application.status = tutorApplication_interface_1.APPLICATION_STATUS.RESUBMITTED;
     application.resubmittedAt = new Date();
-    // Also update user's tutorProfile with new documents
+
     yield user_model_1.User.findOneAndUpdate({ email: userEmail }, {
         'tutorProfile.cvUrl': application.cv,
         'tutorProfile.abiturCertificateUrl': application.abiturCertificate,
     });
     yield application.save();
-    // Log activity
+
     const user = yield user_model_1.User.findOne({ email: userEmail });
     if (user) {
         activityLog_service_1.ActivityLogService.logActivity({

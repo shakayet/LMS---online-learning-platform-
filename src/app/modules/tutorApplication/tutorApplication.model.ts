@@ -15,7 +15,6 @@ const tutorApplicationSchema = new Schema<ITutorApplication>(
       },
     ],
 
-    // Personal Information
     name: {
       type: String,
       required: [true, 'Name is required'],
@@ -38,7 +37,6 @@ const tutorApplicationSchema = new Schema<ITutorApplication>(
       required: [true, 'Birth date is required'],
     },
 
-    // Address (structured fields)
     street: {
       type: String,
       required: [true, 'Street is required'],
@@ -60,7 +58,6 @@ const tutorApplicationSchema = new Schema<ITutorApplication>(
       trim: true,
     },
 
-    // Documents (all mandatory)
     cv: {
       type: String,
       required: [true, 'CV is required'],
@@ -74,7 +71,6 @@ const tutorApplicationSchema = new Schema<ITutorApplication>(
       required: [true, 'Official ID document is required'],
     },
 
-    // Status Tracking (simple - no phases)
     status: {
       type: String,
       enum: Object.values(APPLICATION_STATUS),
@@ -89,7 +85,6 @@ const tutorApplicationSchema = new Schema<ITutorApplication>(
       trim: true,
     },
 
-    // Interview cancellation (by admin)
     interviewCancelledReason: {
       type: String,
       trim: true,
@@ -98,13 +93,11 @@ const tutorApplicationSchema = new Schema<ITutorApplication>(
       type: Date,
     },
 
-    // Admin Notes
     adminNotes: {
       type: String,
       trim: true,
     },
 
-    // Timestamps
     submittedAt: {
       type: Date,
       default: Date.now,
@@ -127,8 +120,6 @@ const tutorApplicationSchema = new Schema<ITutorApplication>(
   },
   { timestamps: true }
 );
-
-// Indexes for performance
 
 tutorApplicationSchema.index({ status: 1 });
 tutorApplicationSchema.index({ submittedAt: -1 });

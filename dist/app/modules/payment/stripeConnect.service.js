@@ -19,7 +19,7 @@ const user_model_1 = require("../user/user.model");
 const payment_model_1 = require("./payment.model");
 const stripe_1 = require("../../../config/stripe");
 const stripe_adapter_1 = require("./stripe.adapter");
-// Create Stripe Connect account for freelancers
+
 const createStripeAccount = (data) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const user = yield user_model_1.User.findById(data.userId).select('name email phone dateOfBirth location');
@@ -33,12 +33,12 @@ const createStripeAccount = (data) => __awaiter(void 0, void 0, void 0, function
         let dob;
         if (user.dateOfBirth && typeof user.dateOfBirth === 'string') {
             const parts = user.dateOfBirth.split('-');
-            // Validate that we have all parts and they are valid numbers
+
             if (parts.length >= 3) {
                 const year = parseInt(parts[0], 10);
                 const month = parseInt(parts[1], 10);
                 const day = parseInt(parts[2], 10);
-                // Only set dob if all values are valid numbers
+
                 if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
                     dob = { year, month, day };
                 }
@@ -66,7 +66,7 @@ const createStripeAccount = (data) => __awaiter(void 0, void 0, void 0, function
             businessType: account.business_type || 'individual',
         });
         yield stripeAccount.save();
-        // Create onboarding link for the newly created account
+
         const onboardingUrl = yield (0, stripe_adapter_1.createOnboardingLink)(account.id, `${process.env.FRONTEND_URL}/free-trial-teacher-dash?stripe_onboarding=refresh`, `${process.env.FRONTEND_URL}/free-trial-teacher-dash?stripe_onboarding=success`);
         return {
             accountId: account.id,
@@ -80,7 +80,7 @@ const createStripeAccount = (data) => __awaiter(void 0, void 0, void 0, function
         throw new ApiError_1.default(http_status_1.default.BAD_REQUEST, `Failed to create Stripe account: ${(0, stripe_1.handleStripeError)(error)}`);
     }
 });
-// Create onboarding link for freelancer
+
 const createOnboardingLink = (userId) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const userObjectId = new mongoose_1.default.Types.ObjectId(userId);
@@ -100,7 +100,7 @@ const createOnboardingLink = (userId) => __awaiter(void 0, void 0, void 0, funct
         throw new ApiError_1.default(http_status_1.default.BAD_REQUEST, `Failed to create onboarding link: ${(0, stripe_1.handleStripeError)(error)}`);
     }
 });
-// Check if freelancer has completed Stripe onboarding
+
 const checkOnboardingStatus = (userId) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c, _d;
     try {
@@ -140,7 +140,7 @@ const checkOnboardingStatus = (userId) => __awaiter(void 0, void 0, void 0, func
         throw new ApiError_1.default(http_status_1.default.BAD_REQUEST, `Failed to check onboarding status: ${(0, stripe_1.handleStripeError)(error)}`);
     }
 });
-// Ensure freelancer is onboarded before allowing escrow actions
+
 const ensureFreelancerOnboarded = (taskerId) => __awaiter(void 0, void 0, void 0, function* () {
     const freelancerStripeAccount = yield payment_model_1.StripeAccount.isExistAccountByUserId(taskerId);
     if (!freelancerStripeAccount || !freelancerStripeAccount.onboardingCompleted) {
@@ -148,7 +148,7 @@ const ensureFreelancerOnboarded = (taskerId) => __awaiter(void 0, void 0, void 0
     }
     return freelancerStripeAccount;
 });
-// Get freelancer account or throw
+
 const getFreelancerAccountOrThrow = (userId) => __awaiter(void 0, void 0, void 0, function* () {
     const freelancerStripeAccount = yield payment_model_1.StripeAccount.isExistAccountByUserId(userId);
     if (!(freelancerStripeAccount === null || freelancerStripeAccount === void 0 ? void 0 : freelancerStripeAccount.stripeAccountId)) {
@@ -156,7 +156,7 @@ const getFreelancerAccountOrThrow = (userId) => __awaiter(void 0, void 0, void 0
     }
     return freelancerStripeAccount;
 });
-// Delete a Stripe Connect account
+
 const deleteStripeAccountService = (accountId) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const deleted = yield stripe_1.stripe.accounts.del(accountId);
@@ -169,7 +169,7 @@ const deleteStripeAccountService = (accountId) => __awaiter(void 0, void 0, void
         throw (0, stripe_1.handleStripeError)(error);
     }
 });
-// Update local account status from Stripe account.update webhook
+
 const handleAccountUpdated = (account) => __awaiter(void 0, void 0, void 0, function* () {
     const completed = account.charges_enabled && account.payouts_enabled;
     yield payment_model_1.StripeAccount.updateMany({

@@ -23,22 +23,17 @@ const AggregationBuilder_1 = __importDefault(require("../../builder/AggregationB
 const stripe_1 = require("../../../config/stripe");
 const stripe_adapter_1 = require("./stripe.adapter");
 const stripeConnect_service_1 = __importDefault(require("./stripeConnect.service"));
-// Helper to present sender/receiver aliases for readability
+
 const mapPaymentToView = (payment) => {
     const base = typeof (payment === null || payment === void 0 ? void 0 : payment.toObject) === 'function' ? payment.toObject() : payment;
     return Object.assign(Object.assign({}, base), { senderId: base.posterId, receiverId: base.freelancerId });
 };
-// Moved to stripeConnected.service.ts
-// Moved to stripeConnected.service.ts
-// Moved to stripeConnected.service.ts
-// TODO: Legacy Bid/Task escrow code - commented out as Bid/Task models don't exist in LMS
-// Create escrow payment when bid is accepted
-// Escrow helpers (internal)
+
 const getBidAndTask = (_bidId) => __awaiter(void 0, void 0, void 0, function* () {
-    // Legacy code - Bid/Task system not used in LMS
+
     throw new ApiError_1.default(http_status_1.default.NOT_IMPLEMENTED, 'Bid/Task system not implemented in LMS');
 });
-// Moved to stripeConnected.service.ts
+
 const ensureNoExistingPaymentForBid = (bidId) => __awaiter(void 0, void 0, void 0, function* () {
     const existingPayment = yield payment_model_1.Payment.getPaymentsByBid(bidId);
     if (existingPayment && existingPayment.length > 0) {
@@ -79,7 +74,7 @@ const createPaymentRecord = (data, platformFee, freelancerAmount, paymentIntentI
 });
 const createEscrowPayment = (data) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        // Validate required fields early
+
         if (!data.bidId) {
             throw new ApiError_1.default(http_status_1.default.BAD_REQUEST, 'Bid ID is required for escrow payment');
         }
@@ -106,8 +101,7 @@ const createEscrowPayment = (data) => __awaiter(void 0, void 0, void 0, function
     }
 });
 exports.createEscrowPayment = createEscrowPayment;
-// Release payment when task is completed and approved
-// Release helpers (internal)
+
 const getPaymentOrThrow = (paymentId) => __awaiter(void 0, void 0, void 0, function* () {
     const payment = yield payment_model_1.Payment.isExistPaymentById(paymentId.toString());
     if (!payment) {
@@ -121,7 +115,7 @@ const ensureHeldStatus = (payment) => {
     }
 };
 const ensureClientAuthorized = (_taskId, _clientId) => __awaiter(void 0, void 0, void 0, function* () {
-    // Legacy code - Task system not used in LMS
+
     throw new ApiError_1.default(http_status_1.default.NOT_IMPLEMENTED, 'Task system not implemented in LMS');
 });
 const getChargeIdForIntent = (intentId) => __awaiter(void 0, void 0, void 0, function* () {
@@ -147,7 +141,7 @@ const getChargeIdForIntent = (intentId) => __awaiter(void 0, void 0, void 0, fun
     }
     return { chargeId, canTransferWithoutSource: !chargeId };
 });
-// Moved to stripeConnected.service.ts
+
 const createTransferToFreelancer = (amount, currency, destination, sourceChargeId, metadata) => __awaiter(void 0, void 0, void 0, function* () {
     return (0, stripe_adapter_1.createTransfer)({
         amountDollars: amount,
@@ -159,7 +153,7 @@ const createTransferToFreelancer = (amount, currency, destination, sourceChargeI
 });
 const markPaymentReleasedAndBidCompleted = (paymentId, _bidId) => __awaiter(void 0, void 0, void 0, function* () {
     yield payment_model_1.Payment.updatePaymentStatus(paymentId, payment_interface_1.PAYMENT_STATUS.RELEASED);
-    // Legacy: BidModel.findByIdAndUpdate(bidId, { status: 'completed' }) - not used in LMS
+
 });
 const releaseEscrowPayment = (data) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c, _d;
@@ -190,8 +184,7 @@ const releaseEscrowPayment = (data) => __awaiter(void 0, void 0, void 0, functio
     }
 });
 exports.releaseEscrowPayment = releaseEscrowPayment;
-// Refund escrow payment
-// Refund helpers (internal)
+
 const ensureRefundable = (payment) => {
     if (payment.status === payment_interface_1.PAYMENT_STATUS.REFUNDED) {
         throw new ApiError_1.default(http_status_1.default.BAD_REQUEST, 'Payment has already been refunded');
@@ -220,7 +213,7 @@ const refundEscrowPayment = (paymentId, reason) => __awaiter(void 0, void 0, voi
         ensureRefundable(payment);
         const refund = yield createRefundForIntent(payment.stripePaymentIntentId, reason);
         yield markPaymentRefunded(paymentId, reason);
-        // Legacy: BidModel update - not used in LMS
+
         return {
             success: true,
             message: 'Payment refunded successfully',
@@ -235,7 +228,7 @@ const refundEscrowPayment = (paymentId, reason) => __awaiter(void 0, void 0, voi
     }
 });
 exports.refundEscrowPayment = refundEscrowPayment;
-// Get payment by ID
+
 const getPaymentById = (paymentId) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const payment = yield payment_model_1.Payment.isExistPaymentById(paymentId);
@@ -247,10 +240,10 @@ const getPaymentById = (paymentId) => __awaiter(void 0, void 0, void 0, function
     }
 });
 exports.getPaymentById = getPaymentById;
-// Get payments with filters and pagination
+
 const getPayments = (filters_1, ...args_1) => __awaiter(void 0, [filters_1, ...args_1], void 0, function* (filters, page = 1, limit = 10) {
     try {
-        // Validate and normalize pagination
+
         const pageNum = Number(page) || 1;
         const limitNum = Number(limit) || 10;
         if (pageNum < 1) {
@@ -259,7 +252,7 @@ const getPayments = (filters_1, ...args_1) => __awaiter(void 0, [filters_1, ...a
         if (limitNum < 1 || limitNum > 100) {
             throw new ApiError_1.default(http_status_1.default.BAD_REQUEST, 'Limit must be between 1 and 100');
         }
-        // Build query object compatible with PaymentModel fields
+
         const queryObj = {};
         if (filters.status)
             queryObj.status = filters.status;
@@ -277,12 +270,12 @@ const getPayments = (filters_1, ...args_1) => __awaiter(void 0, [filters_1, ...a
                 createdAt.$lte = filters.dateTo;
             queryObj.createdAt = createdAt;
         }
-        // Use QueryBuilder for filter/sort/pagination
+
         const qb = new QueryBuilder_1.default(payment_model_1.Payment.find(), Object.assign(Object.assign({}, queryObj), { page: pageNum, limit: limitNum }))
             .filter()
-            .sort() // default '-createdAt'
+            .sort()
             .paginate();
-        // Deep populate bid -> task and tasker
+
         qb.modelQuery = qb.modelQuery.populate({
             path: 'bidId',
             populate: [
@@ -305,7 +298,7 @@ const getPayments = (filters_1, ...args_1) => __awaiter(void 0, [filters_1, ...a
     }
 });
 exports.getPayments = getPayments;
-// Payment stats overview (growth metrics similar to Task stats)
+
 const getPaymentStatsOverview = () => __awaiter(void 0, void 0, void 0, function* () {
     const builder = new AggregationBuilder_1.default(payment_model_1.Payment);
     const allPayments = yield builder.calculateGrowth({ period: 'month' });
@@ -329,7 +322,7 @@ const getPaymentStatsOverview = () => __awaiter(void 0, void 0, void 0, function
     };
 });
 exports.getPaymentStatsOverview = getPaymentStatsOverview;
-// Handle Stripe webhook events
+
 const handleWebhookEvent = (event) => __awaiter(void 0, void 0, void 0, function* () {
     switch (event.type) {
         case 'payment_intent.succeeded':
@@ -349,41 +342,39 @@ const handleWebhookEvent = (event) => __awaiter(void 0, void 0, void 0, function
     }
 });
 exports.handleWebhookEvent = handleWebhookEvent;
-// Handle payment succeeded webhook
+
 const handlePaymentSucceeded = (paymentIntent) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const bidId = (_a = paymentIntent.metadata) === null || _a === void 0 ? void 0 : _a.bid_id;
     try {
-        // After capture, confirm local status HELD (funds on platform balance)
+
         yield payment_model_1.Payment.updateMany({
             bidId: bidId,
             stripePaymentIntentId: paymentIntent.id,
         }, {
             status: payment_interface_1.PAYMENT_STATUS.HELD,
         });
-        // Do not re-trigger bid acceptance here; amount_capturable_updated handles capture + acceptance
+
         console.log(`Payment ${paymentIntent.id} succeeded; status set to HELD. No duplicate acceptance triggered.`);
     }
     catch (error) {
         console.error(`Error in handlePaymentSucceeded for payment ${paymentIntent.id}:`, error);
     }
 });
-// Handle payment failed webhook
+
 const handlePaymentFailed = (paymentIntent) => __awaiter(void 0, void 0, void 0, function* () {
     const bidId = paymentIntent.metadata.bid_id;
-    // Update payment status to REFUNDED
+
     yield payment_model_1.Payment.updateMany({
         bidId: bidId,
         stripePaymentIntentId: paymentIntent.id,
     }, {
         status: payment_interface_1.PAYMENT_STATUS.REFUNDED,
     });
-    // Legacy: Bid/Task system not used in LMS
-    // Original code reset bid status and reverted task assignment
+
     console.log(`Payment failure handled for bidId: ${bidId}`);
 });
-// Moved to stripeConnected.service.ts
-// Handle amount capturable updated webhook (manual capture flow)
+
 const handleAmountCapturableUpdated = (paymentIntent) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const bidId = (_a = paymentIntent.metadata) === null || _a === void 0 ? void 0 : _a.bid_id;
@@ -392,12 +383,11 @@ const handleAmountCapturableUpdated = (paymentIntent) => __awaiter(void 0, void 
             console.error('❌ No bid_id in payment intent metadata for amount_capturable_updated:', paymentIntent.metadata);
             return;
         }
-        // console.log(`Payment ${paymentIntent.id} is now capturable, capturing to hold funds on platform...`);
+
         try {
-            // Capture the payment on the platform account (no transfer_data configured)
+
             const capturedPayment = yield stripe_1.stripe.paymentIntents.capture(paymentIntent.id);
-            // console.log(`Payment ${paymentIntent.id} captured successfully (amount_capturable_updated handler)`);
-            // Mark local payment as HELD (captured and held in platform balance)
+
             yield payment_model_1.Payment.updateMany({
                 bidId: bidId,
                 stripePaymentIntentId: paymentIntent.id,
@@ -421,14 +411,14 @@ const handleAmountCapturableUpdated = (paymentIntent) => __awaiter(void 0, void 
                 return;
             }
         }
-        // Legacy: Bid acceptance - not used in LMS
+
         console.log(`Capture completed for bidId: ${bidId}`);
     }
     catch (error) {
         console.error(`Error in handleAmountCapturableUpdated for payment ${paymentIntent.id}:`, error);
     }
 });
-// Get user payments (for user-specific routes)
+
 const getUserPayments = (userId_1, ...args_1) => __awaiter(void 0, [userId_1, ...args_1], void 0, function* (userId, page = 1, limit = 10) {
     try {
         const userObjectId = new mongoose_1.default.Types.ObjectId(userId);
@@ -450,7 +440,7 @@ const getUserPayments = (userId_1, ...args_1) => __awaiter(void 0, [userId_1, ..
     }
 });
 exports.getUserPayments = getUserPayments;
-// Get user payment statistics (direct aggregation)
+
 const getUserPaymentStats = (userId) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const userObjectId = new mongoose_1.default.Types.ObjectId(userId);
@@ -531,17 +521,16 @@ const getUserPaymentStats = (userId) => __awaiter(void 0, void 0, void 0, functi
     }
 });
 exports.getUserPaymentStats = getUserPaymentStats;
-// Moved to stripeConnected.service.ts
-// Get payment history for poster, tasker, super admin with QueryBuilder
+
 const getPaymentHistory = (userId, query) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        // 🔹 Use string directly for Mongoose to cast automatically
+
         const objectId = userId;
-        // Base query (poster or freelancer) + populate freelancer name
+
         const baseQuery = payment_model_1.Payment.find({
             $or: [{ posterId: objectId }, { freelancerId: objectId }],
-        }).populate('freelancerId', 'name'); // populate only name field
-        // Query builder with populate
+        }).populate('freelancerId', 'name');
+
         const queryBuilder = new QueryBuilder_1.default(baseQuery, query)
             .search(['status', 'currency'])
             .filter()
@@ -549,9 +538,9 @@ const getPaymentHistory = (userId, query) => __awaiter(void 0, void 0, void 0, f
             .sort()
             .paginate()
             .fields();
-        // Execute query with pagination
+
         const { data: payments, pagination } = yield queryBuilder.getFilteredResults();
-        // Format data
+
         const formattedPayments = payments.map(payment => ({
             paymentId: payment.stripePaymentIntentId,
             taskerName: payment.freelancerId
@@ -572,7 +561,7 @@ const getPaymentHistory = (userId, query) => __awaiter(void 0, void 0, void 0, f
         throw new ApiError_1.default(http_status_1.default.INTERNAL_SERVER_ERROR, 'Failed to fetch payment history');
     }
 });
-// Retrieve current Stripe PaymentIntent for a bid and return client_secret when applicable
+
 const getCurrentIntentByBid = (bidId) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     if (!mongoose_1.default.isValidObjectId(bidId)) {
@@ -582,14 +571,14 @@ const getCurrentIntentByBid = (bidId) => __awaiter(void 0, void 0, void 0, funct
     if (!payments || payments.length === 0) {
         throw new ApiError_1.default(http_status_1.default.NOT_FOUND, 'No payment found for this bid');
     }
-    // Prefer pending payment; otherwise take the most recent
+
     const payment = payments.find((p) => p.status === payment_interface_1.PAYMENT_STATUS.PENDING) ||
         payments[0];
     if (!payment.stripePaymentIntentId) {
         throw new ApiError_1.default(http_status_1.default.BAD_REQUEST, 'Payment does not have a Stripe PaymentIntent');
     }
     const intent = yield stripe_1.stripe.paymentIntents.retrieve(payment.stripePaymentIntentId);
-    // Only return client_secret when the intent is awaiting confirmation or action
+
     const statusesWithSecret = new Set([
         'requires_payment_method',
         'requires_confirmation',

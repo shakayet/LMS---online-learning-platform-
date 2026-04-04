@@ -41,7 +41,7 @@ const userSchema = new mongoose_1.Schema({
         type: String,
         required: true,
         minlength: 8,
-        select: false, // hide password by default
+        select: false,
     },
     location: {
         type: String,
@@ -86,7 +86,7 @@ const userSchema = new mongoose_1.Schema({
         type: [String],
         default: [],
     },
-    // Student Profile (for STUDENT role)
+
     studentProfile: {
         type: {
             schoolType: String,
@@ -132,9 +132,9 @@ const userSchema = new mongoose_1.Schema({
                 default: null,
             },
         },
-        default: undefined, // Only set for STUDENT role
+        default: undefined,
     },
-    // Tutor Profile (for TUTOR/APPLICANT role)
+
     tutorProfile: {
         type: {
             address: String,
@@ -168,7 +168,7 @@ const userSchema = new mongoose_1.Schema({
                 type: Number,
                 default: 0,
             },
-            // Level System
+
             level: {
                 type: String,
                 enum: ['STARTER', 'INTERMEDIATE', 'EXPERT'],
@@ -177,7 +177,7 @@ const userSchema = new mongoose_1.Schema({
             levelUpdatedAt: {
                 type: Date,
             },
-            // Earnings
+
             totalEarnings: {
                 type: Number,
                 default: 0,
@@ -186,7 +186,7 @@ const userSchema = new mongoose_1.Schema({
                 type: Number,
                 default: 0,
             },
-            // Payout Settings
+
             payoutRecipient: {
                 type: String,
             },
@@ -213,7 +213,7 @@ const userSchema = new mongoose_1.Schema({
                 default: false,
             },
         },
-        default: undefined, // Only set for TUTOR/APPLICANT role
+        default: undefined,
     },
     authentication: {
         type: {
@@ -230,10 +230,10 @@ const userSchema = new mongoose_1.Schema({
                 default: null,
             },
         },
-        select: false, // hide auth info by default
+        select: false,
     },
 }, { timestamps: true });
-//exist user check
+
 userSchema.statics.isExistUserById = (id) => __awaiter(void 0, void 0, void 0, function* () {
     const isExist = yield exports.User.findById(id);
     return isExist;
@@ -242,32 +242,32 @@ userSchema.statics.isExistUserByEmail = (email) => __awaiter(void 0, void 0, voi
     const isExist = yield exports.User.findOne({ email });
     return isExist;
 });
-//is match password
+
 userSchema.statics.isMatchPassword = (password, hashPassword) => __awaiter(void 0, void 0, void 0, function* () {
     return yield bcrypt_1.default.compare(password, hashPassword);
 });
-//check user
+
 userSchema.pre('save', function (next) {
     return __awaiter(this, void 0, void 0, function* () {
-        //check user - exclude current user from email uniqueness check
+
         const isExist = yield exports.User.findOne({
             email: this.email,
-            _id: { $ne: this._id } // exclude current user
+            _id: { $ne: this._id }
         });
         if (isExist) {
             throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'Email already exist!');
         }
-        //password hash
+
         this.password = yield bcrypt_1.default.hash(this.password, Number(config_1.default.bcrypt_salt_rounds));
         next();
     });
 });
-// ✅ add device token
+
 userSchema.statics.addDeviceToken = (userId, token) => __awaiter(void 0, void 0, void 0, function* () {
-    return yield exports.User.findByIdAndUpdate(userId, { $addToSet: { deviceTokens: token } }, // prevent duplicates
+    return yield exports.User.findByIdAndUpdate(userId, { $addToSet: { deviceTokens: token } },
     { new: true });
 });
-// ✅ remove device token
+
 userSchema.statics.removeDeviceToken = (userId, token) => __awaiter(void 0, void 0, void 0, function* () {
     return yield exports.User.findByIdAndUpdate(userId, { $pull: { deviceTokens: token } }, { new: true });
 });

@@ -21,9 +21,7 @@ const getHeaders = () => ({
     'Content-Type': 'application/json',
     region: config_1.default.agora.whiteboard.region,
 });
-/**
- * নতুন Whiteboard Room তৈরি করে
- */
+
 const createAgoraWhiteboardRoom = (name) => __awaiter(void 0, void 0, void 0, function* () {
     const response = yield axios_1.default.post(`${WHITEBOARD_API}/rooms`, {
         name,
@@ -32,25 +30,19 @@ const createAgoraWhiteboardRoom = (name) => __awaiter(void 0, void 0, void 0, fu
     return { uuid: response.data.uuid };
 });
 exports.createAgoraWhiteboardRoom = createAgoraWhiteboardRoom;
-/**
- * Room Token Generate করে
- */
-const generateWhiteboardRoomToken = (roomUuid_1, ...args_1) => __awaiter(void 0, [roomUuid_1, ...args_1], void 0, function* (roomUuid, role = 'writer', lifespan = 3600000 // 1 hour in ms
+
+const generateWhiteboardRoomToken = (roomUuid_1, ...args_1) => __awaiter(void 0, [roomUuid_1, ...args_1], void 0, function* (roomUuid, role = 'writer', lifespan = 3600000
 ) {
     const response = yield axios_1.default.post(`${WHITEBOARD_API}/tokens/rooms/${roomUuid}`, { lifespan, role }, { headers: getHeaders() });
     return response.data;
 });
 exports.generateWhiteboardRoomToken = generateWhiteboardRoomToken;
-/**
- * Room বন্ধ করে
- */
+
 const closeWhiteboardRoom = (roomUuid) => __awaiter(void 0, void 0, void 0, function* () {
     yield axios_1.default.patch(`${WHITEBOARD_API}/rooms/${roomUuid}`, { isBan: true }, { headers: getHeaders() });
 });
 exports.closeWhiteboardRoom = closeWhiteboardRoom;
-/**
- * Room state export করে
- */
+
 const getWhiteboardRoomInfo = (roomUuid) => __awaiter(void 0, void 0, void 0, function* () {
     const response = yield axios_1.default.get(`${WHITEBOARD_API}/rooms/${roomUuid}`, {
         headers: getHeaders(),
@@ -58,9 +50,7 @@ const getWhiteboardRoomInfo = (roomUuid) => __awaiter(void 0, void 0, void 0, fu
     return response.data;
 });
 exports.getWhiteboardRoomInfo = getWhiteboardRoomInfo;
-/**
- * Whiteboard এর current state এর image snapshot নেয়
- */
+
 const takeWhiteboardSnapshot = (roomUuid_1, ...args_1) => __awaiter(void 0, [roomUuid_1, ...args_1], void 0, function* (roomUuid, scenePath = '/init') {
     const response = yield axios_1.default.post(`${WHITEBOARD_API}/rooms/${roomUuid}/screenshots`, {
         width: 1920,
@@ -70,9 +60,7 @@ const takeWhiteboardSnapshot = (roomUuid_1, ...args_1) => __awaiter(void 0, [roo
     return response.data.url;
 });
 exports.takeWhiteboardSnapshot = takeWhiteboardSnapshot;
-/**
- * Whiteboard এর সব scene list করে
- */
+
 const getWhiteboardScenes = (roomUuid) => __awaiter(void 0, void 0, void 0, function* () {
     const response = yield axios_1.default.get(`${WHITEBOARD_API}/rooms/${roomUuid}/scenes`, { headers: getHeaders() });
     return response.data;

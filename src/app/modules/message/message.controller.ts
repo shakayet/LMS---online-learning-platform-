@@ -42,7 +42,6 @@ const markChatRead = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// Get all messages in a chat
 const getChatMessages = catchAsync(async (req: Request, res: Response) => {
   const chatId = req.params.chatId;
   const result = await MessageService.getMessageFromDB(

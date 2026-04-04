@@ -1,11 +1,10 @@
 import path from 'path';
 import DailyRotateFile from 'winston-daily-rotate-file';
 import config from '../config';
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+
 const { createLogger, format, transports } = require('winston');
 const { combine, timestamp, label, printf } = format;
 
-// Format timestamp in BD timezone as "YYYY-MM-DD HH:MM:SS AM/PM"
 const bdTime = (date = new Date()): string => {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: 'Asia/Dhaka',
@@ -31,7 +30,7 @@ const bdTime = (date = new Date()): string => {
 
 const myFormat = printf(
   ({ level, message, label, timestamp }: { level: string; message: string; label: string; timestamp: Date }) => {
-    // Always render timestamps in BD timezone
+
     const ts = bdTime(new Date(timestamp));
     return `[${ts}] [${label}] ${level}: ${message}`;
   }
@@ -69,15 +68,14 @@ const errorLogger = createLogger({
   transports: errorTransports,
 });
 
-// Optional desktop notification for critical failures in development
 export const notifyCritical = (title: string, message: string) => {
   if (config.node_env !== 'development') return;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+
     const notifier = require('node-notifier');
     notifier.notify({ title, message });
   } catch {
-    // no-op if notifier not available
+
   }
 };
 

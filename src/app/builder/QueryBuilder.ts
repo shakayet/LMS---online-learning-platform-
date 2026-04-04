@@ -11,7 +11,6 @@ class QueryBuilder<T> {
     this.query = query;
   }
 
-  // 🔍 Searching across multiple fields
   search(searchableFields: string[]) {
     if (this?.query?.searchTerm) {
       this.modelQuery = this.modelQuery.find({
@@ -29,7 +28,6 @@ class QueryBuilder<T> {
     return this;
   }
 
-  // 🔎 Text search using MongoDB text indexes (for models with text index)
   textSearch() {
     if (this?.query?.searchTerm) {
       const term = this.query.searchTerm as string;
@@ -38,7 +36,6 @@ class QueryBuilder<T> {
     return this;
   }
 
-  // 🔎 Filtering
   filter() {
     const queryObj = { ...this.query };
     const excludeFields = [
@@ -50,24 +47,22 @@ class QueryBuilder<T> {
       'timeFilter',
       'start',
       'end',
-      'category', // we will handle this separately
-      'latitude', // we will handle this separately
-      'longitude', // we will handle this separately
-      'distance', // we will handle this separately
+      'category',
+      'latitude',
+      'longitude',
+      'distance',
     ];
     excludeFields.forEach(el => delete queryObj[el]);
 
     this.modelQuery = this.modelQuery.find(queryObj as FilterQuery<T>);
 
-    // ✅ Category filtering (support single or multiple)
     if (this?.query?.category) {
       const categories = (this.query.category as string)
         .split(',')
         .map(cat => cat.trim());
 
-      // Apply category filter
       this.modelQuery = this.modelQuery.find({
-        ...this.modelQuery.getFilter(), // keep previous filters
+        ...this.modelQuery.getFilter(),
         taskCategory: { $in: categories },
       } as FilterQuery<T>);
     }
@@ -75,14 +70,12 @@ class QueryBuilder<T> {
     return this;
   }
 
-  // 📍 Location-based filtering using index-friendly bounding box
   locationFilter() {
     if (this?.query?.latitude && this?.query?.longitude && this?.query?.distance) {
       const lat = parseFloat(this.query.latitude as string);
       const lng = parseFloat(this.query.longitude as string);
       const distanceKm = parseFloat(this.query.distance as string);
 
-      // Validate coordinates
       if (isNaN(lat) || isNaN(lng) || isNaN(distanceKm)) {
         throw new Error('Invalid latitude, longitude, or distance values');
       }
@@ -99,11 +92,10 @@ class QueryBuilder<T> {
         throw new Error('Distance must be greater than 0');
       }
 
-      // Bounding box approximation (fast and index-friendly)
-      const latDelta = distanceKm / 111.32; // ~ km per degree latitude
+      const latDelta = distanceKm / 111.32;
       const latRad = (lat * Math.PI) / 180;
       const cosLat = Math.cos(latRad);
-      const lngDelta = distanceKm / (111.32 * (cosLat || 1e-6)); // avoid division by zero at poles
+      const lngDelta = distanceKm / (111.32 * (cosLat || 1e-6));
 
       const minLat = lat - latDelta;
       const maxLat = lat + latDelta;
@@ -119,7 +111,6 @@ class QueryBuilder<T> {
     return this;
   }
 
-  // 🌍 Geospatial: find by proximity using $near on GeoJSON Point `location`
   geoNear() {
     const hasCoords = this?.query?.latitude && this?.query?.longitude;
     const hasMax = this?.query?.distance || this?.query?.maxDistance;
@@ -167,7 +158,6 @@ class QueryBuilder<T> {
     return this;
   }
 
-  // 🌐 Geospatial: within a circle using $geoWithin + $centerSphere
   geoWithinCircle() {
     if (this?.query?.latitude && this?.query?.longitude && (this?.query?.radius || this?.query?.distance)) {
       const lat = parseFloat(this.query.latitude as string);
@@ -199,7 +189,6 @@ class QueryBuilder<T> {
     return this;
   }
 
-  // 🧭 Geospatial: within a bounding box using $geoWithin + $box
   geoWithinBox() {
     const hasSW = this?.query?.swLat && this?.query?.swLng;
     const hasNE = this?.query?.neLat && this?.query?.neLng;
@@ -228,7 +217,6 @@ class QueryBuilder<T> {
     return this;
   }
 
-  // 🔷 Geospatial: within a polygon using $geoWithin + $polygon
   geoWithinPolygon() {
     const field = (this?.query?.geoField as string) || 'location';
     const polygonRaw = (this?.query?.polygon as string) || (this?.query?.poly as string);
@@ -236,13 +224,13 @@ class QueryBuilder<T> {
 
     let coordinates: Array<[number, number]> = [];
     try {
-      // Try JSON first
+
       const parsed = JSON.parse(polygonRaw);
       if (Array.isArray(parsed)) {
         coordinates = parsed.map((pair: any) => [parseFloat(pair[0]), parseFloat(pair[1])]);
       }
     } catch {
-      // Fallback: "lng,lat;lng,lat;..."
+
       coordinates = polygonRaw.split(';')
         .map(p => p.trim())
         .filter(Boolean)
@@ -252,12 +240,10 @@ class QueryBuilder<T> {
         });
     }
 
-    // Basic validation
     if (!Array.isArray(coordinates) || coordinates.length < 3) {
       throw new Error('Polygon must have at least 3 points');
     }
 
-    // Validate ranges and ensure closure
     coordinates.forEach(([lng, lat]) => {
       if (isNaN(lat) || isNaN(lng)) throw new Error('Invalid polygon coordinates');
       if (lat < -90 || lat > 90) throw new Error('Latitude must be between -90 and 90 degrees');
@@ -267,7 +253,7 @@ class QueryBuilder<T> {
     const first = coordinates[0];
     const last = coordinates[coordinates.length - 1];
     if (first[0] !== last[0] || first[1] !== last[1]) {
-      // Auto-close the ring
+
       coordinates.push([first[0], first[1]]);
     }
 
@@ -279,7 +265,6 @@ class QueryBuilder<T> {
     return this;
   }
 
-  // 🔀 Convenience: choose geo mode from query params
   geoQuery() {
     const mode = (this?.query?.geoMode as string) || 'near';
     if (mode === 'near') return this.geoNear();
@@ -289,31 +274,30 @@ class QueryBuilder<T> {
     return this;
   }
 
-  // ⏰ Date filtering (recently, weekly, monthly, custom)
   dateFilter() {
     if (this?.query?.timeFilter) {
       const now = new Date();
       let dateRange: Record<string, Date> = {};
 
       if (this.query.timeFilter === 'recently') {
-        // Last 24 hours
+
         const yesterday = new Date(now);
         yesterday.setDate(now.getDate() - 1);
         dateRange = { $gte: yesterday, $lte: now };
       } else if (this.query.timeFilter === 'weekly') {
-        // Current week (Mon–Sun)
+
         dateRange = {
           $gte: startOfWeek(now, { weekStartsOn: 1 }),
           $lte: endOfWeek(now, { weekStartsOn: 1 }),
         };
       } else if (this.query.timeFilter === 'monthly') {
-        // Current month
+
         dateRange = {
           $gte: startOfMonth(now),
           $lte: endOfMonth(now),
         };
       } else if (this.query.timeFilter === 'custom') {
-        // Custom range: requires ?start=YYYY-MM-DD&end=YYYY-MM-DD
+
         if (!this.query.start || !this.query.end) {
           throw new Error(
             "Custom date filter requires both 'start' and 'end' query parameters."
@@ -347,14 +331,12 @@ class QueryBuilder<T> {
     return this;
   }
 
-  // ↕️ Sorting
   sort() {
     let sort = (this?.query?.sort as string) || '-createdAt';
     this.modelQuery = this.modelQuery.sort(sort);
     return this;
   }
 
-  // 📄 Pagination
   paginate() {
     let limit = Number(this?.query?.limit) || 10;
     let page = Number(this?.query?.page) || 1;
@@ -364,7 +346,6 @@ class QueryBuilder<T> {
     return this;
   }
 
-  // 🎯 Field selection
   fields() {
     let fields =
       (this?.query?.fields as string)?.split(',').join(' ') || '-__v';
@@ -372,7 +353,6 @@ class QueryBuilder<T> {
     return this;
   }
 
-  // 🔗 Populating relations and select all fields if undefined
   populate(populateFields: string[], selectFields?: Record<string, unknown>) {
     this.modelQuery = this.modelQuery.populate(
       populateFields.map(field => ({
@@ -383,7 +363,6 @@ class QueryBuilder<T> {
     return this;
   }
 
-  // 🎯 Populate with match conditions for filtering
   populateWithMatch(
     path: string,
     matchConditions: Record<string, unknown> = {},
@@ -397,7 +376,6 @@ class QueryBuilder<T> {
     return this;
   }
 
-  // 🔍 Search within populated fields
   searchInPopulatedFields(
     path: string,
     searchableFields: string[],
@@ -428,22 +406,17 @@ class QueryBuilder<T> {
     return this;
   }
 
-  // 🧹 Filter out documents with null populated fields
   filterNullPopulatedFields() {
     return this;
   }
 
-  // 📊 Get filtered results with custom pagination
   async getFilteredResults(populatedFieldsToCheck: string[] = []) {
     const _start = Date.now();
     const results = await this.modelQuery;
-    // Rely on the global Mongoose metrics plugin to record model/operation for this find.
-    // Removing the manual record prevents duplicate hits and avoids 'n/a' metadata entries.
 
-    // Filter out documents where specified populated fields are null
     const filteredResults = results.filter((doc: any) => {
       if (populatedFieldsToCheck.length === 0) {
-        return true; // No filtering if no fields specified
+        return true;
       }
 
       return populatedFieldsToCheck.every((fieldPath: string) => {
@@ -452,7 +425,6 @@ class QueryBuilder<T> {
       });
     });
 
-    // Calculate pagination based on filtered results
     const total = filteredResults.length;
     const limit = Number(this?.query?.limit) || 10;
     const page = Number(this?.query?.page) || 1;
@@ -471,7 +443,6 @@ class QueryBuilder<T> {
     };
   }
 
-  // 📊 Pagination info
   async getPaginationInfo() {
     const _start = Date.now();
     const total = await this.modelQuery.model.countDocuments(

@@ -1,14 +1,11 @@
-// Central OpenTelemetry instrumentation for jsonwebtoken
-// Loads once at startup and wraps jwt.sign / jwt.verify globally.
-// This keeps business helpers clean (no per-call spans in jwtHelper.ts).
+
 import { trace } from '@opentelemetry/api';
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+
 const jwt = require('jsonwebtoken');
 
 const originalSign = jwt.sign;
 const originalVerify = jwt.verify;
 
-// Wrap sign
 jwt.sign = function patchedJwtSign(...args: any[]) {
   const tracer = trace.getTracer('app');
   return tracer.startActiveSpan('JWT.sign', span => {
@@ -23,7 +20,6 @@ jwt.sign = function patchedJwtSign(...args: any[]) {
   });
 };
 
-// Wrap verify
 jwt.verify = function patchedJwtVerify(...args: any[]) {
   const tracer = trace.getTracer('app');
   return tracer.startActiveSpan('JWT.verify', span => {
@@ -38,4 +34,4 @@ jwt.verify = function patchedJwtVerify(...args: any[]) {
   });
 };
 
-export {}; // side-effect module
+export {};

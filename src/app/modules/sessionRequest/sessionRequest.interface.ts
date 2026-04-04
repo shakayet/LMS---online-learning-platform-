@@ -1,54 +1,43 @@
 import { Model, Types } from 'mongoose';
 
 export enum SESSION_REQUEST_STATUS {
-  PENDING = 'PENDING', // Student sent request, waiting for tutor
-  ACCEPTED = 'ACCEPTED', // Tutor accepted, chat opened
-  EXPIRED = 'EXPIRED', // No tutor accepted within time limit
-  CANCELLED = 'CANCELLED', // Student cancelled before acceptance
+  PENDING = 'PENDING',
+  ACCEPTED = 'ACCEPTED',
+  EXPIRED = 'EXPIRED',
+  CANCELLED = 'CANCELLED',
 }
 
-// Reuse REQUEST_TYPE from trialRequest for consistency
-// Note: SCHOOL_TYPE and GRADE_LEVEL are now dynamic strings (no longer enums)
 export { REQUEST_TYPE } from '../trialRequest/trialRequest.interface';
 
 export type ISessionRequest = {
-  // Request type (for unified view)
+
   requestType: 'TRIAL' | 'SESSION';
 
-  // Student reference (Required - must be logged in)
   studentId: Types.ObjectId;
 
-  // Academic Information (Required)
-  subject: Types.ObjectId; // Reference to Subject collection
-  gradeLevel: string; // Using string to match GRADE_LEVEL enum values
-  schoolType: string; // Using string to match SCHOOL_TYPE enum values
+  subject: Types.ObjectId;
+  gradeLevel: string;
+  schoolType: string;
 
-  // Learning Details (simplified - no description or preferredDateTime for session requests)
-  description?: string; // Optional: What student needs help with
-  learningGoals?: string; // Optional: Specific learning goals
+  description?: string;
+  learningGoals?: string;
 
-  // Documents (Optional)
-  documents?: string[]; // Array of document URLs (uploaded files)
+  documents?: string[];
 
-  // Request Status
   status: SESSION_REQUEST_STATUS;
 
-  // Matching details
-  acceptedTutorId?: Types.ObjectId; // Tutor who accepted
-  chatId?: Types.ObjectId; // Created chat when accepted
+  acceptedTutorId?: Types.ObjectId;
+  chatId?: Types.ObjectId;
 
-  // Timestamps & Expiration
-  expiresAt: Date; // Auto-expire after 7 days
+  expiresAt: Date;
   acceptedAt?: Date;
   cancelledAt?: Date;
 
-  // Extension tracking
   isExtended?: boolean;
   extensionCount?: number;
   reminderSentAt?: Date;
   finalExpiresAt?: Date;
 
-  // Metadata
   cancellationReason?: string;
 };
 

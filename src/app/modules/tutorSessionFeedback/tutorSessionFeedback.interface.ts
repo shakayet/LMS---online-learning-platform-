@@ -15,27 +15,22 @@ export type ITutorSessionFeedback = {
   tutorId: Types.ObjectId;
   studentId: Types.ObjectId;
 
-  // Rating (1-5) - contributes to tutor's overall rating
   rating: number;
 
-  // Feedback (text OR audio) - MANDATORY
   feedbackType: FEEDBACK_TYPE;
-  feedbackText?: string; // Required if TEXT (min 10 chars)
-  feedbackAudioUrl?: string; // Required if AUDIO (max 60 seconds)
-  audioDuration?: number; // Duration in seconds
+  feedbackText?: string;
+  feedbackAudioUrl?: string;
+  audioDuration?: number;
 
-  // Deadline tracking
-  dueDate: Date; // 3rd of next month after session
+  dueDate: Date;
   submittedAt?: Date;
-  isLate: boolean; // True if submitted after dueDate
+  isLate: boolean;
 
-  // Status
   status: FEEDBACK_STATUS;
 
-  // Payment forfeit tracking (when deadline missed)
-  paymentForfeited: boolean;         // true if deadline missed
-  forfeitedAmount?: number;          // Amount forfeited to platform
-  forfeitedAt?: Date;                // When payment was forfeited
+  paymentForfeited: boolean;
+  forfeitedAmount?: number;
+  forfeitedAt?: Date;
 };
 
 export type TutorSessionFeedbackModel = Model<ITutorSessionFeedback>;

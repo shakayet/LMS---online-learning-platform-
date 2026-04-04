@@ -17,9 +17,7 @@ const http_status_codes_1 = require("http-status-codes");
 const catchAsync_1 = __importDefault(require("../../../shared/catchAsync"));
 const sendResponse_1 = __importDefault(require("../../../shared/sendResponse"));
 const monthlyBilling_service_1 = require("./monthlyBilling.service");
-/**
- * Generate monthly billings (Cron job or manual trigger)
- */
+
 const generateMonthlyBillings = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { month, year } = req.body;
     const result = yield monthlyBilling_service_1.MonthlyBillingService.generateMonthlyBillings(month, year);
@@ -30,9 +28,7 @@ const generateMonthlyBillings = (0, catchAsync_1.default)((req, res) => __awaite
         data: { count: result.length, billings: result },
     });
 }));
-/**
- * Get student's billing history
- */
+
 const getMyBillings = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const studentId = req.user.id;
     const result = yield monthlyBilling_service_1.MonthlyBillingService.getMyBillings(studentId, req.query);
@@ -44,9 +40,7 @@ const getMyBillings = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
         pagination: result.meta,
     });
 }));
-/**
- * Get all billings (Admin)
- */
+
 const getAllBillings = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield monthlyBilling_service_1.MonthlyBillingService.getAllBillings(req.query);
     (0, sendResponse_1.default)(res, {
@@ -57,9 +51,7 @@ const getAllBillings = (0, catchAsync_1.default)((req, res) => __awaiter(void 0,
         pagination: result.meta,
     });
 }));
-/**
- * Get single billing
- */
+
 const getSingleBilling = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const result = yield monthlyBilling_service_1.MonthlyBillingService.getSingleBilling(id);
@@ -70,9 +62,7 @@ const getSingleBilling = (0, catchAsync_1.default)((req, res) => __awaiter(void 
         data: result,
     });
 }));
-/**
- * Mark billing as paid (Manual or webhook)
- */
+
 const markAsPaid = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const result = yield monthlyBilling_service_1.MonthlyBillingService.markAsPaid(id, req.body);
@@ -83,9 +73,7 @@ const markAsPaid = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, voi
         data: result,
     });
 }));
-/**
- * Mark billing as failed
- */
+
 const markAsFailed = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const { failureReason } = req.body;

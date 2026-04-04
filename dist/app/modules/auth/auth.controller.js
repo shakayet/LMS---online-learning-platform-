@@ -43,7 +43,7 @@ const loginUser = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void
     var _a;
     const loginData = __rest(req.body, []);
     const result = yield auth_service_1.AuthService.loginUserFromDB(loginData);
-    // Set refresh token in httpOnly cookie for better security
+
     if ((_a = result === null || result === void 0 ? void 0 : result.tokens) === null || _a === void 0 ? void 0 : _a.refreshToken) {
         res.cookie('refreshToken', result.tokens.refreshToken, {
             httpOnly: true,
@@ -62,14 +62,13 @@ const loginUser = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void
 const logoutUser = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { deviceToken } = req.body;
     console.log('deviceToken', deviceToken);
-    // User is optional now since logout route is public (allows logout even with expired token)
+
     const user = req.user;
-    // Only call service if user is authenticated (for device token removal)
+
     if (user) {
         yield auth_service_1.AuthService.logoutUserFromDB(user, deviceToken);
     }
-    // Clear refresh token cookie on logout
-    // Method 1: clearCookie with maxAge: 0
+
     res.clearCookie('refreshToken', {
         httpOnly: true,
         secure: config_1.default.node_env === 'production',
@@ -77,7 +76,7 @@ const logoutUser = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, voi
         path: '/',
         maxAge: 0,
     });
-    // Method 2: Set expired cookie as fallback (ensures cookie is removed)
+
     res.cookie('refreshToken', '', {
         httpOnly: true,
         secure: config_1.default.node_env === 'production',
@@ -135,12 +134,12 @@ const resendVerifyEmail = (0, catchAsync_1.default)((req, res) => __awaiter(void
 }));
 const refreshToken = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c;
-    // Prefer reading refresh token from cookie; fallback to body if present
+
     const cookieToken = (_a = req.cookies) === null || _a === void 0 ? void 0 : _a.refreshToken;
     const bodyToken = (_b = req.body) === null || _b === void 0 ? void 0 : _b.refreshToken;
     const token = cookieToken || bodyToken || '';
     const result = yield auth_service_1.AuthService.refreshTokenToDB(token);
-    // Rotate refresh token in httpOnly cookie
+
     if ((_c = result === null || result === void 0 ? void 0 : result.tokens) === null || _c === void 0 ? void 0 : _c.refreshToken) {
         res.cookie('refreshToken', result.tokens.refreshToken, {
             httpOnly: true,

@@ -22,7 +22,7 @@ const rateLimitMiddleware = (options) => {
         const identifier = keyResolver ? keyResolver(req) : req.ip;
         const key = `ratelimit:${routeName || req.path}:${identifier}`;
         try {
-            // In-memory counter
+
             const current = (memory.get(key) || 0) + 1;
             memory.set(key, current, Math.ceil(windowMs / 1000));
             if (current > max) {
@@ -36,7 +36,7 @@ const rateLimitMiddleware = (options) => {
             return next();
         }
         catch (e) {
-            // On any error, allow request but log
+
             logger_1.logger.warn(`⚠️ RateLimit error: ${e.message}`);
             return next();
         }

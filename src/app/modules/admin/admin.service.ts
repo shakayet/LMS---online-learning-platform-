@@ -31,16 +31,12 @@ import {
 } from './admin.interface';
 import { PAYOUT_STATUS } from '../tutorEarnings/tutorEarnings.interface';
 
-/**
- * Get comprehensive dashboard statistics
- */
 const getDashboardStats = async (): Promise<IDashboardStats> => {
   const now = new Date();
   const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-  // User Statistics
   const [
     totalUsers,
     totalStudents,
@@ -62,7 +58,6 @@ const getDashboardStats = async (): Promise<IDashboardStats> => {
     }).then(ids => ids.length),
   ]);
 
-  // Application Statistics
   const [
     totalApplications,
     pendingApplications,
@@ -77,7 +72,6 @@ const getDashboardStats = async (): Promise<IDashboardStats> => {
     TutorApplication.countDocuments({ createdAt: { $gte: firstDayOfMonth } }),
   ]);
 
-  // Session Statistics
   const [
     totalSessions,
     completedSessions,
@@ -98,7 +92,6 @@ const getDashboardStats = async (): Promise<IDashboardStats> => {
     }),
   ]);
 
-  // Total hours this month
   const sessionsThisMonthData = await Session.find({
     status: SESSION_STATUS.COMPLETED,
     completedAt: { $gte: firstDayOfMonth, $lte: lastDayOfMonth },
@@ -108,7 +101,6 @@ const getDashboardStats = async (): Promise<IDashboardStats> => {
     0
   );
 
-  // Financial Statistics
   const [allBillings, billingsThisMonth, pendingBillingsCount] = await Promise.all([
     MonthlyBilling.find({ status: BILLING_STATUS.PAID }),
     MonthlyBilling.find({
@@ -124,7 +116,6 @@ const getDashboardStats = async (): Promise<IDashboardStats> => {
     0
   );
 
-  // Last month revenue
   const firstDayOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const lastDayOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
   const billingsLastMonth = await MonthlyBilling.find({
@@ -136,7 +127,6 @@ const getDashboardStats = async (): Promise<IDashboardStats> => {
     0
   );
 
-  // Platform commission
   const allEarnings = await TutorEarnings.find({});
   const totalPlatformCommission = allEarnings.reduce(
     (sum, earning) => sum + earning.platformCommission,
@@ -152,7 +142,6 @@ const getDashboardStats = async (): Promise<IDashboardStats> => {
     0
   );
 
-  // Subscription Statistics
   const activeSubscriptions = await StudentSubscription.find({
     status: SUBSCRIPTION_STATUS.ACTIVE,
   });
@@ -167,7 +156,6 @@ const getDashboardStats = async (): Promise<IDashboardStats> => {
     sub => sub.tier === 'LONG_TERM'
   ).length;
 
-  // Recent Activity (last 30 days)
   const [newStudents, newTutors, newApplications, recentCompletedSessions] =
     await Promise.all([
       User.countDocuments({
@@ -233,9 +221,6 @@ const getDashboardStats = async (): Promise<IDashboardStats> => {
   };
 };
 
-/**
- * Get revenue statistics by month
- */
 const getRevenueByMonth = async (
   year: number,
   months?: number[]
@@ -287,9 +272,6 @@ const getRevenueByMonth = async (
   return stats;
 };
 
-/**
- * Get popular subjects by session count
- */
 const getPopularSubjects = async (limit: number = 10): Promise<IPopularSubject[]> => {
   const result = await Session.aggregate([
     { $match: { status: SESSION_STATUS.COMPLETED } },
@@ -315,9 +297,6 @@ const getPopularSubjects = async (limit: number = 10): Promise<IPopularSubject[]
   return result;
 };
 
-/**
- * Get top tutors by session count or earnings
- */
 const getTopTutors = async (
   limit: number = 10,
   sortBy: 'sessions' | 'earnings' = 'sessions'
@@ -395,9 +374,6 @@ const getTopTutors = async (
   }
 };
 
-/**
- * Get top students by spending or sessions
- */
 const getTopStudents = async (
   limit: number = 10,
   sortBy: 'spending' | 'sessions' = 'spending'
@@ -495,9 +471,6 @@ const getTopStudents = async (
   }
 };
 
-/**
- * Get user growth statistics (monthly new users)
- */
 const getUserGrowth = async (year: number, months?: number[]) => {
   const targetMonths = months || [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
   const stats = [];
@@ -535,26 +508,22 @@ const getUserGrowth = async (year: number, months?: number[]) => {
   return stats;
 };
 
-/**
- * Get overview stats with percentage changes
- * Returns Total Revenue, Total Students, Total Tutors with growth metrics
- */
 const getOverviewStats = async (
   period: 'day' | 'week' | 'month' | 'quarter' | 'year' = 'month'
 ): Promise<IOverviewStats> => {
   const [revenue, students, tutors] = await Promise.all([
-    // Revenue from MonthlyBilling (sum of 'total' field)
+
     new AggregationBuilder(MonthlyBilling).calculateGrowth({
       sumField: 'total',
       filter: { status: BILLING_STATUS.PAID },
       period,
     }),
-    // Students count
+
     new AggregationBuilder(User).calculateGrowth({
       filter: { role: USER_ROLES.STUDENT },
       period,
     }),
-    // Tutors count
+
     new AggregationBuilder(User).calculateGrowth({
       filter: { role: USER_ROLES.TUTOR },
       period,
@@ -564,9 +533,6 @@ const getOverviewStats = async (
   return { revenue, students, tutors };
 };
 
-/**
- * Get monthly revenue with advanced filters
- */
 const getMonthlyRevenue = async (
   year: number,
   months?: number[],
@@ -584,7 +550,6 @@ const getMonthlyRevenue = async (
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 0, 23, 59, 59);
 
-    // Build session filter
     const sessionFilter: Record<string, unknown> = {
       status: SESSION_STATUS.COMPLETED,
       completedAt: { $gte: startDate, $lte: endDate },
@@ -600,16 +565,13 @@ const getMonthlyRevenue = async (
       sessionFilter.subject = filters.subject;
     }
 
-    // Get sessions with filters
     const sessions = await Session.find(sessionFilter);
 
-    // Calculate session stats
     const sessionCount = sessions.length;
     const totalHours = sessions.reduce((sum, s) => sum + s.duration / 60, 0);
     const sessionRevenue = sessions.reduce((sum, s) => sum + (s.totalPrice || 0), 0);
     const averageSessionPrice = sessionCount > 0 ? sessionRevenue / sessionCount : 0;
 
-    // Build billing filter
     const billingFilter: Record<string, unknown> = {
       billingYear: year,
       billingMonth: month,
@@ -620,10 +582,8 @@ const getMonthlyRevenue = async (
       billingFilter.studentId = new Types.ObjectId(filters.studentId);
     }
 
-    // Get billings with tier filter if needed
     let billings = await MonthlyBilling.find(billingFilter).populate('studentId');
 
-    // Filter by subscription tier if provided
     if (filters?.subscriptionTier) {
       const studentsWithTier = await StudentSubscription.find({
         tier: filters.subscriptionTier,
@@ -639,7 +599,6 @@ const getMonthlyRevenue = async (
 
     const totalRevenue = billings.reduce((sum, billing) => sum + billing.total, 0);
 
-    // Get earnings for commission/payout calculation
     const earningsFilter: Record<string, unknown> = {
       payoutYear: year,
       payoutMonth: month,
@@ -676,9 +635,6 @@ const getMonthlyRevenue = async (
   return stats;
 };
 
-/**
- * Get user distribution by role and/or status
- */
 const getUserDistribution = async (
   groupBy: 'role' | 'status' | 'both' = 'role'
 ): Promise<IUserDistribution> => {
@@ -725,10 +681,6 @@ const getUserDistribution = async (
   return result;
 };
 
-/**
- * Get unified sessions (Sessions + Trial Requests)
- * Merges both sessions and pending trial requests into a single view
- */
 const getUnifiedSessions = async (
   query: IUnifiedSessionsQuery
 ): Promise<{
@@ -751,7 +703,6 @@ const getUnifiedSessions = async (
     sortOrder = 'desc',
   } = query;
 
-  // Get all sessions with populated fields
   const sessions = await Session.find()
     .populate('studentId', 'name email phone profilePicture')
     .populate('tutorId', 'name email phone profilePicture')
@@ -765,13 +716,10 @@ const getUnifiedSessions = async (
     })
     .lean();
 
-  // Get trialRequestIds that already have sessions created (to avoid duplicates)
-  // Note: trialRequestId is now populated, so we need to get _id from the object
   const trialRequestIdsWithSessions = sessions
     .filter((s: any) => s.trialRequestId)
     .map((s: any) => s.trialRequestId._id?.toString() || s.trialRequestId.toString());
 
-  // Get pending/accepted trial requests (excluding those that already have sessions)
   const pendingTrialRequests = await TrialRequest.find({
     status: { $in: [TRIAL_REQUEST_STATUS.PENDING, TRIAL_REQUEST_STATUS.ACCEPTED] },
     ...(trialRequestIdsWithSessions.length > 0 && {
@@ -783,7 +731,6 @@ const getUnifiedSessions = async (
     .populate('subject', 'name')
     .lean();
 
-  // Transform sessions to unified format
   const unifiedSessions: IUnifiedSession[] = sessions.map((s: any) => ({
     _id: s._id.toString(),
     type: 'SESSION' as const,
@@ -793,7 +740,7 @@ const getUnifiedSessions = async (
     tutorName: s.tutorId?.name,
     tutorEmail: s.tutorId?.email,
     tutorPhone: s.tutorId?.phone,
-    // Use trialRequest subject if session subject is generic "Tutoring Session"
+
     subject: (s.subject === 'Tutoring Session' && s.trialRequestId?.subject?.name)
       ? s.trialRequestId.subject.name
       : s.subject,
@@ -807,7 +754,6 @@ const getUnifiedSessions = async (
     totalPrice: s.totalPrice,
   }));
 
-  // Transform trial requests to unified format
   const unifiedTrialRequests: IUnifiedSession[] = pendingTrialRequests.map((tr: any) => ({
     _id: tr._id.toString(),
     type: 'TRIAL_REQUEST' as const,
@@ -828,10 +774,8 @@ const getUnifiedSessions = async (
     totalPrice: 0,
   }));
 
-  // Merge all items
   let unified = [...unifiedSessions, ...unifiedTrialRequests];
 
-  // Apply filters
   if (status) {
     unified = unified.filter(item => item.status === status);
   }
@@ -855,7 +799,6 @@ const getUnifiedSessions = async (
     );
   }
 
-  // Sort
   unified.sort((a, b) => {
     const aValue = a[sortBy as keyof IUnifiedSession];
     const bValue = b[sortBy as keyof IUnifiedSession];
@@ -878,7 +821,6 @@ const getUnifiedSessions = async (
     return 0;
   });
 
-  // Pagination
   const total = unified.length;
   const totalPage = Math.ceil(total / limit);
   const startIndex = (page - 1) * limit;
@@ -895,46 +837,42 @@ const getUnifiedSessions = async (
   };
 };
 
-/**
- * Get session stats for admin dashboard
- * Includes both Session records and TrialRequest records for accurate counts
- */
 const getSessionStats = async (): Promise<{
   totalSessions: number;
   pendingSessions: number;
   completedSessions: number;
   trialSessions: number;
 }> => {
-  // Get trial request IDs that already have sessions created (to avoid double counting)
+
   const trialRequestIdsWithSessions = await Session.distinct('trialRequestId', {
     trialRequestId: { $ne: null },
   });
 
   const [
-    // Session counts
+
     sessionTotal,
     sessionPending,
     sessionCompleted,
     sessionTrial,
-    // TrialRequest counts (ONLY those WITHOUT sessions - to avoid double counting)
+
     trialRequestPending,
     trialRequestAccepted,
   ] = await Promise.all([
-    // Sessions
+
     Session.countDocuments(),
     Session.countDocuments({
       status: { $in: [SESSION_STATUS.SCHEDULED, SESSION_STATUS.STARTING_SOON, SESSION_STATUS.AWAITING_RESPONSE] },
     }),
     Session.countDocuments({ status: SESSION_STATUS.COMPLETED }),
     Session.countDocuments({ isTrial: true }),
-    // TrialRequests (pending = not yet matched with tutor, excluding those with sessions)
+
     TrialRequest.countDocuments({
       status: TRIAL_REQUEST_STATUS.PENDING,
       ...(trialRequestIdsWithSessions.length > 0 && {
         _id: { $nin: trialRequestIdsWithSessions },
       }),
     }),
-    // TrialRequests (accepted = matched but session not yet created/scheduled, excluding those with sessions)
+
     TrialRequest.countDocuments({
       status: TRIAL_REQUEST_STATUS.ACCEPTED,
       ...(trialRequestIdsWithSessions.length > 0 && {
@@ -943,16 +881,12 @@ const getSessionStats = async (): Promise<{
     }),
   ]);
 
-  // Total = Sessions + Pending/Accepted TrialRequests (without sessions)
   const totalSessions = sessionTotal + trialRequestPending + trialRequestAccepted;
 
-  // Pending = Session pending + TrialRequest pending/accepted (without sessions)
   const pendingSessions = sessionPending + trialRequestPending + trialRequestAccepted;
 
-  // Completed = Only completed sessions
   const completedSessions = sessionCompleted;
 
-  // Trial = Session trials + TrialRequests (without sessions)
   const trialSessions = sessionTrial + trialRequestPending + trialRequestAccepted;
 
   return {
@@ -963,10 +897,6 @@ const getSessionStats = async (): Promise<{
   };
 };
 
-/**
- * Get application statistics for admin dashboard
- * Returns counts by status with growth metrics (current month vs last month)
- */
 const getApplicationStats = async (): Promise<{
   total: { count: number; growth: number; growthType: 'increase' | 'decrease' | 'no_change' };
   pending: { count: number; growth: number; growthType: 'increase' | 'decrease' | 'no_change' };
@@ -980,7 +910,6 @@ const getApplicationStats = async (): Promise<{
   const firstDayOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const lastDayOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
 
-  // Get total counts
   const [total, pending, interview, approved, rejected, revision] = await Promise.all([
     TutorApplication.countDocuments(),
     TutorApplication.countDocuments({ status: APPLICATION_STATUS.SUBMITTED }),
@@ -990,7 +919,6 @@ const getApplicationStats = async (): Promise<{
     TutorApplication.countDocuments({ status: APPLICATION_STATUS.REVISION }),
   ]);
 
-  // Get this month counts
   const [
     totalThisMonth,
     pendingThisMonth,
@@ -1007,7 +935,6 @@ const getApplicationStats = async (): Promise<{
     TutorApplication.countDocuments({ status: APPLICATION_STATUS.REVISION, revisionRequestedAt: { $gte: firstDayOfMonth } }),
   ]);
 
-  // Get last month counts
   const [
     totalLastMonth,
     pendingLastMonth,
@@ -1024,7 +951,6 @@ const getApplicationStats = async (): Promise<{
     TutorApplication.countDocuments({ status: APPLICATION_STATUS.REVISION, revisionRequestedAt: { $gte: firstDayOfLastMonth, $lte: lastDayOfLastMonth } }),
   ]);
 
-  // Calculate growth helper
   const calculateGrowth = (current: number, previous: number) => {
     if (previous === 0) {
       return {
@@ -1049,10 +975,6 @@ const getApplicationStats = async (): Promise<{
   };
 };
 
-/**
- * Get all transactions (Student Payments + Tutor Payouts + Subscription Purchases)
- * Combines MonthlyBilling (student payments), TutorEarnings (tutor payouts), and StudentSubscription (subscription purchases)
- */
 const getTransactions = async (
   query: ITransactionsQuery
 ): Promise<{
@@ -1076,7 +998,6 @@ const getTransactions = async (
 
   const transactions: ITransaction[] = [];
 
-  // Get Student Payments (MonthlyBilling)
   if (type === 'all' || type === 'STUDENT_PAYMENT') {
     const billings = await MonthlyBilling.find()
       .populate('studentId', 'name email')
@@ -1099,32 +1020,30 @@ const getTransactions = async (
       });
     });
 
-    // Get All Subscription Purchases
     const subscriptions = await StudentSubscription.find()
       .populate('studentId', 'name email')
       .lean();
 
     subscriptions.forEach((sub: any) => {
-      // Calculate subscription value based on tier
+
       let subscriptionAmount = 0;
       let tierName = '';
       let description = '';
 
       if (sub.tier === 'FLEXIBLE') {
         tierName = 'Flexible';
-        subscriptionAmount = 0; // Pay as you go - no upfront
+        subscriptionAmount = 0;
         description = 'Flexible Plan Activation (Pay per session)';
       } else if (sub.tier === 'REGULAR') {
         tierName = 'Regular';
-        subscriptionAmount = sub.pricePerHour * sub.minimumHours; // €28 * 4 = €112
+        subscriptionAmount = sub.pricePerHour * sub.minimumHours;
         description = `${tierName} Subscription (${sub.minimumHours}hrs @ €${sub.pricePerHour}/hr)`;
       } else if (sub.tier === 'LONG_TERM') {
         tierName = 'Long-term';
-        subscriptionAmount = sub.pricePerHour * sub.minimumHours * sub.commitmentMonths; // €25 * 4 * 3 = €300
+        subscriptionAmount = sub.pricePerHour * sub.minimumHours * sub.commitmentMonths;
         description = `${tierName} Subscription (${sub.commitmentMonths} months)`;
       }
 
-      // Generate a subscription reference
       const subDate = new Date(sub.createdAt);
       const subRef = `SUB-${subDate.getFullYear().toString().slice(-2)}${(subDate.getMonth() + 1).toString().padStart(2, '0')}-${sub._id.toString().slice(-6).toUpperCase()}`;
 
@@ -1143,7 +1062,6 @@ const getTransactions = async (
     });
   }
 
-  // Get Tutor Payouts (TutorEarnings)
   if (type === 'all' || type === 'TUTOR_PAYOUT') {
     const earnings = await TutorEarnings.find()
       .populate('tutorId', 'name email')
@@ -1167,7 +1085,6 @@ const getTransactions = async (
     });
   }
 
-  // Apply filters
   let filtered = transactions;
 
   if (status) {
@@ -1184,7 +1101,6 @@ const getTransactions = async (
     );
   }
 
-  // Sort
   filtered.sort((a, b) => {
     const aValue = sortBy === 'date' ? new Date(a.date).getTime() : a.amount;
     const bValue = sortBy === 'date' ? new Date(b.date).getTime() : b.amount;
@@ -1192,7 +1108,6 @@ const getTransactions = async (
     return sortOrder === 'desc' ? bValue - aValue : aValue - bValue;
   });
 
-  // Pagination
   const total = filtered.length;
   const totalPage = Math.ceil(total / limit);
   const startIndex = (page - 1) * limit;
@@ -1209,15 +1124,11 @@ const getTransactions = async (
   };
 };
 
-/**
- * Get transaction statistics
- */
 const getTransactionStats = async (): Promise<ITransactionStats> => {
-  // Student payments (paid billings)
+
   const paidBillings = await MonthlyBilling.find({ status: BILLING_STATUS.PAID });
   const billingPaymentsTotal = paidBillings.reduce((sum, b) => sum + b.total, 0);
 
-  // All subscription purchases
   const allSubscriptions = await StudentSubscription.find({
     status: SUBSCRIPTION_STATUS.ACTIVE,
   });
@@ -1229,17 +1140,15 @@ const getTransactionStats = async (): Promise<ITransactionStats> => {
     } else if (sub.tier === 'LONG_TERM') {
       subscriptionPaymentsTotal += sub.pricePerHour * sub.minimumHours * sub.commitmentMonths;
     }
-    // FLEXIBLE = 0, no upfront payment
+
   });
 
   const studentPaymentsTotal = billingPaymentsTotal + subscriptionPaymentsTotal;
   const studentPaymentsCount = paidBillings.length + allSubscriptions.length;
 
-  // Tutor payouts (paid earnings)
   const paidEarnings = await TutorEarnings.find({ status: PAYOUT_STATUS.PAID });
   const tutorPayoutsTotal = paidEarnings.reduce((sum, e) => sum + e.netEarnings, 0);
 
-  // All billings, subscriptions and earnings count
   const allBillingsCount = await MonthlyBilling.countDocuments();
   const allSubscriptionsCount = await StudentSubscription.countDocuments();
   const allEarningsCount = await TutorEarnings.countDocuments();

@@ -17,7 +17,7 @@ const http_status_codes_1 = require("http-status-codes");
 const catchAsync_1 = __importDefault(require("../../../shared/catchAsync"));
 const sendResponse_1 = __importDefault(require("../../../shared/sendResponse"));
 const oerResource_service_1 = require("./oerResource.service");
-// Search OER resources
+
 const searchResources = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { query, subject, grade, type, page, limit } = req.query;
     const result = yield oerResource_service_1.OERResourceService.searchResources({
@@ -41,7 +41,7 @@ const searchResources = (0, catchAsync_1.default)((req, res) => __awaiter(void 0
         },
     });
 }));
-// Get available filter options
+
 const getFilterOptions = (0, catchAsync_1.default)((_req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const subjects = oerResource_service_1.OERResourceService.getAvailableSubjects();
     const types = oerResource_service_1.OERResourceService.getAvailableTypes();

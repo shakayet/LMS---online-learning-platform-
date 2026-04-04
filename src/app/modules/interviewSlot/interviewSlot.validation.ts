@@ -1,6 +1,5 @@
 import { z } from 'zod';
 
-// Create interview slot validation (Admin)
 const createInterviewSlotZodSchema = z.object({
   body: z.object({
     startTime: z
@@ -33,7 +32,6 @@ const createInterviewSlotZodSchema = z.object({
   ),
 });
 
-// Book interview slot validation (Applicant)
 const bookInterviewSlotZodSchema = z.object({
   body: z.object({
     applicationId: z
@@ -44,12 +42,10 @@ const bookInterviewSlotZodSchema = z.object({
   }),
 });
 
-// Cancel interview slot validation
 const cancelInterviewSlotZodSchema = z.object({
   body: z.object({}).optional(),
 });
 
-// Reschedule interview slot validation (Applicant)
 const rescheduleInterviewSlotZodSchema = z.object({
   body: z.object({
     newSlotId: z
@@ -60,7 +56,6 @@ const rescheduleInterviewSlotZodSchema = z.object({
   }),
 });
 
-// Update interview slot validation (Admin)
 const updateInterviewSlotZodSchema = z.object({
   body: z.object({
     startTime: z

@@ -18,7 +18,7 @@ const QueryBuilder_1 = __importDefault(require("../../builder/QueryBuilder"));
 const ApiError_1 = __importDefault(require("../../../errors/ApiError"));
 const grade_model_1 = require("./grade.model");
 const createGrade = (payload) => __awaiter(void 0, void 0, void 0, function* () {
-    // Check if grade with the same name already exists
+
     const existingGrade = yield grade_model_1.Grade.findOne({ name: payload.name });
     if (existingGrade) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'Grade with this name already exists');
@@ -26,7 +26,7 @@ const createGrade = (payload) => __awaiter(void 0, void 0, void 0, function* () 
     const result = yield grade_model_1.Grade.create(payload);
     return result;
 });
-// Get all grades with filtering, searching, pagination
+
 const getAllGrades = (query) => __awaiter(void 0, void 0, void 0, function* () {
     const gradeQuery = new QueryBuilder_1.default(grade_model_1.Grade.find(), query)
         .search(['name'])
@@ -41,7 +41,7 @@ const getAllGrades = (query) => __awaiter(void 0, void 0, void 0, function* () {
         pagination,
     };
 });
-// Get single grade by ID
+
 const getSingleGrade = (id) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield grade_model_1.Grade.findById(id);
     if (!result) {
@@ -49,14 +49,14 @@ const getSingleGrade = (id) => __awaiter(void 0, void 0, void 0, function* () {
     }
     return result;
 });
-// Update grade
+
 const updateGrade = (id, payload) => __awaiter(void 0, void 0, void 0, function* () {
-    // Check if grade exists
+
     const grade = yield grade_model_1.Grade.findById(id);
     if (!grade) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, 'Grade not found');
     }
-    // If updating name, check for uniqueness
+
     if (payload.name && payload.name !== grade.name) {
         const existingGrade = yield grade_model_1.Grade.findOne({ name: payload.name });
         if (existingGrade) {
@@ -69,13 +69,13 @@ const updateGrade = (id, payload) => __awaiter(void 0, void 0, void 0, function*
     });
     return result;
 });
-// Delete grade (soft delete by setting isActive to false)
+
 const deleteGrade = (id) => __awaiter(void 0, void 0, void 0, function* () {
     const grade = yield grade_model_1.Grade.findById(id);
     if (!grade) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, 'Grade not found');
     }
-    // Soft delete
+
     const result = yield grade_model_1.Grade.findByIdAndUpdate(id, { isActive: false }, { new: true });
     return result;
 });

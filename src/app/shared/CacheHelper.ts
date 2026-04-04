@@ -3,8 +3,8 @@ import { logger, errorLogger } from '../../shared/logger';
 import { recordCacheHit, recordCacheMiss } from '../logging/requestContext';
 
 export interface ICacheOptions {
-  ttl?: number; // Time to live in seconds
-  checkperiod?: number; // Check period for expired keys
+  ttl?: number;
+  checkperiod?: number;
 }
 
 export class CacheHelper {
@@ -27,8 +27,6 @@ export class CacheHelper {
     return CacheHelper.instance;
   }
 
-  // ------------------- Basic Cache Operations -------------------
-
   async set<T>(key: string, value: T, ttl?: number): Promise<boolean> {
     const start = Date.now();
     const logPrefix = `[CACHE][SET] key:${key}`;
@@ -46,7 +44,7 @@ export class CacheHelper {
           Date.now() - start
         }ms`
       );
-      // Fallback to memory
+
       const ok = this.cache.set(key, value, ttl || 0);
       return ok;
     }
@@ -136,8 +134,6 @@ export class CacheHelper {
     logger.info(`${logPrefix} ✅ | ⏱ ${Date.now() - start}ms`);
   }
 
-  // ------------------- Advanced Operations -------------------
-
   async getOrSet<T>(
     key: string,
     fetchFunction: () => Promise<T>,
@@ -183,8 +179,6 @@ export class CacheHelper {
     logger.info(`[CACHE][INVALIDATE TAG] tag:${tag} deleted:${deletedCount}`);
     return deletedCount;
   }
-
-  // ------------------- Utility -------------------
 
   getStats() {
     return this.cache.getStats();

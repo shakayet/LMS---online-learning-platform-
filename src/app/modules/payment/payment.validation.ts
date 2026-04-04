@@ -1,6 +1,5 @@
 import { z } from 'zod';
 
-// Create Stripe account validation
 export const createStripeAccountZodSchema = z.object({
   body: z.object({
     userId: z.number({
@@ -13,7 +12,6 @@ export const createStripeAccountZodSchema = z.object({
   }),
 });
 
-// Create escrow payment validation
 export const createEscrowPaymentZodSchema = z.object({
   body: z.object({
     bidId: z.number({
@@ -31,7 +29,6 @@ export const createEscrowPaymentZodSchema = z.object({
   }),
 });
 
-// Release payment validation
 export const releasePaymentZodSchema = z.object({
   params: z.object({
     paymentId: z.string({
@@ -44,7 +41,6 @@ export const releasePaymentZodSchema = z.object({
   }),
 });
 
-// Refund payment validation
 export const refundPaymentZodSchema = z.object({
   params: z.object({
     paymentId: z.string({
@@ -56,7 +52,6 @@ export const refundPaymentZodSchema = z.object({
   }),
 });
 
-// Get payment by ID validation
 export const getPaymentByIdZodSchema = z.object({
   params: z.object({
     paymentId: z.string({
@@ -65,7 +60,6 @@ export const getPaymentByIdZodSchema = z.object({
   }),
 });
 
-// Get user payments validation
 export const getUserPaymentsZodSchema = z.object({
   params: z.object({
     userId: z.string({
@@ -83,7 +77,6 @@ export const getUserPaymentsZodSchema = z.object({
   }),
 });
 
-// Get payments with filters validation
 export const getPaymentsZodSchema = z.object({
   query: z.object({
     page: z.string().regex(/^\d+$/, 'Page must be a valid number').optional(),
@@ -97,7 +90,6 @@ export const getPaymentsZodSchema = z.object({
   }),
 });
 
-// Get payment stats validation
 export const getPaymentStatsZodSchema = z.object({
   query: z.object({
     clientId: z.string().regex(/^\d+$/, 'Client ID must be a valid number').optional(),
@@ -107,7 +99,6 @@ export const getPaymentStatsZodSchema = z.object({
   }),
 });
 
-// Get user payment stats validation
 export const getUserPaymentStatsZodSchema = z.object({
   params: z.object({
     userId: z.string({
@@ -124,7 +115,6 @@ export const getUserPaymentStatsZodSchema = z.object({
   }),
 });
 
-// Get onboarding link validation
 export const getOnboardingLinkZodSchema = z.object({
   params: z.object({
     userId: z.string({
@@ -133,7 +123,6 @@ export const getOnboardingLinkZodSchema = z.object({
   }),
 });
 
-// Check onboarding status validation
 export const checkOnboardingStatusZodSchema = z.object({
   params: z.object({
     userId: z.string({
@@ -142,7 +131,6 @@ export const checkOnboardingStatusZodSchema = z.object({
   }),
 });
 
-// Webhook validation (minimal since Stripe handles most validation)
 export const webhookZodSchema = z.object({
   headers: z.object({
     'stripe-signature': z.string({
@@ -151,7 +139,6 @@ export const webhookZodSchema = z.object({
   }),
 });
 
-// Export all validation schemas
 export const PaymentValidation = {
   createStripeAccount: createStripeAccountZodSchema,
   createEscrowPayment: createEscrowPaymentZodSchema,

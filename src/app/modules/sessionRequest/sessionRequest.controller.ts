@@ -4,7 +4,6 @@ import catchAsync from '../../../shared/catchAsync';
 import sendResponse from '../../../shared/sendResponse';
 import { SessionRequestService } from './sessionRequest.service';
 
-// Create session request (Student only - must be logged in and have completed trial)
 const createSessionRequest = catchAsync(async (req: Request, res: Response) => {
   const studentId = req.user?.id;
 
@@ -26,7 +25,6 @@ const createSessionRequest = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// Get matching session requests (Tutor)
 const getMatchingSessionRequests = catchAsync(async (req: Request, res: Response) => {
   const tutorId = req.user?.id;
 
@@ -49,7 +47,6 @@ const getMatchingSessionRequests = catchAsync(async (req: Request, res: Response
   });
 });
 
-// Get my session requests (Student)
 const getMySessionRequests = catchAsync(async (req: Request, res: Response) => {
   const studentId = req.user?.id;
 
@@ -72,7 +69,6 @@ const getMySessionRequests = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// Get all session requests (Admin)
 const getAllSessionRequests = catchAsync(async (req: Request, res: Response) => {
   const result = await SessionRequestService.getAllSessionRequests(req.query);
 
@@ -85,7 +81,6 @@ const getAllSessionRequests = catchAsync(async (req: Request, res: Response) => 
   });
 });
 
-// Get single session request
 const getSingleSessionRequest = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const result = await SessionRequestService.getSingleSessionRequest(id);
@@ -98,7 +93,6 @@ const getSingleSessionRequest = catchAsync(async (req: Request, res: Response) =
   });
 });
 
-// Accept session request (Tutor)
 const acceptSessionRequest = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const tutorId = req.user?.id;
@@ -126,7 +120,6 @@ const acceptSessionRequest = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// Cancel session request (Student)
 const cancelSessionRequest = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const studentId = req.user?.id;
@@ -149,7 +142,6 @@ const cancelSessionRequest = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// Extend session request (Student)
 const extendSessionRequest = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const studentId = req.user?.id;
@@ -172,7 +164,6 @@ const extendSessionRequest = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// Send expiration reminders (Admin/Cron)
 const sendExpirationReminders = catchAsync(async (req: Request, res: Response) => {
   const count = await SessionRequestService.sendExpirationReminders();
 
@@ -184,7 +175,6 @@ const sendExpirationReminders = catchAsync(async (req: Request, res: Response) =
   });
 });
 
-// Auto-delete expired requests (Admin/Cron)
 const autoDeleteExpiredRequests = catchAsync(async (req: Request, res: Response) => {
   const count = await SessionRequestService.autoDeleteExpiredRequests();
 
@@ -196,7 +186,6 @@ const autoDeleteExpiredRequests = catchAsync(async (req: Request, res: Response)
   });
 });
 
-// Expire old session requests (Admin/Cron)
 const expireOldRequests = catchAsync(async (req: Request, res: Response) => {
   const expiredCount = await SessionRequestService.expireOldRequests();
 
@@ -208,7 +197,6 @@ const expireOldRequests = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// Get my accepted requests - unified trial + session (Tutor)
 const getMyAcceptedRequests = catchAsync(async (req: Request, res: Response) => {
   const tutorId = req.user?.id;
 

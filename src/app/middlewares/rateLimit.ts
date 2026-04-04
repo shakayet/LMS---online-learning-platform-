@@ -21,7 +21,7 @@ export const rateLimitMiddleware = (options: RateLimitOptions) => {
     const key = `ratelimit:${routeName || req.path}:${identifier}`;
 
     try {
-      // In-memory counter
+
       const current = (memory.get<number>(key) || 0) + 1;
       memory.set(key, current, Math.ceil(windowMs / 1000));
       if (current > max) {
@@ -34,7 +34,7 @@ export const rateLimitMiddleware = (options: RateLimitOptions) => {
       logger.info(`✅ RateLimit applied for IP: ${identifier}`);
       return next();
     } catch (e) {
-      // On any error, allow request but log
+
       logger.warn(`⚠️ RateLimit error: ${(e as Error).message}`);
       return next();
     }

@@ -10,9 +10,6 @@ import {
 } from './agora.helper';
 import ApiError from '../../../errors/ApiError';
 
-/**
- * নতুন Call শুরু করে
- */
 const initiateCall = async (
   initiatorId: string | null | undefined,
   receiverId: string,
@@ -40,9 +37,6 @@ const initiateCall = async (
   return { call: call.toObject() as ICall, token, channelName, uid };
 };
 
-/**
- * Call Accept করলে token দেয়
- */
 const acceptCall = async (
   callId: string,
   userId: string | null | undefined
@@ -74,9 +68,6 @@ const acceptCall = async (
   return { call: call.toObject() as ICall, token, uid };
 };
 
-/**
- * Call Reject করে
- */
 const rejectCall = async (callId: string, userId: string | null | undefined): Promise<ICall> => {
   if (!userId) {
     throw new ApiError(StatusCodes.UNAUTHORIZED, 'User not authenticated');
@@ -102,9 +93,6 @@ const rejectCall = async (callId: string, userId: string | null | undefined): Pr
   return call.toObject() as ICall;
 };
 
-/**
- * Call End করে
- */
 const endCall = async (callId: string, userId: string | null | undefined): Promise<ICall> => {
   if (!userId) {
     throw new ApiError(StatusCodes.UNAUTHORIZED, 'User not authenticated');
@@ -137,9 +125,6 @@ const endCall = async (callId: string, userId: string | null | undefined): Promi
   return call.toObject() as ICall;
 };
 
-/**
- * Call Cancel করে (Initiator রিং হওয়ার আগে cancel করলে)
- */
 const cancelCall = async (callId: string, userId: string | null | undefined): Promise<ICall> => {
   if (!userId) {
     throw new ApiError(StatusCodes.UNAUTHORIZED, 'User not authenticated');
@@ -165,9 +150,6 @@ const cancelCall = async (callId: string, userId: string | null | undefined): Pr
   return call.toObject() as ICall;
 };
 
-/**
- * Token Refresh করে (Call চলাকালীন)
- */
 const refreshToken = async (
   callId: string,
   userId: string | null | undefined
@@ -199,9 +181,6 @@ const refreshToken = async (
   return { token, uid };
 };
 
-/**
- * User এর Call History
- */
 const getCallHistory = async (
   userId: string | null | undefined,
   page: number = 1,
@@ -232,9 +211,6 @@ const getCallHistory = async (
   };
 };
 
-/**
- * Single Call Details
- */
 const getCallById = async (callId: string, userId: string | null | undefined): Promise<ICall> => {
   if (!userId) {
     throw new ApiError(StatusCodes.UNAUTHORIZED, 'User not authenticated');
@@ -260,9 +236,6 @@ const getCallById = async (callId: string, userId: string | null | undefined): P
   return call as ICall;
 };
 
-/**
- * Call এর active participants দেখায়
- */
 const getActiveParticipants = async (
   callId: string
 ): Promise<{ count: number; participants: any[] }> => {
@@ -289,9 +262,6 @@ const getActiveParticipants = async (
   };
 };
 
-/**
- * Participant join tracking
- */
 const recordParticipantJoin = async (
   callId: string,
   userId: string,
@@ -322,9 +292,6 @@ const recordParticipantJoin = async (
   return { call: call.toObject() as ICall, activeCount };
 };
 
-/**
- * Participant leave tracking
- */
 const recordParticipantLeave = async (
   callId: string,
   userId: string
@@ -352,7 +319,6 @@ const recordParticipantLeave = async (
     p => p.joinedAt && !p.leftAt
   ).length;
 
-  // Auto-end call if no one left
   if (activeCount === 0 && call.status === 'active') {
     call.status = 'ended';
     call.endTime = new Date();
@@ -367,11 +333,6 @@ const recordParticipantLeave = async (
   return { call: call.toObject() as ICall, activeCount };
 };
 
-/**
- * Session-based Call Join করে
- * Session এর জন্য call থাকলে join করবে, না থাকলে নতুন তৈরি করবে
- * Both participants will join the SAME channel based on sessionId
- */
 const joinSessionCall = async (
   userId: string | null | undefined,
   sessionId: string,
@@ -382,35 +343,33 @@ const joinSessionCall = async (
     throw new ApiError(StatusCodes.UNAUTHORIZED, 'User not authenticated');
   }
 
-  // Generate deterministic channel name from sessionId
   const channelName = generateSessionChannelName(sessionId);
   const uid = userIdToAgoraUid(userId);
 
-  // Check if a call already exists for this session (any status)
   let call = await Call.findOne({ channelName });
 
   let isNew = false;
 
   if (!call) {
-    // Create new call for this session
+
     call = await Call.create({
       channelName,
       callType,
       participants: [userId, otherUserId],
       initiator: userId,
       receiver: otherUserId,
-      status: 'active', // Session calls start as active immediately
+      status: 'active',
       startTime: new Date(),
       sessionId: new Types.ObjectId(sessionId),
     });
     isNew = true;
   } else if (call.status === 'ended' || call.status === 'cancelled' || call.status === 'missed' || call.status === 'rejected') {
-    // Re-activate ended/cancelled call for this session (user rejoining)
+
     call.status = 'active';
     call.startTime = new Date();
     call.endTime = undefined;
     call.duration = undefined;
-    // Make sure this user is a participant
+
     const isParticipant = call.participants.some(
       p => p.toString() === userId
     );
@@ -419,7 +378,7 @@ const joinSessionCall = async (
     }
     await call.save();
   } else {
-    // Call is pending or active - just make sure user is participant
+
     const isParticipant = call.participants.some(
       p => p.toString() === userId
     );

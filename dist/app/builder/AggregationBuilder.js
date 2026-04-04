@@ -21,7 +21,7 @@ class AggregationBuilder {
         this.pipeline = [];
         this.model = model;
     }
-    // ====== PIPELINE BUILDERS ======
+
     match(conditions) {
         this.pipeline.push({ $match: conditions });
         return this;
@@ -61,7 +61,7 @@ class AggregationBuilder {
             return res;
         });
     }
-    // ====== PERIOD CALCULATOR ======
+
     getPeriodDates(period) {
         const now = new Date();
         let startThis, startLast, endLast;
@@ -76,7 +76,7 @@ class AggregationBuilder {
                 endLast.setHours(23, 59, 59, 999);
                 break;
             case 'week':
-                const day = now.getDay(); // Sunday = 0
+                const day = now.getDay();
                 startThis = new Date(now);
                 startThis.setDate(now.getDate() - day);
                 startThis.setHours(0, 0, 0, 0);
@@ -112,7 +112,7 @@ class AggregationBuilder {
         }
         return { startThis, startLast, endLast };
     }
-    // ====== GENERIC GROWTH CALCULATION ======
+
     calculateGrowth() {
         return __awaiter(this, arguments, void 0, function* (options = {}) {
             var _a, _b, _c;
@@ -143,7 +143,7 @@ class AggregationBuilder {
                 const thisPeriodCount = ((_a = thisPeriodResult[0]) === null || _a === void 0 ? void 0 : _a.total) || 0;
                 const lastPeriodCount = ((_b = lastPeriodResult[0]) === null || _b === void 0 ? void 0 : _b.total) || 0;
                 const total = ((_c = totalResult[0]) === null || _c === void 0 ? void 0 : _c.total) || 0;
-                // Growth calculation
+
                 let growth = 0;
                 let growthType = 'no_change';
                 if (lastPeriodCount > 0) {
@@ -171,7 +171,7 @@ class AggregationBuilder {
             }
         });
     }
-    // ====== REVENUE BREAKDOWN ======
+
     getRevenueBreakdown(options) {
         return __awaiter(this, void 0, void 0, function* () {
             const { sumField, groupByField, filter = {}, limit = 10 } = options;
@@ -200,14 +200,14 @@ class AggregationBuilder {
             return yield this.execute();
         });
     }
-    // ====== TIME TRENDS ======
+
     getTimeTrends(options) {
         return __awaiter(this, void 0, void 0, function* () {
             const { sumField, timeUnit, filter = {}, limit } = options;
             const now = new Date();
             const currentYear = now.getFullYear();
-            const currentMonth = now.getMonth(); // 0-indexed
-            // Only consider documents from the current year
+            const currentMonth = now.getMonth();
+
             const yearFilter = Object.assign(Object.assign({}, filter), { createdAt: {
                     $gte: new Date(currentYear, 0, 1),
                     $lte: new Date(currentYear, 11, 31),
@@ -337,7 +337,7 @@ class AggregationBuilder {
             }
         });
     }
-    // ====== TOP PERFORMERS ======
+
     getTopPerformers(options) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
@@ -383,7 +383,7 @@ class AggregationBuilder {
         });
     }
 }
-// ====== HELPER FUNCTION ======
+
 const calculateGrowthDynamic = (Model_1, ...args_1) => __awaiter(void 0, [Model_1, ...args_1], void 0, function* (Model, options = {}) {
     try {
         const aggregationBuilder = new AggregationBuilder(Model);
@@ -396,7 +396,7 @@ const calculateGrowthDynamic = (Model_1, ...args_1) => __awaiter(void 0, [Model_
 });
 exports.calculateGrowthDynamic = calculateGrowthDynamic;
 exports.default = AggregationBuilder;
-// Compact summary for aggregation pipeline
+
 function summarizePipeline(pipeline) {
     const parts = [];
     for (const stage of pipeline) {

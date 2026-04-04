@@ -2,9 +2,9 @@ import NodeCache from 'node-cache';
 import { logger } from '../../shared/logger';
 
 const ONLINE_SET = 'presence:online';
-const LAST_ACTIVE_PREFIX = 'presence:lastActive:'; // presence:lastActive:<userId>
-const USER_ROOMS_PREFIX = 'presence:userRooms:'; // presence:userRooms:<userId>
-const CONN_COUNT_PREFIX = 'presence:connCount:'; // presence:connCount:<userId>
+const LAST_ACTIVE_PREFIX = 'presence:lastActive:';
+const USER_ROOMS_PREFIX = 'presence:userRooms:';
+const CONN_COUNT_PREFIX = 'presence:connCount:';
 
 const memory = new NodeCache({ stdTTL: 0, checkperiod: 120, useClones: false });
 

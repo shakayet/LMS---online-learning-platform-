@@ -15,7 +15,6 @@ const createSchoolType = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// Get all school types
 const getAllSchoolTypes = catchAsync(async (req: Request, res: Response) => {
   const result = await SchoolTypeService.getAllSchoolTypes(req.query);
 
@@ -28,7 +27,6 @@ const getAllSchoolTypes = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// Get single school type
 const getSingleSchoolType = catchAsync(async (req: Request, res: Response) => {
   const { schoolTypeId } = req.params;
   const result = await SchoolTypeService.getSingleSchoolType(schoolTypeId);
@@ -41,7 +39,6 @@ const getSingleSchoolType = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// Update school type
 const updateSchoolType = catchAsync(async (req: Request, res: Response) => {
   const { schoolTypeId } = req.params;
   const result = await SchoolTypeService.updateSchoolType(schoolTypeId, req.body);
@@ -54,7 +51,6 @@ const updateSchoolType = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// Delete school type
 const deleteSchoolType = catchAsync(async (req: Request, res: Response) => {
   const { schoolTypeId } = req.params;
   const result = await SchoolTypeService.deleteSchoolType(schoolTypeId);
@@ -67,7 +63,6 @@ const deleteSchoolType = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// Get active school types
 const getActiveSchoolTypes = catchAsync(async (_req: Request, res: Response) => {
   const result = await SchoolTypeService.getActiveSchoolTypes();
 

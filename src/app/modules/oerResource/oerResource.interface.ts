@@ -1,4 +1,3 @@
-
 export type IOERResource = {
   id: string;
   title: string;

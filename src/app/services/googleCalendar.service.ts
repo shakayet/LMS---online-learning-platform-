@@ -1,4 +1,3 @@
-
 import config from '../../config';
 
 export type ICalendarEvent = {

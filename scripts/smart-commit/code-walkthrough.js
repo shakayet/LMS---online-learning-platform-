@@ -111,11 +111,8 @@ explain('এই regex patterns দিয়ে code এর diff scan করে �
 code('CONFIG.scopes - Path → Scope Mapping', `
 scopes: {
   'src/app/modules/': (path) => path.split('/')[3],
-  //  src/app/modules/auth/auth.ts → 'auth'
-  //  src/app/modules/user/user.ts → 'user'
 
   'src/app/builder/': () => 'builder',
-  //  src/app/builder/QueryBuilder.ts → 'builder'
 
   'src/app/logging/': () => 'logging',
   'scripts/': () => 'scripts',
@@ -131,7 +128,7 @@ subheader('Function: runGit(command)');
 code('Code', `
 function runGit(command) {
   try {
-    // execSync দিয়ে git command run করি
+
     return execSync(\`git \${command}\`, { encoding: 'utf-8' }).trim();
   } catch (error) {
     return '';  // error হলে empty string
@@ -151,7 +148,7 @@ subheader('Function: getChangedFiles()');
 
 code('Code', `
 function getChangedFiles(stagedOnly = false) {
-  // staged files চাইলে --cached, না হলে HEAD এর সাথে compare
+
   const diffCommand = stagedOnly
     ? 'diff --cached --name-status'
     : 'diff --name-status HEAD';
@@ -159,7 +156,6 @@ function getChangedFiles(stagedOnly = false) {
   const output = runGit(diffCommand);
   if (!output) return [];
 
-  // প্রতিটা line parse করো
   return output.split('\\n').map(line => {
     const [status, ...pathParts] = line.split('\\t');
     return {
@@ -201,7 +197,6 @@ header('🎯 SECTION 3: detectScope() - Path থেকে Scope বের কর
 code('Code', `
 function detectScope(filePath) {
   const normalizedPath = filePath.replace(/\\\\/g, '/');
-  //  Windows: src\\\\app\\\\modules → src/app/modules
 
   for (const [pattern, extractor] of Object.entries(CONFIG.scopes)) {
     if (normalizedPath.includes(pattern)) {
@@ -262,7 +257,6 @@ function analyzeDiff(diff) {
   const lines = diff.split('\\n');
   const addedLines = [];
 
-  // Step 1: Count lines & collect added content
   for (const line of lines) {
     if (line.startsWith('+') && !line.startsWith('+++')) {
       result.linesAdded++;
@@ -272,15 +266,12 @@ function analyzeDiff(diff) {
     }
   }
 
-  // Step 2: Added content এ pattern খোঁজো
   const addedContent = addedLines.join('\\n');
 
-  // নতুন export দেখলে = feat
   if (/export\\s+(class|function)/.test(addedContent)) {
     result.types.set('feat', (result.types.get('feat') || 0) + 1);
   }
 
-  // "fix" keyword দেখলে = fix
   if (/fix/i.test(addedContent)) {
     result.types.set('fix', (result.types.get('fix') || 0) + 1);
   }
@@ -342,7 +333,7 @@ header('📊 SECTION 5: Score Calculation - Winner নির্বাচন');
 
 code('Code', `
 function generateCommitSuggestions(analysis) {
-  // Step 1: সবচেয়ে বেশি score যার type সেটা primary
+
   let primaryType = 'chore';
   let highestScore = 0;
 
@@ -353,18 +344,14 @@ function generateCommitSuggestions(analysis) {
     }
   }
 
-  // Step 2: Special cases check
-  // শুধু নতুন files → feat
   if (analysis.newFiles > 0 && analysis.modifiedFiles === 0) {
     primaryType = 'feat';
   }
 
-  // শুধু .md files → docs
   if (analysis.categories.get('docs') === analysis.totalFiles) {
     primaryType = 'docs';
   }
 
-  // শুধু config files → chore
   if (analysis.categories.get('config') === analysis.totalFiles) {
     primaryType = 'chore';
   }
@@ -428,36 +415,30 @@ function generateSubject(analysis, type) {
   const fileGroups = groupFilesByPurpose(analysis.files);
   const action = type === 'feat' ? 'add' : type === 'fix' ? 'fix' : 'update';
 
-  // Priority 1: Builder files আছে?
   if (fileGroups.builders.length > 0) {
     const names = extractBuilderNames(fileGroups.builders);
     if (names.length === 1) return \`\${action} \${names[0]}Builder functionality\`;
     return \`\${action} multiple builders (\${names.join(', ')})\`;
   }
 
-  // Priority 2: Module files আছে?
   if (fileGroups.modules.length > 0) {
     const modules = extractModuleNames(fileGroups.modules);
     if (modules.length === 1) return \`\${action} \${modules[0]} module\`;
     return \`\${action} \${modules.join(', ')} modules\`;
   }
 
-  // Priority 3: Logging files?
   if (fileGroups.logging.length > 0) {
     return \`\${action} logging and observability\`;
   }
 
-  // Priority 4: Only tests?
   if (fileGroups.tests.length === analysis.files.length) {
     return \`\${action} tests\`;
   }
 
-  // Priority 5: Only docs?
   if (fileGroups.docs.length === analysis.files.length) {
     return \`\${action} documentation\`;
   }
 
-  // Fallback
   return \`\${action} codebase\`;
 }`);
 
@@ -495,17 +476,14 @@ scenarios.forEach(s => {
 header('🏗️ SECTION 7: Final Message Assembly');
 
 code('Code', `
-// Components:
+
 const type = 'feat';
 const scope = 'builder';
 const subject = 'add multiple builders (Query, PDF)';
 
-// Assembly:
 const scopePart = scope ? \`(\${scope})\` : '';
 const fullMessage = \`\${type}\${scopePart}: \${subject}\`;
 
-// Result:
-// "feat(builder): add multiple builders (Query, PDF)"
 `);
 
 console.log(`\n${c.bgGreen}${c.white} 🔴 LIVE ASSEMBLY ${c.reset}`);
@@ -545,7 +523,7 @@ function printSuggestions(suggestions) {
   console.log('─'.repeat(50));
 
   suggestions.forEach((suggestion, index) => {
-    // Confidence bar তৈরি
+
     const confidence = Math.round(suggestion.confidence * 100);
     const filled = Math.round(confidence / 10);
     const bar = '█'.repeat(filled) + '░'.repeat(10 - filled);

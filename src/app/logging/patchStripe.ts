@@ -1,4 +1,3 @@
-
 import { trace } from '@opentelemetry/api';
 import { stripe } from '../../config/stripe';
 

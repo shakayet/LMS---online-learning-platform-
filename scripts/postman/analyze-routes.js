@@ -129,23 +129,19 @@ class RouteCommentAnalyzer {
     while ((match = routeRegex.exec(content)) !== null) {
       const [fullMatch, method, routePath] = match;
 
-      // Find line number
       const beforeMatch = content.substring(0, match.index);
       const lineNumber = beforeMatch.split('\n').length;
 
-      // Check for preceding comment
       let hasComment = false;
       let commentText = null;
 
       for (let i = lineNumber - 2; i >= Math.max(0, lineNumber - 5); i--) {
         const line = lines[i]?.trim() || '';
 
-        // Stop if we hit another route
         if (line.startsWith('router.')) {
           break;
         }
 
-        // Check for comment
         if (line.startsWith('//')) {
           hasComment = true;
           commentText = line.replace('//', '').trim();
@@ -176,7 +172,6 @@ class RouteCommentAnalyzer {
   generateSuggestion(route, moduleName) {
     const { method, path } = route;
 
-    // Module-specific patterns
     const modulePatterns = {
       chat: {
         '/:otherUserId': method === 'POST' ? 'Create Chat' : null,
@@ -188,14 +183,12 @@ class RouteCommentAnalyzer {
       },
     };
 
-    // Check module-specific patterns first
     if (modulePatterns[moduleName] && modulePatterns[moduleName][path]) {
       return modulePatterns[moduleName][path];
     }
 
-    // Special patterns for common endpoints
     const patterns = {
-      // Auth patterns
+
       '/login': 'User Login',
       '/register': 'User Registration',
       '/logout': 'User Logout',
@@ -206,35 +199,28 @@ class RouteCommentAnalyzer {
       '/verify-email': 'Verify Email Address',
       '/resend-verify-email': 'Resend Email Verification',
 
-      // Google OAuth
       '/google': 'Google OAuth Login',
       '/google/callback': 'Google OAuth Callback',
 
-      // Profile patterns
       '/profile': 'Get User Profile',
       '/me': 'Get Current User',
 
-      // Common CRUD patterns
       '/': method === 'GET' ? 'Get All' : method === 'POST' ? 'Create' : null,
     };
 
-    // Check exact path match
     if (patterns[path]) {
       return patterns[path];
     }
 
-    // Path parameter patterns
     if (path.includes(':id')) {
       if (method === 'GET') return 'Get by ID';
       if (method === 'PUT' || method === 'PATCH') return 'Update by ID';
       if (method === 'DELETE') return 'Delete by ID';
     }
 
-    // Block/Unblock patterns
     if (path.includes('/block')) return 'Block User';
     if (path.includes('/unblock')) return 'Unblock User';
 
-    // File upload patterns
     if (
       path.includes('/upload') ||
       path.includes('/avatar') ||
@@ -243,7 +229,6 @@ class RouteCommentAnalyzer {
       return 'Upload File';
     }
 
-    // Payment patterns
     if (path.includes('/payment')) {
       if (method === 'POST') return 'Create Payment';
       if (method === 'GET') return 'Get Payment';
@@ -252,25 +237,21 @@ class RouteCommentAnalyzer {
     if (path.includes('/refund')) return 'Process Refund';
     if (path.includes('/webhook')) return 'Handle Webhook';
 
-    // Chat/Message patterns
     if (path.includes('/send')) return 'Send Message';
     if (path.includes('/read')) return 'Mark as Read';
     if (path.includes('/unread')) return 'Get Unread Messages';
 
-    // Notification patterns
     if (path.includes('/notification')) {
       if (method === 'GET') return 'Get Notifications';
       if (method === 'PATCH' && path.includes('/read'))
         return 'Mark Notification as Read';
     }
 
-    // Bookmark patterns
     if (path.includes('/bookmark')) {
       if (method === 'POST') return 'Toggle Bookmark';
       if (method === 'GET') return 'Get Bookmarks';
     }
 
-    // Generic fallback based on path structure
     const pathParts = path
       .split('/')
       .filter(p => p && !p.startsWith(':'))
@@ -293,7 +274,6 @@ class RouteCommentAnalyzer {
       return `${action} ${pathParts.join(' ')}`;
     }
 
-    // Ultimate fallback
     return `${method} ${path}`;
   }
 
@@ -301,7 +281,7 @@ class RouteCommentAnalyzer {
    * Auto-fix route file by adding comments
    */
   async fixRouteFile(routeFile, missingComments) {
-    // Create backup first
+
     const backupPath = routeFile.replace('.ts', `.backup-${Date.now()}.ts`);
     fs.copyFileSync(routeFile, backupPath);
     console.log(`📦 Backup created: ${path.basename(backupPath)}`);
@@ -309,7 +289,6 @@ class RouteCommentAnalyzer {
     let content = fs.readFileSync(routeFile, 'utf8');
     const lines = content.split('\n');
 
-    // Sort by line number (descending) to avoid offset issues
     const sorted = [...missingComments].sort(
       (a, b) => b.lineNumber - a.lineNumber
     );
@@ -320,17 +299,14 @@ class RouteCommentAnalyzer {
       const targetLine = lineNumber - 1; // Convert to 0-based index
       const routeLine = lines[targetLine];
 
-      // Get indentation from route line
       const indentMatch = routeLine.match(/^(\s*)/);
       const indent = indentMatch ? indentMatch[1] : '';
 
-      // Insert comment above route
       const commentLine = `${indent}// ${suggestion}`;
       lines.splice(targetLine, 0, commentLine);
       addedCount++;
     });
 
-    // Write back to file
     fs.writeFileSync(routeFile, lines.join('\n'), 'utf8');
     this.stats.fixed += addedCount;
 
@@ -399,11 +375,9 @@ class RouteCommentAnalyzer {
   }
 }
 
-// CLI execution
 async function main() {
   const args = process.argv.slice(2);
 
-  // Parse arguments
   let moduleName = null;
   let options = {
     suggest: false,

@@ -211,7 +211,6 @@ class SmartPostmanGenerator {
     const schemas = {};
     const content = fs.readFileSync(filePath, 'utf8');
 
-    // Match each const declaration
     const schemaBlocks = content.split(/(?=const\s+\w+\s*=\s*z\.object)/);
 
     for (const block of schemaBlocks) {
@@ -220,7 +219,6 @@ class SmartPostmanGenerator {
 
       const schemaName = nameMatch[1];
 
-      // Extract body schema content
       const bodyMatch = block.match(/body:\s*z\.object\s*\(\s*{([\s\S]*?)}\s*\)/);
       if (bodyMatch) {
         const bodyContent = bodyMatch[1];
@@ -238,22 +236,20 @@ class SmartPostmanGenerator {
   extractZodFieldsImproved(schemaContent) {
     const fields = {};
 
-    // Match field definitions more accurately
     const lines = schemaContent.split('\n');
     let currentField = null;
 
     for (const line of lines) {
-      // Match field start: fieldName: z.something
+
       const fieldMatch = line.match(/^\s*(\w+):\s*z\.(string|number|boolean|array|enum|date|object)/);
       if (fieldMatch) {
         currentField = fieldMatch[1];
         const fieldType = fieldMatch[2];
 
-        // Check if it's an array
         if (fieldType === 'array') {
           fields[currentField] = this.generateSampleValue(currentField, 'array');
         } else if (fieldType === 'enum') {
-          // Try to extract enum values
+
           const enumMatch = line.match(/z\.enum\s*\(\s*\[([\s\S]*?)\]/);
           if (enumMatch) {
             const firstValue = enumMatch[1].match(/['"]([^'"]+)['"]/);
@@ -274,21 +270,19 @@ class SmartPostmanGenerator {
    * Generate sample value for field
    */
   generateSampleValue(fieldName, fieldType) {
-    // Field-specific samples with Postman variables
+
     const fieldSamples = {
-      // IDs - use Postman variables
+
       email: '{{TEST_EMAIL}}',
       password: '{{TEST_PASSWORD}}',
       newPassword: '{{NEW_PASSWORD}}',
       confirmPassword: '{{NEW_PASSWORD}}',
       currentPassword: '{{TEST_PASSWORD}}',
 
-      // Common fields
       name: '{{TEST_NAME}}',
       title: 'Sample Title',
       description: 'Sample description text',
 
-      // Reference IDs - use variables
       chatId: '{{chatId}}',
       messageId: '{{messageId}}',
       userId: '{{userId}}',
@@ -303,36 +297,29 @@ class SmartPostmanGenerator {
       studentId: '{{studentId}}',
       slotId: '{{slotId}}',
 
-      // Subject/Tutor Application
       subject: 'Mathematics',
       subjects: ['Mathematics', 'Physics'],
 
-      // Contact info
       phone: '+49123456789',
       address: '123 Main Street, Berlin, Germany',
 
-      // Dates
       birthDate: '1995-05-15',
       startTime: '{{START_TIME}}',
       endTime: '{{END_TIME}}',
       date: '{{DATE}}',
 
-      // URLs
       cvUrl: 'https://example.com/cv.pdf',
       abiturCertificateUrl: 'https://example.com/abitur.pdf',
       educationProofUrls: ['https://example.com/proof1.pdf'],
 
-      // Status/Reason
       status: 'SUBMITTED',
       reason: 'Sample reason text',
       rejectionReason: 'Application does not meet requirements',
       cancellationReason: 'Need to reschedule the session',
       adminNotes: 'Admin notes here',
 
-      // Codes
       oneTimeCode: 123456,
 
-      // Ratings
       rating: 5,
       overallRating: 5,
       teachingQuality: 5,
@@ -340,7 +327,6 @@ class SmartPostmanGenerator {
       punctuality: 5,
       preparedness: 5,
 
-      // Other
       comment: 'This is a sample comment',
       text: 'Sample text message',
       targetId: '{{TARGET_ID}}',
@@ -356,7 +342,6 @@ class SmartPostmanGenerator {
       return fieldSamples[fieldName];
     }
 
-    // Type-based defaults
     switch (fieldType) {
       case 'string':
         return `sample_${fieldName}`;
@@ -381,7 +366,6 @@ class SmartPostmanGenerator {
     const lines = content.split('\n');
     const endpoints = [];
 
-    // Find all router method calls
     const routeRegex = /router\.(get|post|put|patch|delete)\s*\(\s*['"`]([^'"`]+)['"`]/g;
     let match;
 

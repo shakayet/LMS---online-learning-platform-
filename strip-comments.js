@@ -4,21 +4,30 @@
 const fs = require('fs');
 const path = require('path');
 
-const stripComments = (code) => {
-  let stripped = code.replace(/\/\*[\s\S]*?\*\/|([^\\:]|^)\/\/.*|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)/g, (match, p1, p2) => {
-    if (p2) return p2; 
-    return p1 || ""; 
+const cleanFile = (filePath) => {
+  const content = fs.readFileSync(filePath, 'utf8');
+
+  const regex = /\/\*[\s\S]*?\*\/|([^\\:]|^)\/\/.*|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)/g;
+  let cleaned = content.replace(regex, (match, p1, p2) => {
+    if (p2) return p2;
+    return p1 || "";
   });
 
-  return stripped.split('\n')
+  cleaned = cleaned.replace(/(`[\s\S]*?`)/g, (match) => {
+
+    return match.replace(/^(\s*)\/\/.*$/gm, '$1');
+  });
+
+  cleaned = cleaned.split('\n')
     .map(line => line.trimEnd())
-    .filter((line, index, arr) => {
-      if (line.trim() === '' && index > 0 && arr[index-1].trim() === '') {
-        return false;
-      }
-      return true;
-    })
-    .join('\n');
+    .join('\n')
+    .replace(/\n\s*\n\s*\n/g, '\n\n')
+    .trim();
+
+  if (content !== cleaned) {
+    fs.writeFileSync(filePath, cleaned + '\n', 'utf8');
+    console.log(`Cleaned: ${filePath}`);
+  }
 };
 
 const walk = (dir) => {
@@ -43,14 +52,9 @@ const walk = (dir) => {
 
 const targetDirs = ['src', 'dist', 'scripts'];
 targetDirs.forEach(dirName => {
-  const dirPath = path.join(__dirname, dirName);
+  const dirPath = path.join(process.cwd(), dirName);
   const files = walk(dirPath);
-  files.forEach((file) => {
-    const content = fs.readFileSync(file, 'utf8');
-    const stripped = stripComments(content);
-    if (content !== stripped) {
-      fs.writeFileSync(file, stripped, 'utf8');
-      console.log(`Cleaned up: ${file}`);
-    }
-  });
+  files.forEach(cleanFile);
 });
+
+cleanFile(__filename);

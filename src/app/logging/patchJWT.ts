@@ -1,4 +1,3 @@
-
 import { trace } from '@opentelemetry/api';
 
 const jwt = require('jsonwebtoken');

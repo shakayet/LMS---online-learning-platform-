@@ -415,7 +415,7 @@ class TestScriptGenerator {
     tests.push('    pm.expect(response.data).to.have.property("_id");');
     tests.push('    pm.expect(response.data._id).to.be.a("string");');
     tests.push('    ');
-    tests.push(`    // Save ${moduleName} ID for later use`);
+    tests.push(`
     tests.push(
       `    pm.collectionVariables.set("${moduleName}Id", response.data._id);`
     );
@@ -588,7 +588,7 @@ class TestScriptGenerator {
     tests.push('
     tests.push('pm.test("✓ Response structure matches contract", () => {');
     tests.push('    const response = pm.response.json();');
-    tests.push('    // Contract validation logic here');
+    tests.push('
     tests.push('    pm.expect(response).to.have.property("success");');
     tests.push('    pm.expect(response).to.have.property("data");');
     tests.push('});');
@@ -605,7 +605,7 @@ class TestScriptGenerator {
     tests.push('    const response = pm.response.json();');
     tests.push('    const data = response.data;');
     tests.push('    ');
-    tests.push('    // Learn and validate data types dynamically');
+    tests.push('
     tests.push('    if (data && typeof data === "object") {');
     tests.push('        Object.keys(data).forEach(key => {');
     tests.push('            const value = data[key];');

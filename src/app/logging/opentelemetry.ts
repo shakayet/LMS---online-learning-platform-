@@ -1,4 +1,3 @@
-
 let NodeSDK: any;
 let Resource: any;
 let SemanticResourceAttributes: any;

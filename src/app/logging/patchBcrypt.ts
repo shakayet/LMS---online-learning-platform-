@@ -1,4 +1,3 @@
-
 import { trace } from '@opentelemetry/api';
 
 const bcrypt = require('bcrypt');

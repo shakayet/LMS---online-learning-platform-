@@ -46,7 +46,6 @@ class EnhancedPostmanGenerator {
       const apiPath = match[1];
       const routeName = match[2];
 
-      // Find the import to get module folder name
       const importRegex = new RegExp(
         `import\\s*{\\s*${routeName}\\s*}\\s*from\\s*['"]([^'"]+)['"]`
       );
@@ -74,7 +73,7 @@ class EnhancedPostmanGenerator {
    */
   async run(args) {
     try {
-      // Parse arguments
+
       const options = this.parseArguments(args);
 
       if (options.help) {
@@ -87,7 +86,6 @@ class EnhancedPostmanGenerator {
         return;
       }
 
-      // Generate collection
       if (options.module) {
         await this.generateSingleModule(options.module, options);
       } else {
@@ -174,15 +172,12 @@ Available Modules (auto-detected from routes/index.ts):
       console.log('🔍 Analyzing changes...\n');
     }
 
-    // Set collection name
     this.collection.info.name = 'Complete API Collection';
     this.collection.info.description =
       'All API modules with smart authentication and auto-saved variables';
 
-    // Add collection-level scripts
     this.addCollectionScripts();
 
-    // Process all modules
     const modules = Object.keys(this.moduleConfig).sort(
       (a, b) => this.moduleConfig[a].priority - this.moduleConfig[b].priority
     );
@@ -200,17 +195,14 @@ Available Modules (auto-detected from routes/index.ts):
 
       console.log(`📊 Processing module: ${moduleName}`);
 
-      // Parse routes
       const routes = await this.parseModuleRoutes(moduleName);
 
-      // Create folder for module
       const moduleFolder = {
         name: `${this.capitalizeFirst(moduleName)} Module`,
         item: [],
         description: `${this.capitalizeFirst(moduleName)} related endpoints`,
       };
 
-      // If existing collection, do smart merge
       if (existingCollection) {
         const existingFolder = this.findModuleFolder(
           existingCollection,
@@ -232,10 +224,9 @@ Available Modules (auto-detected from routes/index.ts):
           console.log(`  ✓ Unchanged: ${changes.unchanged.length} endpoints`);
         }
 
-        // Merge changes
         this.mergeModuleEndpoints(moduleFolder, existingFolder, changes);
       } else {
-        // Fresh generation
+
         routes.forEach(route => {
           const request = this.createPostmanRequest(route, moduleName);
           moduleFolder.item.push(request);
@@ -247,13 +238,10 @@ Available Modules (auto-detected from routes/index.ts):
       this.collection.item.push(moduleFolder);
     }
 
-    // Add/merge variables
     this.addCollectionVariables(existingCollection);
 
-    // Save collection
     await this.saveCollection(outputFile);
 
-    // Summary
     console.log('\n📈 Summary:');
     console.log(`  Total endpoints: ${totalAdded + totalUpdated + totalUnchanged}`);
     if (totalAdded > 0) console.log(`  ✅ New: ${totalAdded}`);
@@ -288,7 +276,6 @@ Available Modules (auto-detected from routes/index.ts):
       console.log('🔍 Analyzing changes...\n');
     }
 
-    // Set collection name
     this.collection.info.name = `${this.capitalizeFirst(
       moduleName
     )} API Collection`;
@@ -296,13 +283,10 @@ Available Modules (auto-detected from routes/index.ts):
       moduleName
     )} module endpoints`;
 
-    // Add collection-level scripts
     this.addCollectionScripts();
 
-    // Parse routes
     const routes = await this.parseModuleRoutes(moduleName);
 
-    // Smart merge or fresh generation
     if (existingCollection && !options.force) {
       const changes = this.compareEndpoints(existingCollection, routes);
 
@@ -311,13 +295,11 @@ Available Modules (auto-detected from routes/index.ts):
       console.log(`  🔄 To update: ${changes.toUpdate.length}`);
       console.log(`  ✓ Unchanged: ${changes.unchanged.length}\n`);
 
-      // Apply changes
       this.applyChangesToCollection(existingCollection, changes, moduleName);
 
-      // Use merged collection
       this.collection.item = existingCollection.item;
     } else {
-      // Fresh generation
+
       routes.forEach(route => {
         const request = this.createPostmanRequest(route, moduleName);
         this.collection.item.push(request);
@@ -325,10 +307,8 @@ Available Modules (auto-detected from routes/index.ts):
       console.log(`✅ Created ${routes.length} endpoints\n`);
     }
 
-    // Add/merge variables
     this.addCollectionVariables(existingCollection);
 
-    // Save
     await this.saveCollection(outputFile);
 
     console.log(`✅ Collection saved: postman-collections/${outputFile}`);
@@ -378,7 +358,7 @@ Available Modules (auto-detected from routes/index.ts):
     );
 
     if (!fs.existsSync(routeFilePath)) {
-      // Try alternative naming
+
       const alternatives = [
         `${moduleName}.routes.ts`,
         `${moduleName}s.route.ts`,
@@ -815,7 +795,7 @@ Available Modules (auto-detected from routes/index.ts):
     // Login endpoint - save tokens
     if (moduleName === 'auth' && route.path === '/login') {
       return `
-// Auto-save tokens from login response
+
 const response = pm.response.json();
 
 if (response.success && response.data) {
@@ -840,7 +820,7 @@ if (response.success && response.data) {
     // Register endpoint - save tokens
     if (moduleName === 'auth' && route.path === '/') {
       return `
-// Auto-save tokens from register response
+
 const response = pm.response.json();
 
 if (response.success && response.data) {
@@ -865,7 +845,7 @@ if (response.success && response.data) {
     // Create chat - save chatId
     if (moduleName === 'chat' && route.method === 'POST') {
       return `
-// Auto-save chat ID
+
 const response = pm.response.json();
 
 if (response.success && response.data && response.data._id) {
@@ -878,7 +858,7 @@ if (response.success && response.data && response.data._id) {
     // Send message - save messageId
     if (moduleName === 'message' && route.path === '/') {
       return `
-// Auto-save message ID
+
 const response = pm.response.json();
 
 if (response.success && response.data && response.data._id) {
@@ -891,7 +871,7 @@ if (response.success && response.data && response.data._id) {
     // Payment endpoints - save paymentId
     if (moduleName === 'payment' && route.method === 'POST') {
       return `
-// Auto-save payment ID
+
 const response = pm.response.json();
 
 if (response.success && response.data) {

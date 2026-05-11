@@ -200,13 +200,8 @@ print(`
 example('JavaScript Code', `
 const { execSync } = require('child_process');
 
-// Git command চালাও এবং output নাও
 const output = execSync('git diff --name-status HEAD', { encoding: 'utf-8' });
 
-// Output আসে এরকম:
-// M    src/app/builder/QueryBuilder.ts
-// A    scripts/smart-commit.js
-// D    old-file.ts
 `);
 
 print(`
@@ -233,9 +228,7 @@ junior('ভাইয়া, "M src/app/auth.ts" এই string দিয়ে �
 senior('এটাকে JavaScript Object এ convert করবো যাতে সহজে কাজ করা যায়।');
 
 example('Code', `
-// Raw input: "M    src/app/modules/auth/auth.service.ts"
 
-// Parse করে Object বানাও:
 const file = {
   status: 'M',
   path: 'src/app/modules/auth/auth.service.ts',
@@ -264,11 +257,9 @@ senior('Pattern matching! Path এর মধ্যে keywords খুঁজব�
 
 example('Code', `
 function detectScope(filePath) {
-  // Path: "src/app/modules/auth/auth.service.ts"
 
   if (filePath.includes('modules/')) {
-    // "modules/" এর পরের part নাও
-    // modules/auth/... → "auth"
+
     const parts = filePath.split('/');
     const moduleIndex = parts.indexOf('modules');
     return parts[moduleIndex + 1];  // "auth"
@@ -282,7 +273,6 @@ function detectScope(filePath) {
     return 'logging';
   }
 
-  // ... আরো patterns
 }
 `);
 
@@ -358,7 +348,6 @@ const addedLines = diff.split('\\n')
   .filter(line => line.startsWith('+'))  // শুধু নতুন lines
   .join('\\n');
 
-// Patterns check করো
 if (/fix(ed|es|ing)?/i.test(addedLines)) {
   typeScores.fix += 1;  // fix এর score বাড়াও
 }
@@ -407,15 +396,12 @@ print(`
 `);
 
 example('Confidence Calculation', `
-// Formula: (typeScore / totalScore) + 0.3
 
 const totalScore = 2 + 2 + 0 = 4;  // feat + fix + others
 
 const featConfidence = (2 / 4) + 0.3 = 0.8 = 80%
 const fixConfidence = (2 / 4) + 0.3 = 0.8 = 80%
 
-// Visual bar:
-// 80% = ████████░░
 `);
 
 subsection('🔍 STEP 6: Smart Subject Generation');
@@ -471,10 +457,8 @@ example('Subject Generation Code', `
 function generateSubject(analysis) {
   const fileGroups = groupFiles(analysis.files);
 
-  // Priority 1: Builder check
   if (fileGroups.builders.length > 0) {
     const names = extractBuilderNames(fileGroups.builders);
-    // ["QueryBuilder.ts", "PDFBuilder.ts"] → ["Query", "PDF"]
 
     if (names.length === 1) {
       return \`add \${names[0]}Builder functionality\`;
@@ -482,15 +466,12 @@ function generateSubject(analysis) {
     return \`add multiple builders (\${names.join(', ')})\`;
   }
 
-  // Priority 2: Module check
   if (fileGroups.modules.length > 0) {
     const modules = extractModuleNames(fileGroups.modules);
-    // ["auth/auth.service.ts"] → ["auth"]
 
     return \`add \${modules.join(', ')} module\`;
   }
 
-  // ... more priorities
 }
 `);
 

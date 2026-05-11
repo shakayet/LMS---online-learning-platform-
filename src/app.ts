@@ -217,7 +217,6 @@ app.get('/', (req: Request, res: Response) => {
 
         setInterval(draw, 33);
 
-        // Live date & time
         function updateDateTime() {
           const now = new Date();
           document.getElementById("dateTime").textContent = now.toLocaleString();

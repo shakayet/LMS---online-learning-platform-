@@ -86,7 +86,7 @@ function detectScope(filePath) {
     'src/app/builder/': () => 'builder',
     'src/app/logging/': () => 'logging',
     'scripts/': () => 'scripts',
-    // ...
+
   };
 
   for (const [pattern, extractor] of Object.entries(patterns)) {
@@ -205,19 +205,18 @@ Subject generation এর priority order:
 📝 Code Flow:
 
 if (fileGroups.builders.length > 0) {
-  // Extract builder names: QueryBuilder → Query
+
   const names = builders.map(extractName);
   if (names.length === 1) return \`add \${names[0]}Builder functionality\`;
   if (names.length > 1)  return \`add multiple builders (\${names.join(', ')})\`;
 }
 
 if (fileGroups.modules.length > 0) {
-  // Extract module names from path
+
   const modules = extractModuleNames();
   return \`add \${modules.join(', ')} modules\`;
 }
 
-// ... continue checking other groups
 `);
 
 console.log(`
@@ -405,18 +404,18 @@ console.log(`
     refactor: { priority: 3, emoji: '♻️', description: 'Refactoring' },
     perf:     { priority: 4, emoji: '⚡', description: 'Performance' },
     docs:     { priority: 5, emoji: '📚', description: 'Documentation' },
-    // ...
+
   },
   patterns: {
     feat: [/export\\s+class/, /new\\s+function/],
     fix:  [/fix(ed)?/i, /bug/i, /resolve/i],
     perf: [/optimi[zs]/i, /cache/i, /performance/i],
-    // ...
+
   },
   scopes: {
     'src/app/modules/': (path) => path.split('/')[3],
     'src/app/builder/': () => 'builder',
-    // ...
+
   }
 }
 `);

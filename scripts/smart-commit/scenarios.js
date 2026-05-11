@@ -216,11 +216,11 @@ const scenarios = [
       { path: 'src/app/modules/payment/payment.service.ts', status: 'M' },
     ],
     diffContent: `
-      // Fix: handle null case in refund
+
       if (!payment) {
         throw new ApiError(404, 'Payment not found');
       }
-      // Bug resolved
+
     `,
     linesAdded: 8,
     linesRemoved: 2,
@@ -271,9 +271,9 @@ const scenarios = [
       { path: 'src/app/modules/search/search.service.ts', status: 'M' },
     ],
     diffContent: `
-      // Optimize: use index hint for faster lookup
+
       const results = await Model.find(query).hint({ createdAt: -1 });
-      // Add caching for better performance
+
       await redis.setex(cacheKey, 3600, JSON.stringify(results));
     `,
     linesAdded: 25,
@@ -361,9 +361,7 @@ const scenarios = [
       { path: 'src/app/modules/user/helpers/validation.ts', status: 'A' },
     ],
     diffContent: `
-      // Refactor: extract validation logic
-      // Clean up duplicate code
-      // Restructure for better maintainability
+
     `,
     linesAdded: 50,
     linesRemoved: 80,

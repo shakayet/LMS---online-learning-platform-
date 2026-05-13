@@ -12,7 +12,7 @@ const getRecentActivities = catchAsync(async (req: Request, res: Response) => {
     statusCode: StatusCodes.OK,
     message: 'Recent activities retrieved successfully',
     data: result.data,
-    pagination: result.meta,
+    pagination: result.pagination,
   });
 });
 

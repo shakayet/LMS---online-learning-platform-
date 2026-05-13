@@ -1,4 +1,5 @@
 import { ActivityLog } from './activityLog.model';
+import QueryBuilder from '../../builder/QueryBuilder';
 import {
   IActivityLogCreate,
   IActivityLogQuery,
@@ -18,64 +19,29 @@ const logActivity = async (data: IActivityLogCreate): Promise<void> => {
       status: data.status || 'success',
     });
   } catch (error) {
-
     console.error('Failed to log activity:', error);
   }
 };
 
 const getRecentActivities = async (
-  query: IActivityLogQuery
+  query: Record<string, unknown>,
 ): Promise<{
   data: IActivityLogResponse[];
-  meta: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPage: number;
-  };
+  pagination: any;
 }> => {
-  const page = query.page || 1;
-  const limit = Math.min(query.limit || 10, 100);
-  const skip = (page - 1) * limit;
+  const activityQuery = new QueryBuilder(
+    ActivityLog.find().populate('userId', 'name email profilePicture'),
+    query,
+  )
+    .filter()
+    .sort()
+    .paginate()
+    .fields();
 
-  const filter: Record<string, unknown> = {};
+  const activities = await activityQuery.modelQuery.lean();
+  const pagination = await activityQuery.getPaginationInfo();
 
-  if (query.actionType) {
-    const actionTypes = query.actionType.split(',');
-    filter.actionType = { $in: actionTypes };
-  }
-
-  if (query.status) {
-    const statuses = query.status.split(',');
-    filter.status = { $in: statuses };
-  }
-
-  if (query.entityType) {
-    filter.entityType = query.entityType;
-  }
-
-  if (query.startDate || query.endDate) {
-    filter.createdAt = {};
-    if (query.startDate) {
-      (filter.createdAt as Record<string, Date>).$gte = new Date(
-        query.startDate
-      );
-    }
-    if (query.endDate) {
-      (filter.createdAt as Record<string, Date>).$lte = new Date(query.endDate);
-    }
-  }
-
-  const total = await ActivityLog.countDocuments(filter);
-
-  const activities = await ActivityLog.find(filter)
-    .sort({ createdAt: -1 })
-    .skip(skip)
-    .limit(limit)
-    .populate('userId', 'name email profilePicture')
-    .lean();
-
-  const data: IActivityLogResponse[] = activities.map(activity => {
+  const data: IActivityLogResponse[] = (activities as any[]).map(activity => {
     const user = activity.userId as unknown as {
       _id: string;
       name?: string;
@@ -98,12 +64,7 @@ const getRecentActivities = async (
 
   return {
     data,
-    meta: {
-      page,
-      limit,
-      total,
-      totalPage: Math.ceil(total / limit),
-    },
+    pagination: pagination,
   };
 };
 

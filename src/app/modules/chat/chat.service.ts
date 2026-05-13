@@ -1,3 +1,5 @@
+/* eslint-disable no-empty */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { IMessage } from '../message/message.interface';
 import { Message } from '../message/message.model';
 import { IChat } from './chat.interface';

@@ -9,6 +9,7 @@ import {
   takeWhiteboardSnapshot,
 } from './whiteboard.helper';
 import ApiError from '../../../errors/ApiError';
+import QueryBuilder from '../../builder/QueryBuilder';
 
 const createRoom = async (
   userId: string | null | undefined,
@@ -98,33 +99,31 @@ const getRoomTokenByUuid = async (
 
 const getUserRooms = async (
   userId: string | null | undefined,
-  page: number = 1,
-  limit: number = 20
-): Promise<{ rooms: IWhiteboardRoom[]; total: number; page: number; totalPages: number }> => {
+  query: Record<string, unknown>
+): Promise<{ rooms: IWhiteboardRoom[]; pagination: any }> => {
   if (!userId) {
     throw new ApiError(StatusCodes.UNAUTHORIZED, 'User not authenticated');
   }
-  const skip = (page - 1) * limit;
 
-  const [rooms, total] = await Promise.all([
+  const whiteboardQuery = new QueryBuilder(
     WhiteboardRoom.find({
       $or: [{ createdBy: userId }, { participants: userId }],
-    })
-      .populate('createdBy', 'name profilePicture')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean(),
-    WhiteboardRoom.countDocuments({
-      $or: [{ createdBy: userId }, { participants: userId }],
     }),
-  ]);
+    query
+  )
+    .filter()
+    .sort()
+    .paginate()
+    .fields();
+
+  const rooms = await whiteboardQuery.modelQuery
+    .populate('createdBy', 'name profilePicture')
+    .lean();
+  const pagination = await whiteboardQuery.getPaginationInfo();
 
   return {
     rooms: rooms as IWhiteboardRoom[],
-    total,
-    page,
-    totalPages: Math.ceil(total / limit),
+    pagination,
   };
 };
 

@@ -35,22 +35,16 @@ const getRoomToken = catchAsync(async (req: Request, res: Response) => {
 
 const getUserRooms = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user?.id;
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 20;
+  const query = req.query;
 
-  const result = await WhiteboardService.getUserRooms(userId, page, limit);
+  const result = await WhiteboardService.getUserRooms(userId, query);
 
   sendResponse(res, {
     success: true,
     statusCode: StatusCodes.OK,
     message: 'Rooms retrieved successfully',
     data: result.rooms,
-    pagination: {
-      page: result.page,
-      limit,
-      total: result.total,
-      totalPage: result.totalPages,
-    },
+    pagination: result.pagination,
   });
 });
 

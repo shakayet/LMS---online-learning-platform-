@@ -2,10 +2,22 @@ import { StatusCodes } from 'http-status-codes';
 import ApiError from '../../../errors/ApiError';
 import { ILegalPolicy, POLICY_TYPE } from './legalPolicy.interface';
 import { LegalPolicy } from './legalPolicy.model';
+import QueryBuilder from '../../builder/QueryBuilder';
 
-const getAllPolicies = async (): Promise<ILegalPolicy[]> => {
-  const result = await LegalPolicy.find().sort({ type: 1 }).lean();
-  return result;
+const getAllPolicies = async (query: Record<string, unknown>): Promise<{ data: ILegalPolicy[]; pagination: any }> => {
+  const policyQuery = new QueryBuilder(LegalPolicy.find(), query)
+    .filter()
+    .sort()
+    .paginate()
+    .fields();
+
+  const result = await policyQuery.modelQuery.lean();
+  const pagination = await policyQuery.getPaginationInfo();
+
+  return {
+    data: result as ILegalPolicy[],
+    pagination,
+  };
 };
 
 const getPolicyByType = async (type: POLICY_TYPE): Promise<ILegalPolicy | null> => {
@@ -92,9 +104,20 @@ const deletePolicy = async (type: POLICY_TYPE): Promise<ILegalPolicy | null> => 
   return result;
 };
 
-const getAllActivePolicies = async (): Promise<ILegalPolicy[]> => {
-  const result = await LegalPolicy.find({ isActive: true }).sort({ type: 1 }).lean();
-  return result;
+const getAllActivePolicies = async (query: Record<string, unknown>): Promise<{ data: ILegalPolicy[]; pagination: any }> => {
+  const policyQuery = new QueryBuilder(LegalPolicy.find({ isActive: true }), query)
+    .filter()
+    .sort()
+    .paginate()
+    .fields();
+
+  const result = await policyQuery.modelQuery.lean();
+  const pagination = await policyQuery.getPaginationInfo();
+
+  return {
+    data: result as ILegalPolicy[],
+    pagination,
+  };
 };
 
 const initializeDefaultPolicies = async (): Promise<void> => {

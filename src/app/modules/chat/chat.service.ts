@@ -5,7 +5,11 @@ import { Message } from '../message/message.model';
 import { IChat } from './chat.interface';
 import { Chat } from './chat.model';
 import { isOnline, getLastActive } from '../../helpers/presenceHelper';
-import { getUnreadCountCached, setUnreadCount } from '../../helpers/unreadHelper';
+import {
+  getUnreadCountCached,
+  setUnreadCount,
+} from '../../helpers/unreadHelper';
+import QueryBuilder from '../../builder/QueryBuilder';
 
 const createChatToDB = async (payload: any): Promise<IChat> => {
   const isExistChat: IChat | null = await Chat.findOne({
@@ -19,14 +23,24 @@ const createChatToDB = async (payload: any): Promise<IChat> => {
   return chat;
 };
 
-const getChatFromDB = async (user: any, search: string): Promise<IChat[]> => {
-  const chats: any = await Chat.find({ participants: { $in: [user.id] } })
+const getChatFromDB = async (
+  user: any,
+  query: Record<string, unknown>,
+): Promise<{ data: any[]; pagination: any }> => {
+  const chatQuery = new QueryBuilder(
+    Chat.find({ participants: { $in: [user.id] } }),
+    query,
+  )
+    .filter()
+    .sort()
+    .paginate();
+
+  const chats: any = await chatQuery.modelQuery
     .populate({
       path: 'participants',
       select: '_id name image role',
       match: {
         _id: { $ne: user.id },
-        ...(search && { name: { $regex: search, $options: 'i' } }),
       },
     })
     .populate({
@@ -47,11 +61,13 @@ const getChatFromDB = async (user: any, search: string): Promise<IChat[]> => {
     })
     .select('participants status updatedAt trialRequestId sessionRequestId');
 
+  const pagination = await chatQuery.getPaginationInfo();
+
   const filteredChats = chats?.filter(
-    (chat: any) => chat?.participants?.length > 0
+    (chat: any) => chat?.participants?.length > 0,
   );
 
-  const chatList: IChat[] = await Promise.all(
+  const chatList: any[] = await Promise.all(
     filteredChats?.map(async (chat: any) => {
       const data = chat?.toObject();
 
@@ -61,7 +77,10 @@ const getChatFromDB = async (user: any, search: string): Promise<IChat[]> => {
         .sort({ createdAt: -1 })
         .select('text offer createdAt sender');
 
-      const cachedUnread = await getUnreadCountCached(String(chat?._id), String(user.id));
+      const cachedUnread = await getUnreadCountCached(
+        String(chat?._id),
+        String(user.id),
+      );
       let unreadCount: number;
       if (typeof cachedUnread === 'number') {
         unreadCount = cachedUnread;
@@ -92,7 +111,10 @@ const getChatFromDB = async (user: any, search: string): Promise<IChat[]> => {
         presence = { isOnline: online, lastActive: last };
       }
 
-      const subject = data?.sessionRequestId?.subject?.name || data?.trialRequestId?.subject?.name || null;
+      const subject =
+        data?.sessionRequestId?.subject?.name ||
+        data?.trialRequestId?.subject?.name ||
+        null;
 
       return {
         ...data,
@@ -101,10 +123,13 @@ const getChatFromDB = async (user: any, search: string): Promise<IChat[]> => {
         presence,
         subject,
       };
-    })
+    }),
   );
 
-  return chatList;
+  return {
+    data: chatList,
+    pagination,
+  };
 };
 
 export const ChatService = { createChatToDB, getChatFromDB };

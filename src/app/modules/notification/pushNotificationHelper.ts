@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable no-undef */
 import { logger } from '../../../shared/logger';
 import config from '../../../config';
 import admin from 'firebase-admin';
@@ -16,7 +18,7 @@ admin.initializeApp({
 const sendPushNotifications = async (
   values: admin.messaging.MulticastMessage
 ) => {
-  const res = await admin.messaging().sendEachForMulticast(values);
+  const res = await (admin.messaging() as any).sendEachForMulticast(values);
   logger.info('Notifications sent successfully', res);
 };
 

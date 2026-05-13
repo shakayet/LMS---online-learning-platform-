@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Types } from 'mongoose';
 import { StatusCodes } from 'http-status-codes';
 import { WhiteboardRoom } from './whiteboard.model';
@@ -14,7 +15,7 @@ import QueryBuilder from '../../builder/QueryBuilder';
 const createRoom = async (
   userId: string | null | undefined,
   name: string,
-  callId?: string
+  callId?: string,
 ): Promise<{ room: IWhiteboardRoom; token: string }> => {
   if (!userId) {
     throw new ApiError(StatusCodes.UNAUTHORIZED, 'User not authenticated');
@@ -39,7 +40,7 @@ const createRoom = async (
 const getRoomToken = async (
   roomId: string,
   userId: string | null | undefined,
-  role: WhiteboardRole = 'writer'
+  role: WhiteboardRole = 'writer',
 ): Promise<{ token: string; room: IWhiteboardRoom }> => {
   if (!userId) {
     throw new ApiError(StatusCodes.UNAUTHORIZED, 'User not authenticated');
@@ -54,9 +55,7 @@ const getRoomToken = async (
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Whiteboard room is closed');
   }
 
-  const isParticipant = room.participants.some(
-    p => p.toString() === userId
-  );
+  const isParticipant = room.participants.some(p => p.toString() === userId);
 
   if (!isParticipant) {
     room.participants.push(new Types.ObjectId(userId));
@@ -71,7 +70,7 @@ const getRoomToken = async (
 const getRoomTokenByUuid = async (
   uuid: string,
   userId: string,
-  role: WhiteboardRole = 'writer'
+  role: WhiteboardRole = 'writer',
 ): Promise<{ token: string; room: IWhiteboardRoom }> => {
   const room = await WhiteboardRoom.findOne({ uuid });
 
@@ -83,9 +82,7 @@ const getRoomTokenByUuid = async (
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Whiteboard room is closed');
   }
 
-  const isParticipant = room.participants.some(
-    p => p.toString() === userId
-  );
+  const isParticipant = room.participants.some(p => p.toString() === userId);
 
   if (!isParticipant) {
     room.participants.push(new Types.ObjectId(userId));
@@ -99,7 +96,7 @@ const getRoomTokenByUuid = async (
 
 const getUserRooms = async (
   userId: string | null | undefined,
-  query: Record<string, unknown>
+  query: Record<string, unknown>,
 ): Promise<{ rooms: IWhiteboardRoom[]; pagination: any }> => {
   if (!userId) {
     throw new ApiError(StatusCodes.UNAUTHORIZED, 'User not authenticated');
@@ -109,7 +106,7 @@ const getUserRooms = async (
     WhiteboardRoom.find({
       $or: [{ createdBy: userId }, { participants: userId }],
     }),
-    query
+    query,
   )
     .filter()
     .sort()
@@ -122,12 +119,15 @@ const getUserRooms = async (
   const pagination = await whiteboardQuery.getPaginationInfo();
 
   return {
-    rooms: rooms as IWhiteboardRoom[],
+    rooms: rooms as unknown as IWhiteboardRoom[],
     pagination,
   };
 };
 
-const deleteRoom = async (roomId: string, userId: string | null | undefined): Promise<void> => {
+const deleteRoom = async (
+  roomId: string,
+  userId: string | null | undefined,
+): Promise<void> => {
   if (!userId) {
     throw new ApiError(StatusCodes.UNAUTHORIZED, 'User not authenticated');
   }
@@ -140,7 +140,7 @@ const deleteRoom = async (roomId: string, userId: string | null | undefined): Pr
   if (room.createdBy.toString() !== userId) {
     throw new ApiError(
       StatusCodes.FORBIDDEN,
-      'Only room creator can delete this room'
+      'Only room creator can delete this room',
     );
   }
 
@@ -153,7 +153,7 @@ const deleteRoom = async (roomId: string, userId: string | null | undefined): Pr
 const takeSnapshot = async (
   roomId: string,
   userId: string | null | undefined,
-  scenePath?: string
+  scenePath?: string,
 ): Promise<{ snapshotUrl: string }> => {
   if (!userId) {
     throw new ApiError(StatusCodes.UNAUTHORIZED, 'User not authenticated');
@@ -164,14 +164,12 @@ const takeSnapshot = async (
     throw new ApiError(StatusCodes.NOT_FOUND, 'Whiteboard room not found');
   }
 
-  const isParticipant = room.participants.some(
-    p => p.toString() === userId
-  );
+  const isParticipant = room.participants.some(p => p.toString() === userId);
 
   if (!isParticipant) {
     throw new ApiError(
       StatusCodes.FORBIDDEN,
-      'You are not a participant of this room'
+      'You are not a participant of this room',
     );
   }
 
@@ -190,7 +188,7 @@ const takeSnapshot = async (
 
 const getRoomSnapshots = async (
   roomId: string,
-  userId: string | null | undefined
+  userId: string | null | undefined,
 ): Promise<IWhiteboardRoom['snapshots']> => {
   if (!userId) {
     throw new ApiError(StatusCodes.UNAUTHORIZED, 'User not authenticated');
@@ -204,13 +202,13 @@ const getRoomSnapshots = async (
   }
 
   const isParticipant = room.participants.some(
-    (p: any) => p.toString() === userId
+    (p: any) => p.toString() === userId,
   );
 
   if (!isParticipant && room.createdBy.toString() !== userId) {
     throw new ApiError(
       StatusCodes.FORBIDDEN,
-      'You do not have access to this room'
+      'You do not have access to this room',
     );
   }
 
@@ -219,7 +217,7 @@ const getRoomSnapshots = async (
 
 const getOrCreateRoomForCall = async (
   callId: string,
-  userId: string | null | undefined
+  userId: string | null | undefined,
 ): Promise<{ room: IWhiteboardRoom; token: string; isNew: boolean }> => {
   if (!userId) {
     throw new ApiError(StatusCodes.UNAUTHORIZED, 'User not authenticated');
@@ -230,9 +228,7 @@ const getOrCreateRoomForCall = async (
   if (room) {
     const token = await generateWhiteboardRoomToken(room.uuid, 'writer');
 
-    const isParticipant = room.participants.some(
-      p => p.toString() === userId
-    );
+    const isParticipant = room.participants.some(p => p.toString() === userId);
 
     if (!isParticipant) {
       room.participants.push(new Types.ObjectId(userId));
@@ -245,7 +241,7 @@ const getOrCreateRoomForCall = async (
   const { room: newRoom, token } = await createRoom(
     userId,
     `Call Whiteboard - ${callId}`,
-    callId
+    callId,
   );
 
   return { room: newRoom, token, isNew: true };

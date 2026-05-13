@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { Request, Response } from 'express';
 import catchAsync from '../../../shared/catchAsync';
 import sendResponse from '../../../shared/sendResponse';
@@ -30,7 +31,7 @@ const getChat = catchAsync(async (req: Request, res: Response) => {
     statusCode: StatusCodes.OK,
     success: true,
     message: 'Chat Retrieve Successfully',
-    pagination: result.meta,
+    pagination: result.pagination,
     data: result.data,
   });
 });

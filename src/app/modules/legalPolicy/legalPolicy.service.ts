@@ -1,10 +1,13 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { StatusCodes } from 'http-status-codes';
 import ApiError from '../../../errors/ApiError';
 import { ILegalPolicy, POLICY_TYPE } from './legalPolicy.interface';
 import { LegalPolicy } from './legalPolicy.model';
 import QueryBuilder from '../../builder/QueryBuilder';
 
-const getAllPolicies = async (query: Record<string, unknown>): Promise<{ data: ILegalPolicy[]; pagination: any }> => {
+const getAllPolicies = async (
+  query: Record<string, unknown>,
+): Promise<{ data: ILegalPolicy[]; pagination: any }> => {
   const policyQuery = new QueryBuilder(LegalPolicy.find(), query)
     .filter()
     .sort()
@@ -15,17 +18,21 @@ const getAllPolicies = async (query: Record<string, unknown>): Promise<{ data: I
   const pagination = await policyQuery.getPaginationInfo();
 
   return {
-    data: result as ILegalPolicy[],
+    data: result as unknown as ILegalPolicy[],
     pagination,
   };
 };
 
-const getPolicyByType = async (type: POLICY_TYPE): Promise<ILegalPolicy | null> => {
+const getPolicyByType = async (
+  type: POLICY_TYPE,
+): Promise<ILegalPolicy | null> => {
   const result = await LegalPolicy.findOne({ type }).lean();
   return result;
 };
 
-const getActivePolicyByType = async (type: POLICY_TYPE): Promise<ILegalPolicy | null> => {
+const getActivePolicyByType = async (
+  type: POLICY_TYPE,
+): Promise<ILegalPolicy | null> => {
   const result = await LegalPolicy.findOne({ type, isActive: true }).lean();
   return result;
 };
@@ -33,28 +40,29 @@ const getActivePolicyByType = async (type: POLICY_TYPE): Promise<ILegalPolicy | 
 const upsertPolicy = async (
   type: POLICY_TYPE,
   payload: Partial<ILegalPolicy>,
-  userId?: string
+  userId?: string,
 ): Promise<ILegalPolicy> => {
   const existingPolicy = await LegalPolicy.findOne({ type });
 
   if (existingPolicy) {
-
     const result = await LegalPolicy.findOneAndUpdate(
       { type },
       {
         ...payload,
         lastUpdatedBy: userId,
       },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     );
 
     if (!result) {
-      throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to update policy');
+      throw new ApiError(
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        'Failed to update policy',
+      );
     }
 
     return result;
   } else {
-
     const result = await LegalPolicy.create({
       type,
       ...payload,
@@ -68,7 +76,7 @@ const upsertPolicy = async (
 const updatePolicy = async (
   type: POLICY_TYPE,
   payload: Partial<ILegalPolicy>,
-  userId?: string
+  userId?: string,
 ): Promise<ILegalPolicy | null> => {
   const policy = await LegalPolicy.findOne({ type });
 
@@ -82,13 +90,15 @@ const updatePolicy = async (
       ...payload,
       lastUpdatedBy: userId,
     },
-    { new: true, runValidators: true }
+    { new: true, runValidators: true },
   );
 
   return result;
 };
 
-const deletePolicy = async (type: POLICY_TYPE): Promise<ILegalPolicy | null> => {
+const deletePolicy = async (
+  type: POLICY_TYPE,
+): Promise<ILegalPolicy | null> => {
   const policy = await LegalPolicy.findOne({ type });
 
   if (!policy) {
@@ -98,14 +108,19 @@ const deletePolicy = async (type: POLICY_TYPE): Promise<ILegalPolicy | null> => 
   const result = await LegalPolicy.findOneAndUpdate(
     { type },
     { isActive: false },
-    { new: true }
+    { new: true },
   );
 
   return result;
 };
 
-const getAllActivePolicies = async (query: Record<string, unknown>): Promise<{ data: ILegalPolicy[]; pagination: any }> => {
-  const policyQuery = new QueryBuilder(LegalPolicy.find({ isActive: true }), query)
+const getAllActivePolicies = async (
+  query: Record<string, unknown>,
+): Promise<{ data: ILegalPolicy[]; pagination: any }> => {
+  const policyQuery = new QueryBuilder(
+    LegalPolicy.find({ isActive: true }),
+    query,
+  )
     .filter()
     .sort()
     .paginate()
@@ -115,7 +130,7 @@ const getAllActivePolicies = async (query: Record<string, unknown>): Promise<{ d
   const pagination = await policyQuery.getPaginationInfo();
 
   return {
-    data: result as ILegalPolicy[],
+    data: result as unknown as ILegalPolicy[],
     pagination,
   };
 };
